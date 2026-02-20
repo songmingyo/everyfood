@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.management.service.impl.MgrCodeMapper">
+	
+
+	<resultMap id="codeInfoMap" type="com.doppio.management.service.MgrCodeVo">
+       		<result column="COM_CD"		  	property="comCd" 		/>	<!--분류코드			-->   				
+			<result column="COM_NM"		  	property="comNm" 		/>	<!--분류명칭			-->
+			<result column="COM_SUB_NM"		property="comSubNm" 	/>	<!--분류추가명칭		-->
+			<result column="COM_EXTEND_NM"	property="comExtendNm" 	/>	<!--분류추가명칭(VN)	-->
+			<result column="DTL_CD"       	property="dtlCd" 		/>	<!--세부코드			-->   
+			<result column="DTL_NM"      	property="dtlNm" 		/>	<!--세부코드명칭		-->
+			<result column="DTL_SUB_NM"     property="dtlSubNm" 	/>	<!--세부코드영문명칭		-->
+			<result column="DTL_EXTEND_NM"  property="dtlExtendNm" 	/>	<!--세부코드명칭(VN)	-->
+			<result column="USE_YN"    		property="useYn" 		/>	<!--사용여부			--> 
+			<result column="EXTENT01"     	property="extent01" 	/>	<!--예비1				-->
+			<result column="EXTENT02"     	property="extent02" 	/>	<!--예비2				-->
+			<result column="SORT_NO"     	property="sortNo" 	    />	<!--소트순번			-->
+			<result column="MOD_DT"   		property="modDt" 		/>	<!--변경일자			-->
+			<result column="MOD_ID" 	    property="modId" 		/>	<!--변경자사번			-->
+    </resultMap>
+
+
+	<!-- 코드마스터 정보 조회 -->
+	<select id="selectCodeMasterList" resultMap="codeInfoMap" parameterType="com.doppio.management.service.MgrCodeVo">
+		/*MgrCodeMapper.selectCodeMasterList*/
+		SELECT	 A.COM_CD
+		   	    ,A.COM_NM
+		   	    ,A.COM_SUB_NM
+		   	    ,A.COM_EXTEND_NM
+		   	    ,DATE_FORMAT(MOD_DT, '%Y%m%d%H%i%s') AS MOD_DT
+		   	    ,A.MOD_ID
+		FROM	TCM_CODE_MST A 
+	    <if test='dtlNm != null and dtlNm != ""'>
+		    INNER JOIN (SELECT COM_CD FROM TCM_CODE_DTL  S1
+	             <choose>
+		   	    	<when test='languageType == "ko"'>
+	                  	WHERE	S1.DTL_NM  LIKE CONCAT('%',#{dtlNm},'%')
+	                </when>  
+	                <otherwise>
+		   	        	WHERE	S1.DTL_SUB_NM  LIKE CONCAT('%',#{dtlNm},'%')
+		   	    	</otherwise>
+		   	    </choose>
+		           GROUP BY COM_CD
+	            ) B ON A.COM_CD = B.COM_CD
+		</if>
+		<where>
+		    <if test='comNm != null and comNm != ""'>
+		     <choose>
+		   	    	<when test='languageType == "ko"'>
+			   			AND COM_NM LIKE CONCAT('%',#{comNm},'%')
+			   		</when>
+			   		<otherwise>
+			   			AND COM_SUB_NM LIKE CONCAT('%',#{comNm},'%')
+			   		</otherwise>
+			   	</choose>	
+			</if>
+		</where>
+	   ORDER BY COM_CD, COM_NM
+    </select>	
+    
+    
+    <!-- 코드서브 정보 조회 -->
+	<select id="selectCodeSubList" resultMap="codeInfoMap" parameterType="com.doppio.management.service.MgrCodeVo">
+		/*MgrCodeMapper.selectCodeSubList*/
+		SELECT   A.COM_CD
+				,B.COM_NM
+				,B.COM_SUB_NM
+				,A.DTL_CD
+				,A.DTL_NM
+				,A.DTL_SUB_NM
+				,A.DTL_EXTEND_NM
+				,A.USE_YN
+				,IFNULL(A.EXTENT01,'') AS EXTENT01
+				,IFNULL(A.EXTENT02,'') AS EXTENT02
+				,IFNULL(A.SORT_NO,0)  AS SORT_NO
+				,DATE_FORMAT(A.MOD_DT, '%Y%m%d%H%i%s') AS MOD_DT
+				,A.MOD_ID
+		FROM	TCM_CODE_DTL A INNER JOIN TCM_CODE_MST B ON A.COM_CD = B.COM_CD
+		WHERE	A.COM_CD = #{comCd}
+		<if test='dtlCdArr != null and dtlCdArr.size > 0'>
+		    AND A.DTL_CD  IN 
+		    <foreach item="item" collection="dtlCdArr" open="(" separator="," close=")">
+		    	#{item}
+		    </foreach>		    
+		</if>
+		<if test='dtlCd != null and dtlCd != ""'>
+		    AND A.DTL_CD  = #{dtlCd}
+		</if>
+		<if test='dtlNm != null and dtlNm != ""'>
+		    AND A.DTL_NM  = #{dtlNm}
+		</if>
+		ORDER BY SORT_NO, DTL_CD, DTL_NM
+	</select>
+	
+	
+	<!-- 마스터 코드 등록 -->
+	<update  id="insertCodeMaster" parameterType="com.doppio.management.service.MgrCodeVo">
+	   /* MgrCodeMapper.insertCodeMaster*/
+	     INSERT INTO TCM_CODE_MST (
+                    COM_CD 
+                   ,COM_NM
+                   ,COM_SUB_NM
+                   ,COM_EXTEND_NM
+                   ,USE_YN
+                   ,REG_DT 
+                   ,REG_ID
+                   ,MOD_DT
+                   ,MOD_ID )
+           VALUES ( #{comCd}
+                   ,#{comNm}
+                   ,#{comSubNm}
+                   ,#{comExtendNm}
+                   ,'Y'
+		           ,NOW()
+                   ,#{workId}
+		           ,NOW()
+                   ,#{workId})
+	</update>
+	
+	<!-- 마스터 코드 수정 -->
+	<update  id="updateCodeMaster" parameterType="com.doppio.management.service.MgrCodeVo">
+	   /* MgrCodeMapper.updateCodeMaster*/
+	     UPDATE	TCM_CODE_MST 
+	     SET	COM_CD  	 = #{comCd}
+               ,COM_NM  	 = #{comNm}
+               ,COM_SUB_NM   = #{comSubNm}
+               ,COM_EXTEND_NM = #{comExtendNm}
+               ,MOD_DT  	 = NOW()
+               ,MOD_ID  	 = #{workId}
+		WHERE COM_CD = #{comCdOld} 
+	</update>
+	
+	
+	<!-- 서브 코드 등록 -->
+	<update  id="insertCodeSub" parameterType="com.doppio.management.service.MgrCodeVo">
+		/* MgrCodeMapper.insertCodeSub*/
+	  INSERT INTO TCM_CODE_DTL(
+		              COM_CD 
+		             ,DTL_CD
+				 	 ,DTL_NM
+				 	 ,DTL_SUB_NM
+				 	 ,DTL_EXTEND_NM
+					 ,USE_YN
+					 ,EXTENT01
+				 	 ,EXTENT02
+				 	 ,SORT_NO
+		             ,REG_DT
+		             ,REG_ID 
+		             ,MOD_DT
+		             ,MOD_ID)
+               VALUES(#{comCd}
+                    ,#{dtlCd}
+					,#{dtlNm}
+					,#{dtlSubNm}
+					,#{dtlExtendNm}
+					,#{useYn}
+		            ,#{extent01}
+					,#{extent02}
+					,#{sortNo}
+		            ,NOW()
+		            ,#{workId}
+		            ,NOW()
+		            ,#{workId})
+	</update>
+	
+	<!-- 서브 코드 수정 -->
+	<update  id="updateCodeSub" parameterType="com.doppio.management.service.MgrCodeVo">
+	   /* MgrCodeMapper.updateCodeSub*/
+	    UPDATE TCM_CODE_DTL  
+		      SET DTL_CD  		  = #{dtlCd}
+                 ,DTL_NM		  = #{dtlNm}
+                 ,DTL_SUB_NM	  = #{dtlSubNm}
+                 ,DTL_EXTEND_NM	  = #{dtlExtendNm}
+				 ,USE_YN		  = #{useYn}
+				 ,EXTENT01		  = #{extent01}
+				 ,EXTENT02		  = #{extent02}
+				 ,SORT_NO         = #{sortNo}
+                 ,MOD_DT          = NOW()
+		         ,MOD_ID          = #{workId}
+		   WHERE COM_CD = #{comCd} 
+		     AND DTL_CD = #{dtlCdOld} 
+	</update>
+	
+	
+	<!-- 마스터 코드 삭제 -->
+	<delete  id="deleteCodeMaster" parameterType="com.doppio.management.service.MgrCodeVo">
+	   /* MgrCodeMapper.deleteCodeMaster*/
+	   DELETE FROM TCM_CODE_MST  WHERE COM_CD = #{comCdOld}
+	</delete>
+	
+	<!-- 서브코드 코드 분류코드 전체 update -->
+	<delete  id="upateCodeSubAll" parameterType="com.doppio.management.service.MgrCodeVo">
+		/* MgrCodeMapper.upateCodeSubAll*/
+		UPDATE TCM_CODE_DTL SET COM_CD = #{comCd} 
+		 WHERE COM_CD = #{comCdOld}
+	</delete>
+	
+	<!-- 서브코드 코드 삭제 -->
+	<delete  id="deleteCodeSub" parameterType="com.doppio.management.service.MgrCodeVo">
+		/* MgrCodeMapper.deleteCodeSub*/
+		DELETE FROM TCM_CODE_DTL
+		<where>
+		    <if test='comCd != null and comCd != ""'>
+		        AND COM_CD  = #{comCd}
+		    </if>
+		    <if test='dtlCdOld != null and dtlCdOld != ""'>
+		        AND DTL_CD  = #{dtlCdOld}
+		    </if>
+		</where>
+	</delete>
+	
+	
+	<!-- 마스터코드 중복유무 카운트 확인 -->
+	<select id="selectMasterCodeCount"   resultType="String" parameterType="com.doppio.management.service.MgrCodeVo">
+		/* MgrCodeMapper.selectMasterCodeCheck*/
+		SELECT COUNT(*) CNT FROM TCM_CODE_MST  WHERE COM_CD = #{comCd}
+	</select>
+	
+	<!-- 서브코드 중복유무 카운트 확인 -->
+	<select id="selectSubCodeCount"   resultType="String" parameterType="com.doppio.management.service.MgrCodeVo">
+		/* MgrCodeMapper.selectSubCodeCheck*/
+		SELECT COUNT(*) CNT FROM TCM_CODE_DTL  
+		 WHERE COM_CD = #{comCd}
+		   AND DTL_CD = #{dtlCd}
+	</select>
+	
+   	 
+   	 
+   	 
+   	 
+</mapper>

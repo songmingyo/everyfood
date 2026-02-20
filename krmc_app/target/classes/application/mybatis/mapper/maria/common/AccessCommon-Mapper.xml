@@ -1,0 +1,546 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.common.service.impl.AccessCommonMapper">
+
+	<resultMap id="menuSession" 	type="com.doppio.common.model.MenuSession">
+		<result column="MENU_ID" 			property="menuId" />			<!-- 메뉴아이디 -->
+	    <result column="PARENT_ID" 			property="parentId" />			<!-- 부모아이디 -->
+	    <result column="TITLE" 				property="title" />				<!-- 항목 별칭 -->
+	    <result column="TITLE_SUB" 			property="titleSub" /> 			<!-- 항목추가 별칭 -->
+	    <result column="TITLE_EXTEND" 		property="titleExtend" /> 		<!-- 항목확장 별칭 -->
+	    <result column="WEB_PAGE" 			property="webPage"/>			<!-- 페이지경로 -->
+	    <result column="EXTRA_INFO" 		property="extraInfo"/>			<!-- 확장컬럼 -->
+	    <result column="AUTHORITY_LEVEL"	property="authorityLevel"/>		<!-- 전체권한  -->
+	    <result column="SORT" 				property="sort"/>				<!-- 소팅순번  -->
+	    <result column="HIDE_YN" 			property="hideYn"/>				<!-- 메뉴숨김여부:Y/N] -->
+	    <result column="DTL_LOG_YN" 		property="dtlLogYn"/>			<!-- 상세로그생성여부[Y,N] 	-->
+	    <result column="LEAF" 				property="leaf"/>				<!-- CONNECT_BY_ISLEAF 		  -->
+	    <result column="LEVEL" 				property="level"/>				<!-- CONNECT_BY_ISLEAF LEVEL  -->
+	    <result column="READ_AUTH" 			property="readAuth"/>			<!-- 권한 조회 [Y/N] -->
+	    <result column="WRITE_AUTH" 		property="writeAuth"/>			<!-- 권한 등록 [Y/N] -->
+	    <result column="EDIT_AUTH" 			property="editAuth"/>			<!-- 권한 수정 [Y/N] -->
+	    <result column="DELETE_AUTH" 		property="deleteAuth"/>			<!-- 권한 삭제 [Y/N] -->
+	    <result column="PRINT_AUTH" 		property="printAuth"/>			<!-- 권한 출력 [Y/N] -->
+	    <result column="ALL_AUTH" 			property="allAuth"/>			<!-- 전체권한 있음 유무[Y/N] -->
+	    <result column="DENYS" 				property="deny"/>				<!-- 전체권한 없음 유무[Y/N] -->
+	    <result column="VDI_CD" 			property="vdiCd"/>				<!-- 아이피접근제어정책(9050) -->
+	    <result column="VDI_IPS" 			property="vdiIps"/> 			<!-- 허용 접근아이피목록 -->
+	    <result column="MENU_ICON" 			property="menuIcon"/>			<!-- 메뉴아이콘 -->
+	</resultMap>
+	
+	<resultMap id="PermissionResult" 	type="com.doppio.common.model.MenuSession">
+	    <result column="PGM_QRY"			property="readAuth" 		/> <!-- 조회 -->
+        <result column="PGM_INT"			property="writeAuth" 		/> <!-- 등록 -->
+        <result column="PGM_UPT"			property="editAuth" 		/> <!-- 수정 -->
+        <result column="PGM_DEL"			property="deleteAuth" 		/> <!-- 삭제 -->
+        <result column="PGM_PRT"			property="printAuth" 		/> <!-- 출력 -->
+        <result column="PGM_NVL"			property="programNvl" 	    /> <!-- 메뉴목록없음 T/F -->
+        <result column="WEB_PAGE"			property="programId" 		/> <!-- 프로그램아이디 -->
+    </resultMap>
+
+
+	<!-- LOGIN USER  MENU -->
+	<select id="selectMenuListById"  parameterType="java.util.HashMap" resultMap="menuSession">
+	/* AccessCommonMapper.selectMenuListById */
+	SELECT T1.MENU_ID
+		 ,T1.PARENT_ID
+		 ,T1.TITLE
+		 ,T1.TITLE_SUB
+		 ,T1.TITLE_EXTEND
+		 ,T1.WEB_PAGE
+		 ,T1.EXTRA_INFO
+		 ,T1.AUTHORITY_LEVEL
+		 ,T1.PGM_QRY AS  READ_AUTH
+		 ,T1.PGM_INT AS  WRITE_AUTH
+		 ,T1.PGM_UPT AS  EDIT_AUTH
+		 ,T1.PGM_DEL AS  DELETE_AUTH
+		 ,T1.PGM_PRT AS  PRINT_AUTH
+		 ,CASE WHEN T1.AUTHORITY_LEVEL = 'YYYYY' THEN 'Y' ELSE 'N' END AS ALL_AUTH
+		 ,CASE WHEN T1.AUTHORITY_LEVEL = 'NNNNN' THEN 'Y' ELSE 'N' END AS DENYS
+		 ,HO.SORT_PATH  AS SORT
+		 ,HO.MENU_LEVEL AS LEVEL
+		 ,T1.HIDE_YN
+		 ,T1.USE_YN
+		 ,T1.VDI_CD
+		 ,T1.VDI_IPS
+		 ,T1.DTL_LOG_YN
+		 ,CASE WHEN T1.COMMAND_FG = 0 THEN '0' ELSE '1' END AS LEAF
+		 ,T1.MENU_ICON
+	FROM VCM_MENU  HO
+			 JOIN  (SELECT M2.MENU_ID
+						 ,M2.PARENT_ID
+						 ,M2.TITLE
+						 ,M2.TITLE_SUB
+						 ,M2.TITLE_EXTEND
+						 ,M2.MENU_FG
+						 ,M2.COMMAND_FG
+						 ,M2.HIDE_YN
+						 ,M2.VDI_CD
+						 ,(SELECT EXTENT02 FROM TCM_CODE_DTL WHERE COM_CD ='9050' AND DTL_CD  = M2.VDI_CD  ) AS VDI_IPS
+						 ,M2.DTL_LOG_YN
+						 ,M2.USE_YN
+						 ,M2.IS_EXPANDED
+						 ,M2.WEB_PAGE
+						 ,M2.EXTRA_INFO
+						 ,M2.SORT_IN_LEVEL
+						 ,M2.MENU_ICON
+						 ,IFNULL(S1.PGM_QRY,'Y') AS PGM_QRY
+						 ,IFNULL(S1.PGM_INT,'Y') AS PGM_INT
+						 ,IFNULL(S1.PGM_UPT,'Y') AS PGM_UPT
+						 ,IFNULL(S1.PGM_DEL,'Y') AS PGM_DEL
+						 ,IFNULL(S1.PGM_PRT,'Y') AS PGM_PRT
+						 ,IFNULL(CONCAT(S1.PGM_QRY,S1.PGM_INT,S1.PGM_UPT,S1.PGM_DEL,S1.PGM_PRT),'YYYYY') AS AUTHORITY_LEVEL
+					FROM ( SELECT U1.MENU_ID
+						   FROM TCM_MENU U1
+							  ,   ( SELECT S1.PARENT_ID  AS L_MENU_ID
+										 ,S1.MENU_ID    AS M_MENU_ID
+										 ,S2.MENU_ID    AS S_MENU_ID
+									FROM TCM_MENU S1
+									   ,( SELECT A.MENU_ID, A.PARENT_ID
+										  FROM TCM_MENU         A
+											 ,TCM_GROUP_AUTH   B
+											 ,TCM_MEMBER_AUTH  C
+										  WHERE A.MENU_ID = B.MENU_ID
+											AND B.GROUP_ID = C.GROUP_ID
+											AND C.MEMBER_CD =  #{memberCd}
+											<choose>
+												<when test='excTypeCd == "M"'>
+													AND IFNULL(A.EXC_TYPE_FG, '') = 'M'
+												</when>
+												<otherwise>
+													AND IFNULL(A.EXC_TYPE_FG, '') != 'M'
+												</otherwise>
+											</choose>
+										  GROUP BY A.MENU_ID, A.PARENT_ID
+									) S2
+									WHERE  S1.MENU_ID = S2.PARENT_ID OR S1.MENU_ID=S2.MENU_ID
+									GROUP BY S1.PARENT_ID , S1.MENU_ID, S2.MENU_ID
+						   ) U2
+						   WHERE ( U1.MENU_ID = U2.L_MENU_ID OR U1.MENU_ID = U2.M_MENU_ID OR U1.MENU_ID = S_MENU_ID)
+						   GROUP BY  U1.MENU_ID
+
+						 ) M1 INNER JOIN TCM_MENU M2 ON M1.MENU_ID = M2.MENU_ID
+							  LEFT OUTER JOIN ( SELECT TGA.MENU_ID
+													 ,MAX(TGA.PGM_QRY) PGM_QRY
+													 ,MAX(TGA.PGM_INT) PGM_INT
+													 ,MAX(TGA.PGM_UPT) PGM_UPT
+													 ,MAX(TGA.PGM_DEL) PGM_DEL
+													 ,MAX(TGA.PGM_PRT) PGM_PRT
+												FROM TCM_GROUP_AUTH  TGA
+												   , TCM_MEMBER_AUTH TMA
+												WHERE TGA.GROUP_ID = TMA.GROUP_ID
+												  AND TMA.MEMBER_CD = #{memberCd}
+												GROUP BY TGA.MENU_ID) S1 ON M1.MENU_ID = S1.MENU_ID
+	) T1     ON      T1.MENU_ID = HO.M_MENU_ID
+	WHERE T1.MENU_ID  != '10001'
+
+	</select>	
+
+
+	<!-- GUEST MENU -->
+	<select id="selectMenuListByGuest"  resultMap="menuSession">
+		/*AccessCommonMapper.selectMenuListByGuest*/
+		SELECT
+			T1.MENU_ID
+			,T1.PARENT_ID
+			,T1.TITLE
+			,T1.TITLE_SUB
+			,T1.TITLE_EXTEND
+			,T1.WEB_PAGE
+			,T1.EXTRA_INFO
+			,T1.AUTHORITY_LEVEL
+			,T1.PGM_QRY			AS READ_AUTH
+			,T1.PGM_INT			AS WRITE_AUTH
+			,T1.PGM_UPT			AS EDIT_AUTH
+			,T1.PGM_DEL			AS DELETE_AUTH
+			,T1.PGM_PRT			AS PRINT_AUTH
+			,CASE WHEN T1.AUTHORITY_LEVEL = 'YYYYY' THEN 'Y' ELSE 'N' END AS ALL_AUTH
+			,CASE WHEN T1.AUTHORITY_LEVEL = 'NNNNN' THEN 'Y' ELSE 'N' END AS DENYS
+			,HO.SORT_PATH  		AS SORT
+			,HO.MENU_LEVEL		AS LEVEL
+			,T1.HIDE_YN
+			,T1.USE_YN
+			,T1.VDI_CD
+			,T1.VDI_IPS
+			,T1.DTL_LOG_YN
+			,CASE WHEN T1.COMMAND_FG = 0 THEN '0' ELSE '1' END AS LEAF
+			,T1.MENU_ICON
+		FROM VCM_MENU HO
+		INNER JOIN
+		(
+			SELECT
+				M2.MENU_ID
+				, M2.PARENT_ID
+				, M2.TITLE 
+				, M2.TITLE_SUB 
+				, M2.TITLE_EXTEND 
+				, M2.MENU_FG 
+				, M2.COMMAND_FG 
+				, M2.HIDE_YN 
+				, M2.VDI_CD 
+				,(SELECT EXTENT02 FROM TCM_CODE_DTL WHERE COM_CD ='9050' AND DTL_CD  = M2.VDI_CD  ) AS VDI_IPS
+				, M2.DTL_LOG_YN 
+				, M2.USE_YN 
+				, M2.IS_EXPANDED 
+				, M2.WEB_PAGE 
+				, M2.EXTRA_INFO 
+				, M2.SORT_IN_LEVEL 
+				, M2.MENU_ICON 
+				, IFNULL(M3.PGM_QRY,'Y') AS PGM_QRY
+				, IFNULL(M3.PGM_INT,'Y') AS PGM_INT
+				, IFNULL(M3.PGM_UPT,'Y') AS PGM_UPT
+				, IFNULL(M3.PGM_DEL,'Y') AS PGM_DEL
+				, IFNULL(M3.PGM_PRT,'Y') AS PGM_PRT
+				, IFNULL(CONCAT(M3.PGM_QRY,M3.PGM_INT,M3.PGM_UPT,M3.PGM_DEL,M3.PGM_PRT),'YYYYY') AS AUTHORITY_LEVEL
+			FROM
+			(
+				SELECT U1.MENU_ID 
+				FROM TCM_MENU U1
+				INNER JOIN
+				(
+					SELECT
+						S1.PARENT_ID AS L_MENU_ID
+						, S1.MENU_ID AS M_MENU_ID
+						, S2.MENU_ID AS S_MENU_ID
+					FROM TCM_MENU S1
+					INNER JOIN
+					(
+						SELECT A.MENU_ID, A.PARENT_ID 
+						FROM TCM_MENU A
+						INNER JOIN TCM_GROUP_AUTH B ON A.MENU_ID = B.MENU_ID 
+						WHERE B.GROUP_ID = 'guest'
+						<choose>
+							<when test='excTypeCd == "M"'>
+								AND IFNULL(A.EXC_TYPE_FG, '') = 'M'
+							</when>
+							<otherwise>
+								AND IFNULL(A.EXC_TYPE_FG, '') != 'M'
+							</otherwise>
+						</choose>
+						GROUP BY A.MENU_ID, A.PARENT_ID
+					)S2 ON S1.MENU_ID = S2.PARENT_ID OR S1.MENU_ID = S2.MENU_ID
+					GROUP BY S1.PARENT_ID, S1.MENU_ID, S2.MENU_ID
+				)U2 ON U1.MENU_ID = U2.L_MENU_ID OR U1.MENU_ID = U2.M_MENU_ID OR U1.MENU_ID = U2.S_MENU_ID
+				GROUP BY U1.MENU_ID 
+			) M1													/* 게스트 권한그룹의 대중소 메뉴 ID */
+			INNER JOIN TCM_MENU M2 ON M1.MENU_ID = M2.MENU_ID		/* 메뉴 MASTER */
+			LEFT OUTER JOIN											/* 게스트 권한그룹의 메뉴 권한 */
+			(
+				SELECT
+					TGA.MENU_ID
+					,IF(IFNULL(TGA.PGM_QRY, '') = '', 'N', TGA.PGM_QRY) AS PGM_QRY
+					,IF(IFNULL(TGA.PGM_INT, '') = '', 'N', TGA.PGM_INT) AS PGM_INT
+					,IF(IFNULL(TGA.PGM_UPT, '') = '', 'N', TGA.PGM_UPT) AS PGM_UPT
+					,IF(IFNULL(TGA.PGM_DEL, '') = '', 'N', TGA.PGM_QRY) AS PGM_DEL
+					,IF(IFNULL(TGA.PGM_PRT, '') = '', 'N', TGA.PGM_PRT) AS PGM_PRT
+				FROM TCM_GROUP_AUTH TGA
+				WHERE TGA.GROUP_ID = 'guest'
+			) M3 ON M1.MENU_ID = M3.MENU_ID
+		) T1 ON T1.MENU_ID = HO.M_MENU_ID
+		WHERE T1.MENU_ID != '10001'
+    </select>    
+    
+    
+    <!-- 메뉴아이디 조회   -->
+	<select id="selectMenuidValidation" parameterType="String" resultType="String">
+		/*AccessCommonMapper.selectMenuidValidation*/
+		SELECT
+			MENU_ID
+		FROM TCM_MENU 
+		WHERE WEB_PAGE = #{webPage}
+		LIMIT 1
+	</select>
+
+
+	<!-- 해당 메뉴 실행 권한 조회 -->
+	<select id="selectFuncPermission"   resultMap="PermissionResult"  parameterType="com.doppio.common.model.PermissionResult" >
+		  /* AccessCommonMapper.selectFuncPermission */
+	    SELECT     T3.PGM_QRY
+                  ,T3.PGM_INT
+                  ,T3.PGM_UPT
+                  ,T3.PGM_DEL
+                  ,T3.PGM_PRT
+                  ,T3.WEB_PAGE
+                  ,CASE WHEN T3.WEB_PAGE = '' OR T3.WEB_PAGE IS NULL THEN 'T' ELSE 'F' END AS PGM_NVL
+          FROM (   SELECT 
+                   MAX(IFNULL(T2.PGM_QRY,'N'))     AS PGM_QRY
+                  ,MAX(IFNULL(T2.PGM_INT,'N'))     AS PGM_INT
+                  ,MAX(IFNULL(T2.PGM_UPT,'N'))     AS PGM_UPT
+                  ,MAX(IFNULL(T2.PGM_DEL,'N'))     AS PGM_DEL
+                  ,MAX(IFNULL(T2.PGM_PRT,'N'))     AS PGM_PRT
+                  ,MAX(T1.WEB_PAGE)             AS WEB_PAGE
+             FROM TCM_MENU T1 
+                    LEFT OUTER JOIN 
+                    (SELECT  S2.MENU_ID
+                            ,S2.PGM_QRY
+                            ,S2.PGM_INT
+                            ,S2.PGM_UPT
+                            ,S2.PGM_DEL
+                            ,S2.PGM_PRT
+                  	 FROM TCM_MEMBER_AUTH    S1
+                          INNER JOIN TCM_GROUP_AUTH S2 ON S1.GROUP_ID = S2.GROUP_ID
+                      WHERE S1.MEMBER_CD = #{memberCd}
+                    ) T2  ON T1.MENU_ID = T2.MENU_ID
+              WHERE USE_YN = 'Y'
+              <if test='programEvent != null and programEvent != ""'>
+                  AND REPLACE(T1.WEB_PAGE,'/','') LIKE CONCAT(REPLACE(#{programId},'/',''), '%')
+              </if>
+              <if test='programEvent == null or programEvent == ""'>
+                  AND REPLACE(T1.WEB_PAGE,'/','') =  REPLACE(#{programId},'/','')
+              </if>
+            )AS T3
+    </select>
+    
+    
+    <parameterMap id="spAccessLogCreateMap" type="com.doppio.common.model.AccessLog">
+			<parameter mode="IN" jdbcType="VARCHAR" javaType="String" 	property="sessionId" 		/>	<!--1. 브라우저세션아이디  [필수] -->
+			<parameter mode="IN" jdbcType="VARCHAR" javaType="String" 	property="resPgmUrl" 		/>	<!--2. 접근프로그램UR    [필수] -->
+			<parameter mode="IN" jdbcType="VARCHAR" javaType="String" 	property="resFullUrl" 		/>	<!--3. 접근URL전체경로 -->
+			<parameter mode="IN" jdbcType="VARCHAR" javaType="String" 	property="resIp" 			/>	<!--4. 접근IP -->
+			<parameter mode="IN" jdbcType="VARCHAR" javaType="String" 	property="regId" 			/>	<!--5. 등록자아이디ID -->
+			<parameter mode="IN" jdbcType="VARCHAR" javaType="String"	property="menuId" 			/>	<!--6.메뉴아이디 -->
+			<parameter mode="IN" jdbcType="VARCHAR" javaType="String"	property="executeTime" 		/>	<!--7.실행시간(ms) -->
+			<parameter mode="IN" jdbcType="VARCHAR" javaType="String"	property="dtlCommand" 		/>	<!--8.추가세부정보(parameter정보상세) -->
+			
+			<parameter mode="OUT" jdbcType="VARCHAR" javaType="String"	property="spRspnsCd" 		/>	<!--1.응답코드 -->
+			<parameter mode="OUT" jdbcType="VARCHAR" javaType="String" 	property="spMessage" 		/>	<!--2.MESSAGE-->
+	</parameterMap>
+	
+			
+		
+	<!-- 접근로그  생성 oracle sp -->
+	<select id="insertAccessLogSp" statementType="CALLABLE" parameterMap="spAccessLogCreateMap">
+			{CALL SP_ACCESS_LOG_CREATE ( ?,?,?,?,?,?,?,?,?,?)}
+	</select>	
+	
+	<resultMap id="authSysMenu" 	type="com.doppio.common.model.MenuSession">
+	    <result column="MENU_ID" 			property="menuId"/>		<!-- 코드 -->
+	    <result column="TITLE" 				property="title"/>		<!-- 메뉴명 -->	
+	    <result column="WEB_PAGE" 			property="webPage"/>	<!-- 링크 url -->
+	</resultMap>
+	
+	<!-- 권한별 최상단 시스템메뉴 조회 -->
+	<select id="selectGrantAuthSysMenuList" parameterType="com.doppio.common.security.service.CustomUser" resultMap="authSysMenu">
+	/*AccessCommonMapper.selectGrantAuthSysMenuList */
+		WITH CTE_TABLE
+		AS
+	  	(
+			SELECT 1 AS LEVEL
+				,CONVERT(VARCHAR(100), ','+CAST( M1.SORT_IN_LEVEL as VARCHAR(100))+','+CAST( M1.MENU_ID as VARCHAR(100))) AS SORT
+				,M1.SORT_IN_LEVEL AS TOP_MENU_SORT
+				,0 AS SC_MENU_SORT
+				,0 AS TH_MENU_SORT
+				,M1.MENU_ID
+			FROM TCM_MENU M1
+			WHERE M1.PARENT_ID = 10001
+
+ 		    UNION ALL
+		    
+			SELECT LEVEL + 1 AS LEVEL
+				,CONVERT(VARCHAR(100),CAST(N.SORT as VARCHAR(100)) + ','+CAST( M2.SORT_IN_LEVEL as VARCHAR(100))+','+CAST(M2.MENU_ID as VARCHAR(100))) AS SORT
+				,N.TOP_MENU_SORT
+				,CASE WHEN LEVEL + 1 = 2 THEN M2.SORT_IN_LEVEL
+					WHEN LEVEL + 1 = 3 THEN N.SC_MENU_SORT
+					ELSE 0 
+					END SC_MENU_SORT
+				,CASE WHEN LEVEL + 1 = 3 THEN M2.SORT_IN_LEVEL
+					ELSE 0
+					END TH_MENU_SORT					
+				,M2.MENU_ID
+			FROM CTE_TABLE N 
+				JOIN TCM_MENU M2 
+				ON N.MENU_ID = M2.PARENT_ID
+		)
+		SELECT
+			T1.SYS_CODE AS MENU_ID
+			, MAX(C.DTL_NM) AS TITLE
+			, MAX(C.EXTENT01) AS WEB_PAGE
+		FROM
+			(SELECT M2.MENU_ID
+                    ,M2.PARENT_ID
+                    ,M2.TITLE
+                    ,M2.TITLE_SUB
+                    ,M2.TITLE_EXTEND
+                    ,M2.MENU_FG
+                    ,M2.COMMAND_FG
+                    ,M2.HIDE_YN	      
+	     			,M2.DTL_LOG_YN 
+                    ,M2.USE_YN
+					,M2.VDI_CD
+                    ,M2.IS_EXPANDED
+                    ,M2.WEB_PAGE
+                    ,M2.EXTRA_INFO
+                    ,M2.SORT_IN_LEVEL
+                    ,IFNULL(S1.PGM_QRY,'Y') AS PGM_QRY
+                    ,IFNULL(S1.PGM_INT,'Y') AS PGM_INT 
+                    ,IFNULL(S1.PGM_UPT,'Y') AS PGM_UPT
+                    ,IFNULL(S1.PGM_DEL,'Y') AS PGM_DEL
+                    ,IFNULL(S1.PGM_PRT,'Y') AS PGM_PRT
+					,IFNULL(S1.PGM_QRY+S1.PGM_INT+S1.PGM_UPT+S1.PGM_DEL+S1.PGM_PRT,'YYYYY') AS AUTHORITY_LEVEL
+					,M2.MENU_ICON
+					,M2.SYS_CODE
+                FROM ( SELECT U1.MENU_ID
+                             FROM TCM_MENU U1
+                              ,   ( SELECT S1.PARENT_ID  AS L_MENU_ID
+                                              ,S1.MENU_ID    AS M_MENU_ID
+                                              ,S2.MENU_ID    AS S_MENU_ID
+                                         FROM TCM_MENU S1
+                                             ,( SELECT A.MENU_ID, A.PARENT_ID
+                                                 FROM TCM_MENU         A
+                                                     ,TCM_GROUP_AUTH   B
+                                                     ,TCM_MEMBER_AUTH  C
+                                                WHERE A.MENU_ID = B.MENU_ID
+                                                  AND B.GROUP_ID = C.GROUP_ID
+                                                  AND C.MEMBER_CD = #{memberCd}
+                                            <choose>
+                                            	<when test='excTypeCd == "M"'>
+                                            		AND A.EXC_TYPE_FG = 'M'
+                                            	</when>
+                                            	<otherwise>
+                                            		AND A.EXC_TYPE_FG != 'M'
+                                            	</otherwise>                                            
+                                            </choose>
+												GROUP BY A.MENU_ID, A.PARENT_ID
+                                              ) S2
+                                       WHERE  S1.MENU_ID = S2.PARENT_ID OR S1.MENU_ID=S2.MENU_ID 
+                                       GROUP BY S1.PARENT_ID , S1.MENU_ID, S2.MENU_ID
+                                       ) U2
+                             WHERE ( U1.MENU_ID = U2.L_MENU_ID OR U1.MENU_ID = U2.M_MENU_ID OR U1.MENU_ID = S_MENU_ID)
+                             GROUP BY  U1.MENU_ID      
+                             
+                      ) M1 INNER JOIN TCM_MENU M2 ON M1.MENU_ID = M2.MENU_ID
+                      LEFT OUTER JOIN ( SELECT TGA.MENU_ID
+                                   ,MAX(TGA.PGM_QRY) PGM_QRY
+                                   ,MAX(TGA.PGM_INT) PGM_INT
+                                   ,MAX(TGA.PGM_UPT) PGM_UPT
+                                   ,MAX(TGA.PGM_DEL) PGM_DEL
+                                   ,MAX(TGA.PGM_PRT) PGM_PRT
+                               FROM TCM_GROUP_AUTH  TGA
+                                  , TCM_MEMBER_AUTH TMA
+                              WHERE TGA.GROUP_ID = TMA.GROUP_ID
+                                AND TMA.MEMBER_CD = #{memberCd}
+                              GROUP BY TGA.MENU_ID) S1 ON M1.MENU_ID = S1.MENU_ID
+             ) T1 
+			INNER JOIN CTE_TABLE A 
+				ON T1.MENU_ID = A.MENU_ID
+			LEFT OUTER JOIN TCM_MENU M3 
+				ON T1.MENU_ID = M3.PARENT_ID
+			INNER JOIN TCM_CODE_DTL C
+				ON T1.SYS_CODE = C.DTL_CD
+			<where>
+				<if test='expSysCode != null and expSysCode != ""'>
+					T1.SYS_CODE != #{expSysCode}
+				</if>
+			</where>			GROUP BY T1.SYS_CODE
+
+	</select>	
+
+
+	<!-- 메뉴 대분류코드 유효성 체크 -->
+	<select id="selectValidSysMenu"  parameterType="java.util.HashMap" resultType="int">
+	/* AccessCommonMapper.selectValidSysMenu*/
+		SELECT
+			COUNT(*) AS CHK_COUNT
+		FROM
+		(
+			SELECT
+				E.MENU_ID
+				, E.SYS_CODE
+			FROM TCM_MEMBER A
+			INNER JOIN TCM_MEMBER_AUTH B
+				ON A.MEMBER_CD = B.MEMBER_CD
+			INNER JOIN TCM_GROUP C
+				ON B.GROUP_ID = C.GROUP_ID
+			INNER JOIN TCM_GROUP_AUTH D
+				ON D.GROUP_ID = C.GROUP_ID
+			INNER JOIN TCM_MENU E
+				ON D.MENU_ID = E.MENU_ID
+			WHERE A.MEMBER_CD = #{memberCd}
+				AND E.SYS_CODE = #{sysCode}
+				<if test='menuId != null and menuId != ""'>
+				AND E.MENU_ID = #{menuId}
+				</if>
+			GROUP BY E.MENU_ID, E.SYS_CODE
+		) A
+	</select>
+
+
+	<!-- 모바일 최근 접속일시 조회 -->
+	<select id="selectAccessDt" parameterType="java.util.HashMap" resultType="String">
+		/* SdcmCommonMapper.selectAccessDt */
+		SELECT
+			CONCAT(CONVERT(VARCHAR, REG_DT, 23), '(', SUBSTRING(DATENAME(WEEKDAY, REG_DT), 1, 1), ') ', SUBSTRING(CONVERT(VARCHAR, REG_DT, 8), 1, 5)) AS accessDt 
+		FROM TCM_PERSONALINFO_LOG 
+		WHERE RES_FULL_URL = #{resUrl}
+			AND reg_id = #{workId}
+		ORDER BY REG_DT DESC
+			LIMIT 1
+	</select>
+	
+	
+	
+	
+	<!-- 접근허용아이피 목록 (추후 개발 예정)-->
+	<select id="selectAccessIpList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		/* AccessCommonMapper.selectAccessIpList*/
+		SELECT PERMIT_IP
+		FROM
+		(
+			WITH T1 AS
+			(
+				SELECT
+						COM_CD, EXTENT01, EXTENT02
+				FROM
+						TCM_CODE_DTL
+				WHERE
+						COM_CD = '9050'
+			)
+			SELECT
+					DECODE(CNT,1, EXTENT01,2, EXTENT02) AS PERMIT_IP
+			FROM
+					T1 ,(SELECT LEVEL CNT FROM DUAL CONNECT BY LEVEL <![CDATA[<=]]> 10)
+		)
+		WHERE
+				PERMIT_IP IS NOT NULL
+	</select>
+	
+	<!-- 사용자 기기인증 쿠키 정보 유효성 확인 -->
+	<select id="selectChkUserDeviceAuthCookieValidYn" parameterType="HashMap" resultType="String">
+		/* AccessCommonMapper.selectChkUserDeviceAuthCookieValidYn */
+		SELECT IF(COUNT(1) > 0, 'Y', 'N') AS COOKIE_VALID_YN
+		FROM TCM_TERMS_AGREE A
+		WHERE A.TERMS_DIVN_CD = '9012022'
+		AND A.AGREE_REG_NO = #{agreeRegNo}
+		AND A.SEQ = '1'
+		AND A.TERMS_PCL_NO = #{memberCd}
+		AND A.AGREE_YN = 'Y'
+		AND DATE_FORMAT(A.TERMS_AGREE_DT, '%Y%m%d') = #{termsAgreeDt}
+	</select>		
+		
+		
+		
+	<!-- 파일다운로드 이력 생성  -->
+    <insert id="insertFileDownloadHist" parameterType="com.doppio.common.model.AttachFileVo" useGeneratedKeys="true" keyProperty="logSeq">
+    /*AccessCommonMapper.insertFileDownloadHist*/
+    	INSERT INTO  TCM_FILEDWLDINFO_LOG
+    	(	 FILE_KIND_CD
+			,DWLD_CMD
+			,FILE_INFO
+			,EXECUTE_TIME
+			,ACCESS_DY
+			,RES_IP
+			,REG_ID
+			,REG_DT ) 
+		VALUES(
+			 #{fileKindCd}
+			,#{dwldCmd}
+			,#{fileInfo}
+			,#{executeTime}
+			,DATE_FORMAT( NOW(), '%Y%m%d')
+			,#{resIp}
+			,#{workId}
+			,NOW()
+		)
+    </insert>
+	
+</mapper>

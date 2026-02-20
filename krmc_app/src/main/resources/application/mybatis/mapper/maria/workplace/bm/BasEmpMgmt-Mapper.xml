@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.bm.service.impl.EmpManagementMapper">
+
+	
+	<!-- 영업사원정보 조회 리스트 검색조건-->
+	<sql id="selectEmpManagementList_Where">
+		/*EmpManagementMapper.selectEmpManagementList_Where*/
+		<where>
+			<if test='salesPrCd != null and salesPrCd != ""'>				<!-- 영업사원코드  --> 
+				AND TSP.SALES_PR_CD LIKE CONCAT('%',#{salesPrCd},'%')
+			</if>	
+			<if test='salesPrNm != null and salesPrNm != ""'>				<!-- 영업사원명  --> 
+				AND TSP.SALES_PR_NM LIKE CONCAT('%',#{salesPrNm},'%')
+			</if>
+			<if test='mtelNo != null and mtelNo != ""'>						<!-- 전화번호  --> 
+				AND TSP.M_TEL_NO LIKE CONCAT('%',#{mtelNo},'%')
+			</if>
+			</where>
+		ORDER BY USE_YN DESC, SALES_PR_CD	
+	</sql>
+	
+	<!-- 영업사원정보 조회  카운터 -->
+	<select id="selectEmpManagementListCount" parameterType="com.doppio.workplace.bm.service.EmpMasterVo" resultType="int">
+		/* EmpManagementMapper.selectEmpManagementListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM KRMC.TFM_SALES_PR_MST AS TSP
+		<include refid="selectEmpManagementList_Where"/>
+	</select>
+	
+	
+	<!-- 영업사원정보 조회 -->
+	<select id="selectEmpManagementList" parameterType="com.doppio.workplace.bm.service.EmpMasterVo" resultType="com.doppio.workplace.bm.service.EmpMasterVo">
+	/*EmpManagementMapper.selectEmpManagementList*/	
+		SELECT TSP.SALES_PR_CD
+               , TSP.SALES_PR_NM
+               , TSP.POSITION
+               , TSP.M_TEL_NO
+               , TSP.USE_YN
+               , TM_1.USER_NM AS REG_NM
+               , TSP.REG_DT
+               , TM_2.USER_NM AS MOD_NM
+               , TSP.MOD_DT
+		  FROM KRMC.TFM_SALES_PR_MST AS TSP
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_1
+		         ON TSP.REG_ID = TM_1.USER_ID
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_2
+		         ON TSP.MOD_ID = TM_2.USER_ID
+		 <include refid="selectEmpManagementList_Where"/>
+	</select>
+	
+		<!-- 차량정보 조회(상세조회 ) -->
+	<select id="selectEmpManagementData" parameterType="com.doppio.workplace.bm.service.EmpMasterVo" resultType="com.doppio.workplace.bm.service.EmpMasterVo">
+	/*EmpManagementMapper.selectEmpManagementData*/	
+	      SELECT TSP.SALES_PR_CD
+               , TSP.SALES_PR_NM
+               , TSP.POSITION
+               , TSP.M_TEL_NO
+               , TSP.USE_YN
+               , TM_1.USER_NM AS REG_NM
+               , TSP.REG_DT
+               , TM_2.USER_NM AS MOD_NM
+               , TSP.MOD_DT
+		  FROM KRMC.TFM_SALES_PR_MST AS TSP
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_1
+		         ON TSP.REG_ID = TM_1.USER_ID
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_2
+		         ON TSP.MOD_ID = TM_2.USER_ID
+		<where>
+			AND TSP.SALES_PR_CD = #{salesPrCd}
+		</where>	
+	</select>
+
+
+	<!-- 영업사원정보 업데이트 -->
+	<insert id="updateEmpMangement" parameterType="com.doppio.workplace.bm.service.EmpMasterVo">
+	/*EmpManagementMapper.updateEmpMangement*/	
+        UPDATE TFM_SALES_PR_MST
+           SET 	SALES_PR_CD         = #{salesPrCd}
+               , SALES_PR_NM      	= #{salesPrNm}
+               , POSITION          	= #{position}
+               , M_TEL_NO          	= #{mtelNo}
+               , USE_YN             = #{useYn}
+               , MOD_ID             = #{modId, jdbcType=VARCHAR}
+               , MOD_DT             = NOW()
+         WHERE SALES_PR_CD = #{salesPrCd}
+	</insert>
+
+
+	
+	<!-- 영업사원정보 등록 -->
+	<insert id="insertEmpManagementInfo" parameterType="com.doppio.workplace.bm.service.EmpMasterVo">
+	/*EmpManagementMapper.insertEmpManagementInfo*/	
+		INSERT INTO KRMC.TFM_SALES_PR_MST
+			(SALES_PR_CD, SALES_PR_NM, POSITION, M_TEL_NO, USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT)
+		VALUES
+			(
+				#{salesPrCd}
+			    , #{salesPrNm}
+			    , #{position}
+			    , #{mtelNo}
+			    , #{useYn}
+			    , #{regId, jdbcType=VARCHAR}
+			    , NOW()
+			    , #{modId, jdbcType=VARCHAR}
+			    , NOW()
+			)
+			ON DUPLICATE KEY UPDATE
+				SALES_PR_CD = #{salesPrCd}
+				, SALES_PR_NM = #{salesPrNm}
+				, POSITION = #{position}
+				, M_TEL_NO = #{mtelNo}
+				, USE_YN = #{useYn}
+				, MOD_ID = #{modId}
+				, MOD_DT = NOW()
+
+	</insert>
+	
+			<!-- 영업사원정보 삭제 -->
+		<insert id="deleteEmpManagement" parameterType="com.doppio.workplace.bm.service.EmpMasterVo">
+	/*EmpManagementMapper.deleteEmpManagement*/	
+	      DELETE FROM KRMC.TFM_SALES_PR_MST
+			WHERE SALES_PR_CD = #{salesPrCd}
+		
+	</insert>
+
+	
+</mapper>

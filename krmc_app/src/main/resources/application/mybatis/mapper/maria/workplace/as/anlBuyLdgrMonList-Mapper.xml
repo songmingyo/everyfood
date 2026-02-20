@@ -1,0 +1,991 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.AnlBuyLdgrMonListMapper">
+
+	<!-- 매입처처원장(연간) 조회 -->
+	<select id="selectAnlBuyLdgrMonList" parameterType="com.doppio.workplace.as.service.AnlBuyLdgrMonListVo" resultType="com.doppio.workplace.as.service.AnlBuyLdgrMonListVo">
+	/*AnlBuyLdgrMonListMapper.selectAnlBuyLdgrMonList*/	
+        WITH TMBP AS (
+            SELECT TMBP.YEAR_MON
+                   , TMBP.BUY_CD
+                   , TBM.BUY_NM
+                   , TMBP.LBAL_AMT
+                   , TMBP.BUY_AMT
+              FROM TMH_MON_BUY_PAYMENT AS TMBP
+              
+                   JOIN TFM_BUY_MST AS TBM
+                       ON TBM.BUY_CD = TMBP.BUY_CD
+                       
+             WHERE TMBP.YEAR_MON BETWEEN #{searchYearMnSt} AND #{searchYearMnEt}
+             <if test='searchBuyCd != null and searchBuyCd != ""'>
+               AND TBM.BUY_CD = #{searchBuyCd}
+             </if>
+               AND (TMBP.LBAL_AMT != 0 OR TMBP.BUY_AMT != 0)
+               AND TBM.USE_YN = 'Y'
+        ),
+        TBW AS (
+            SELECT TBW.WDRL_DT
+                   , TBW.BUY_CD
+                   , TBM.BUY_NM
+                   , TBW.SETL_AMT
+              FROM TBH_BUY_WDRL AS TBW
+              
+                   JOIN TFM_BUY_MST AS TBM
+                       ON TBM.BUY_CD = TBW.BUY_CD
+                       
+             WHERE TBW.WDRL_DT BETWEEN CONCAT(#{searchYearMnSt},'01') AND CONCAT(#{searchYearMnEt},'31')
+             <if test='searchBuyCd != null and searchBuyCd != ""'>
+               AND TBM.BUY_CD = #{searchBuyCd}
+             </if>
+               AND TBW.SETL_AMT != 0
+               AND TBM.USE_YN = 'Y'
+        )                  
+        SELECT A.BUY_CD
+               , A.BUY_NM
+               , CASE WHEN A.SORT='1' THEN '전월잔액'
+                      WHEN A.SORT='2' THEN '매입'
+                      WHEN A.SORT='3' THEN '지급'
+                      WHEN A.SORT='4' THEN '현잔고'
+                      WHEN A.SORT='5' THEN '전월잔액'
+                      WHEN A.SORT='6' THEN '매입'
+                      WHEN A.SORT='7' THEN '지급'
+                      WHEN A.SORT='8' THEN '현잔고' END AS CLASS_NM
+               , SUM(IFNULL(A.MON_1,0)) AS MON1
+               , SUM(IFNULL(A.MON_2,0)) AS MON2
+               , SUM(IFNULL(A.MON_3,0)) AS MON3
+               , SUM(IFNULL(A.MON_4,0)) AS MON4
+               , SUM(IFNULL(A.MON_5,0)) AS MON5
+               , SUM(IFNULL(A.MON_6,0)) AS MON6
+               , SUM(IFNULL(A.MON_7,0)) AS MON7
+               , SUM(IFNULL(A.MON_8,0)) AS MON8
+               , SUM(IFNULL(A.MON_9,0)) AS MON9
+               , SUM(IFNULL(A.MON_10,0)) AS MON10
+               , SUM(IFNULL(A.MON_11,0)) AS MON11
+               , SUM(IFNULL(A.MON_12,0)) AS MON12
+               , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+          FROM (SELECT '1' AS SORT
+                       , BUY_CD
+                       , BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(LBAL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(LBAL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(LBAL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(LBAL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(LBAL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(LBAL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(LBAL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(LBAL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(LBAL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(LBAL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(LBAL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(LBAL_AMT,0) END) AS MON_12
+                       , 0 AS TOT_AMT
+                  FROM TMBP
+                          
+	              GROUP BY BUY_CD
+                           , BUY_NM
+              UNION ALL
+                SELECT '2' AS SORT
+                       , BUY_CD
+                       , BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(BUY_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(BUY_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(BUY_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(BUY_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(BUY_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(BUY_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(BUY_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(BUY_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(BUY_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(BUY_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(BUY_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(BUY_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(BUY_AMT,0)) AS TOT_AMT                       
+                  FROM TMBP
+                 GROUP BY BUY_CD
+                          , BUY_NM
+             UNION ALL
+                SELECT '3' AS SORT
+                       , BUY_CD
+                       , BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='01' THEN IFNULL(SETL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='02' THEN IFNULL(SETL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='03' THEN IFNULL(SETL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='04' THEN IFNULL(SETL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='05' THEN IFNULL(SETL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='06' THEN IFNULL(SETL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='07' THEN IFNULL(SETL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='08' THEN IFNULL(SETL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='09' THEN IFNULL(SETL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='10' THEN IFNULL(SETL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='11' THEN IFNULL(SETL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='12' THEN IFNULL(SETL_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(SETL_AMT,0)) AS TOT_AMT
+                  FROM TBW
+                  GROUP BY BUY_CD
+                           , BUY_NM
+             UNION ALL
+                SELECT '4' AS SORT
+                       , A.BUY_CD
+                       , A.BUY_NM
+                       , SUM(IFNULL(A.MON_1,0)) AS MON_1
+                       , SUM(IFNULL(A.MON_2,0)) AS MON_2
+                       , SUM(IFNULL(A.MON_3,0)) AS MON_3
+                       , SUM(IFNULL(A.MON_4,0)) AS MON_4
+                       , SUM(IFNULL(A.MON_5,0)) AS MON_5
+                       , SUM(IFNULL(A.MON_6,0)) AS MON_6
+                       , SUM(IFNULL(A.MON_7,0)) AS MON_7
+                       , SUM(IFNULL(A.MON_8,0)) AS MON_8
+                       , SUM(IFNULL(A.MON_9,0)) AS MON_9
+                       , SUM(IFNULL(A.MON_10,0)) AS MON_10
+                       , SUM(IFNULL(A.MON_11,0)) AS MON_11
+                       , SUM(IFNULL(A.MON_12,0)) AS MON_12
+                       , 0 AS TOT_AMT
+                  FROM (SELECT BUY_CD
+                               , BUY_NM
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(LBAL_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(LBAL_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(LBAL_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(LBAL_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(LBAL_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(LBAL_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(LBAL_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(LBAL_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(LBAL_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(LBAL_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(LBAL_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(LBAL_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(LBAL_AMT,0)) AS AMT
+                          FROM TMBP
+                         GROUP BY BUY_CD
+                                  , BUY_NM
+                      UNION ALL
+                        SELECT BUY_CD
+                               , BUY_NM
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(BUY_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(BUY_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(BUY_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(BUY_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(BUY_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(BUY_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(BUY_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(BUY_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(BUY_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(BUY_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(BUY_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(BUY_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(BUY_AMT,0)) AS AMT
+                          FROM TMBP
+                         GROUP BY BUY_CD
+                                  , BUY_NM
+                      UNION ALL
+                        SELECT BUY_CD
+                               , BUY_NM
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='01' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='02' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='03' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='04' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='05' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='06' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='07' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='08' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='09' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='10' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='11' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='12' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_12
+                               , SUM(IFNULL(SETL_AMT,0))*-1 AS AMT
+                          FROM TBW
+                         GROUP BY BUY_CD
+                                  , BUY_NM
+                       ) AS A
+                 GROUP BY A.BUY_CD
+                          , A.BUY_NM
+              UNION ALL
+                SELECT '5' AS SORT
+                       , '99999' AS BUY_CD
+                       , '전체계 :' AS BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(LBAL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(LBAL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(LBAL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(LBAL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(LBAL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(LBAL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(LBAL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(LBAL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(LBAL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(LBAL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(LBAL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(LBAL_AMT,0) END) AS MON_12
+                       , 0 AS TOT_AMT
+                  FROM TMBP
+              UNION ALL
+                SELECT '6' AS SORT
+                       , '99999' AS BUY_CD
+                       , '전체계 :' AS BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(BUY_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(BUY_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(BUY_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(BUY_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(BUY_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(BUY_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(BUY_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(BUY_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(BUY_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(BUY_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(BUY_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(BUY_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(BUY_AMT,0)) AS TOT_AMT
+                  FROM TMBP
+             UNION ALL
+                SELECT '7' AS SORT
+                       , '99999' AS BUY_CD
+                       , '전체계 :' AS BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='01' THEN IFNULL(SETL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='02' THEN IFNULL(SETL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='03' THEN IFNULL(SETL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='04' THEN IFNULL(SETL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='05' THEN IFNULL(SETL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='06' THEN IFNULL(SETL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='07' THEN IFNULL(SETL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='08' THEN IFNULL(SETL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='09' THEN IFNULL(SETL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='10' THEN IFNULL(SETL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='11' THEN IFNULL(SETL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='12' THEN IFNULL(SETL_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(SETL_AMT,0)) AS TOT_AMT
+                  FROM TBW
+             UNION ALL
+                SELECT '8' AS SORT
+                       , '99999' AS BUY_CD
+                       , '전체계 :' AS BUY_NM
+                       , SUM(IFNULL(A.MON_1,0)) AS MON_1
+                       , SUM(IFNULL(A.MON_2,0)) AS MON_2
+                       , SUM(IFNULL(A.MON_3,0)) AS MON_3
+                       , SUM(IFNULL(A.MON_4,0)) AS MON_4
+                       , SUM(IFNULL(A.MON_5,0)) AS MON_5
+                       , SUM(IFNULL(A.MON_6,0)) AS MON_6
+                       , SUM(IFNULL(A.MON_7,0)) AS MON_7
+                       , SUM(IFNULL(A.MON_8,0)) AS MON_8
+                       , SUM(IFNULL(A.MON_9,0)) AS MON_9
+                       , SUM(IFNULL(A.MON_10,0)) AS MON_10
+                       , SUM(IFNULL(A.MON_11,0)) AS MON_11
+                       , SUM(IFNULL(A.MON_12,0)) AS MON_12
+                       , 0 AS TOT_AMT
+                  FROM (SELECT   SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(LBAL_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(LBAL_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(LBAL_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(LBAL_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(LBAL_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(LBAL_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(LBAL_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(LBAL_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(LBAL_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(LBAL_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(LBAL_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(LBAL_AMT,0) END) AS MON_12
+                          FROM TMBP
+                      UNION ALL
+                        SELECT   SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(BUY_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(BUY_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(BUY_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(BUY_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(BUY_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(BUY_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(BUY_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(BUY_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(BUY_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(BUY_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(BUY_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(BUY_AMT,0) END) AS MON_12
+                          FROM TMBP
+                     UNION ALL
+                        SELECT   SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='01' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='02' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='03' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='04' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='05' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='06' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='07' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='08' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='09' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='10' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='11' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='12' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_12
+                          FROM TBW
+                       ) AS A
+               ) A
+         GROUP BY A.BUY_CD
+                  , A.BUY_NM
+                  , A.SORT
+                  , CASE WHEN A.SORT='1' THEN '전월잔액'
+                         WHEN A.SORT='2' THEN '매입'
+                         WHEN A.SORT='3' THEN '지급'
+                         WHEN A.SORT='4' THEN '현잔고'
+                         WHEN A.SORT='5' THEN '전월잔액'
+                         WHEN A.SORT='6' THEN '매입'
+                         WHEN A.SORT='7' THEN '지급'
+                         WHEN A.SORT='8' THEN '현잔고' END
+         ORDER BY A.BUY_NM, A.SORT
+
+	</select>
+	
+	
+	
+	<!-- 매입처처원장(연간) 출력 -->
+	<select id="selectBuyLdgrMonListPrint" parameterType="com.doppio.workplace.as.service.AnlBuyLdgrMonListVo" resultType="com.doppio.workplace.as.service.AnlBuyLdgrMonListVo">
+	/*AnlBuyLdgrMonListMapper.selectBuyLdgrMonListPrint*/	
+        WITH TMBP AS (
+            SELECT TMBP.YEAR_MON
+                   , TMBP.BUY_CD
+                   , TBM.BUY_NM
+                   , TMBP.LBAL_AMT
+                   , TMBP.BUY_AMT
+              FROM TMH_MON_BUY_PAYMENT AS TMBP
+              
+                   JOIN TFM_BUY_MST AS TBM
+                       ON TBM.BUY_CD = TMBP.BUY_CD
+                       
+             WHERE TMBP.YEAR_MON BETWEEN REPLACE(#{searchYearMnSt},'-','') AND REPLACE(#{searchYearMnEt},'-','')
+             <if test='searchBuyCd != null and searchBuyCd != ""'>
+               AND TBM.BUY_CD = #{searchBuyCd}
+             </if>
+               AND (TMBP.LBAL_AMT != 0 OR TMBP.BUY_AMT != 0)
+               AND TBM.USE_YN = 'Y'
+        ),
+        TBW AS (
+            SELECT TBW.WDRL_DT
+                   , TBW.BUY_CD
+                   , TBM.BUY_NM
+                   , TBW.SETL_AMT
+              FROM TBH_BUY_WDRL AS TBW
+              
+                   JOIN TFM_BUY_MST AS TBM
+                       ON TBM.BUY_CD = TBW.BUY_CD
+                       
+             WHERE TBW.WDRL_DT BETWEEN CONCAT(REPLACE(#{searchYearMnSt},'-',''),'01') AND CONCAT(REPLACE(#{searchYearMnEt},'-',''),'31')
+             <if test='searchBuyCd != null and searchBuyCd != ""'>
+               AND TBM.BUY_CD = #{searchBuyCd}
+             </if>
+               AND TBW.SETL_AMT != 0
+               AND TBM.USE_YN = 'Y'
+        )                  
+        SELECT A.BUY_CD
+               , A.BUY_NM
+               , CASE WHEN A.SORT='1' THEN '전월잔액'
+                      WHEN A.SORT='2' THEN '매입'
+                      WHEN A.SORT='3' THEN '지급'
+                      WHEN A.SORT='4' THEN '현잔고'
+                      WHEN A.SORT='5' THEN '전월잔액'
+                      WHEN A.SORT='6' THEN '매입'
+                      WHEN A.SORT='7' THEN '지급'
+                      WHEN A.SORT='8' THEN '현잔고' END AS CLASS_NM
+               , SUM(IFNULL(A.MON_1,0)) AS PRT_MON1
+               , SUM(IFNULL(A.MON_2,0)) AS PRT_MON2
+               , SUM(IFNULL(A.MON_3,0)) AS PRT_MON3
+               , SUM(IFNULL(A.MON_4,0)) AS PRT_MON4
+               , SUM(IFNULL(A.MON_5,0)) AS PRT_MON5
+               , SUM(IFNULL(A.MON_6,0)) AS PRT_MON6
+               , SUM(IFNULL(A.MON_7,0)) AS PRT_MON7
+               , SUM(IFNULL(A.MON_8,0)) AS PRT_MON8
+               , SUM(IFNULL(A.MON_9,0)) AS PRT_MON9
+               , SUM(IFNULL(A.MON_10,0)) AS PRT_MON10
+               , SUM(IFNULL(A.MON_11,0)) AS PRT_MON11
+               , SUM(IFNULL(A.MON_12,0)) AS PRT_MON12
+               , SUM(IFNULL(A.TOT_AMT,0)) AS PRT_TOT_AMT
+               , #{searchYearMnSt} AS START_DT
+               , #{searchYearMnEt} AS END_DT
+               , #{searchBuyNm} AS SEARCH_BUY_NM
+               
+               , NOW() AS PRINT_DT
+               
+          FROM (SELECT '1' AS SORT
+                       , BUY_CD
+                       , BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(LBAL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(LBAL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(LBAL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(LBAL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(LBAL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(LBAL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(LBAL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(LBAL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(LBAL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(LBAL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(LBAL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(LBAL_AMT,0) END) AS MON_12
+                       , 0 AS TOT_AMT
+                  FROM TMBP
+                          
+	              GROUP BY BUY_CD
+                           , BUY_NM
+              UNION ALL
+                SELECT '2' AS SORT
+                       , BUY_CD
+                       , BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(BUY_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(BUY_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(BUY_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(BUY_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(BUY_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(BUY_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(BUY_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(BUY_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(BUY_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(BUY_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(BUY_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(BUY_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(BUY_AMT,0)) AS TOT_AMT                       
+                  FROM TMBP
+                 GROUP BY BUY_CD
+                          , BUY_NM
+             UNION ALL
+                SELECT '3' AS SORT
+                       , BUY_CD
+                       , BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='01' THEN IFNULL(SETL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='02' THEN IFNULL(SETL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='03' THEN IFNULL(SETL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='04' THEN IFNULL(SETL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='05' THEN IFNULL(SETL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='06' THEN IFNULL(SETL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='07' THEN IFNULL(SETL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='08' THEN IFNULL(SETL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='09' THEN IFNULL(SETL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='10' THEN IFNULL(SETL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='11' THEN IFNULL(SETL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='12' THEN IFNULL(SETL_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(SETL_AMT,0)) AS TOT_AMT
+                  FROM TBW
+                  GROUP BY BUY_CD
+                           , BUY_NM
+             UNION ALL
+                SELECT '4' AS SORT
+                       , A.BUY_CD
+                       , A.BUY_NM
+                       , SUM(IFNULL(A.MON_1,0)) AS MON_1
+                       , SUM(IFNULL(A.MON_2,0)) AS MON_2
+                       , SUM(IFNULL(A.MON_3,0)) AS MON_3
+                       , SUM(IFNULL(A.MON_4,0)) AS MON_4
+                       , SUM(IFNULL(A.MON_5,0)) AS MON_5
+                       , SUM(IFNULL(A.MON_6,0)) AS MON_6
+                       , SUM(IFNULL(A.MON_7,0)) AS MON_7
+                       , SUM(IFNULL(A.MON_8,0)) AS MON_8
+                       , SUM(IFNULL(A.MON_9,0)) AS MON_9
+                       , SUM(IFNULL(A.MON_10,0)) AS MON_10
+                       , SUM(IFNULL(A.MON_11,0)) AS MON_11
+                       , SUM(IFNULL(A.MON_12,0)) AS MON_12
+                       , 0 AS TOT_AMT
+                  FROM (SELECT BUY_CD
+                               , BUY_NM
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(LBAL_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(LBAL_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(LBAL_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(LBAL_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(LBAL_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(LBAL_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(LBAL_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(LBAL_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(LBAL_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(LBAL_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(LBAL_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(LBAL_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(LBAL_AMT,0)) AS AMT
+                          FROM TMBP
+                         GROUP BY BUY_CD
+                                  , BUY_NM
+                      UNION ALL
+                        SELECT BUY_CD
+                               , BUY_NM
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(BUY_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(BUY_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(BUY_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(BUY_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(BUY_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(BUY_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(BUY_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(BUY_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(BUY_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(BUY_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(BUY_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(BUY_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(BUY_AMT,0)) AS AMT
+                          FROM TMBP
+                         GROUP BY BUY_CD
+                                  , BUY_NM
+                      UNION ALL
+                        SELECT BUY_CD
+                               , BUY_NM
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='01' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='02' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='03' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='04' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='05' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='06' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='07' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='08' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='09' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='10' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='11' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='12' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_12
+                               , SUM(IFNULL(SETL_AMT,0))*-1 AS AMT
+                          FROM TBW
+                         GROUP BY BUY_CD
+                                  , BUY_NM
+                       ) AS A
+                 GROUP BY A.BUY_CD
+                          , A.BUY_NM
+              UNION ALL
+                SELECT '5' AS SORT
+                       , '99999' AS BUY_CD
+                       , '전체계 :' AS BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(LBAL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(LBAL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(LBAL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(LBAL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(LBAL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(LBAL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(LBAL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(LBAL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(LBAL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(LBAL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(LBAL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(LBAL_AMT,0) END) AS MON_12
+                       , 0 AS TOT_AMT
+                  FROM TMBP
+              UNION ALL
+                SELECT '6' AS SORT
+                       , '99999' AS BUY_CD
+                       , '전체계 :' AS BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(BUY_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(BUY_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(BUY_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(BUY_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(BUY_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(BUY_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(BUY_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(BUY_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(BUY_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(BUY_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(BUY_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(BUY_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(BUY_AMT,0)) AS TOT_AMT
+                  FROM TMBP
+             UNION ALL
+                SELECT '7' AS SORT
+                       , '99999' AS BUY_CD
+                       , '전체계 :' AS BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='01' THEN IFNULL(SETL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='02' THEN IFNULL(SETL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='03' THEN IFNULL(SETL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='04' THEN IFNULL(SETL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='05' THEN IFNULL(SETL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='06' THEN IFNULL(SETL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='07' THEN IFNULL(SETL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='08' THEN IFNULL(SETL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='09' THEN IFNULL(SETL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='10' THEN IFNULL(SETL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='11' THEN IFNULL(SETL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='12' THEN IFNULL(SETL_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(SETL_AMT,0)) AS TOT_AMT
+                  FROM TBW
+             UNION ALL
+                SELECT '8' AS SORT
+                       , '99999' AS BUY_CD
+                       , '전체계 :' AS BUY_NM
+                       , SUM(IFNULL(A.MON_1,0)) AS MON_1
+                       , SUM(IFNULL(A.MON_2,0)) AS MON_2
+                       , SUM(IFNULL(A.MON_3,0)) AS MON_3
+                       , SUM(IFNULL(A.MON_4,0)) AS MON_4
+                       , SUM(IFNULL(A.MON_5,0)) AS MON_5
+                       , SUM(IFNULL(A.MON_6,0)) AS MON_6
+                       , SUM(IFNULL(A.MON_7,0)) AS MON_7
+                       , SUM(IFNULL(A.MON_8,0)) AS MON_8
+                       , SUM(IFNULL(A.MON_9,0)) AS MON_9
+                       , SUM(IFNULL(A.MON_10,0)) AS MON_10
+                       , SUM(IFNULL(A.MON_11,0)) AS MON_11
+                       , SUM(IFNULL(A.MON_12,0)) AS MON_12
+                       , 0 AS TOT_AMT
+                  FROM (SELECT   SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(LBAL_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(LBAL_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(LBAL_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(LBAL_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(LBAL_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(LBAL_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(LBAL_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(LBAL_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(LBAL_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(LBAL_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(LBAL_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(LBAL_AMT,0) END) AS MON_12
+                          FROM TMBP
+                      UNION ALL
+                        SELECT   SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(BUY_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(BUY_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(BUY_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(BUY_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(BUY_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(BUY_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(BUY_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(BUY_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(BUY_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(BUY_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(BUY_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(BUY_AMT,0) END) AS MON_12
+                          FROM TMBP
+                     UNION ALL
+                        SELECT   SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='01' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='02' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='03' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='04' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='05' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='06' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='07' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='08' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='09' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='10' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='11' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='12' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_12
+                          FROM TBW
+                       ) AS A
+               ) A
+         GROUP BY A.BUY_CD
+                  , A.BUY_NM
+                  , A.SORT
+                  , CASE WHEN A.SORT='1' THEN '전월잔액'
+                         WHEN A.SORT='2' THEN '매입'
+                         WHEN A.SORT='3' THEN '지급'
+                         WHEN A.SORT='4' THEN '현잔고'
+                         WHEN A.SORT='5' THEN '전월잔액'
+                         WHEN A.SORT='6' THEN '매입'
+                         WHEN A.SORT='7' THEN '지급'
+                         WHEN A.SORT='8' THEN '현잔고' END
+         ORDER BY A.BUY_NM, A.SORT
+
+	</select>
+	
+	
+	<!-- 매입처처원장(연간) 엑셀 -->
+	<select id="selectAnlBuyLdgrMonListExcelDown" parameterType="com.doppio.workplace.as.service.AnlBuyLdgrMonListVo" resultType="java.util.HashMap">
+	/*AnlBuyLdgrMonListMapper.selectAnlBuyLdgrMonListExcelDown*/	
+        WITH TMBP AS (
+            SELECT TMBP.YEAR_MON
+                   , TMBP.BUY_CD
+                   , TBM.BUY_NM
+                   , TMBP.LBAL_AMT
+                   , TMBP.BUY_AMT
+              FROM TMH_MON_BUY_PAYMENT AS TMBP
+              
+                   JOIN TFM_BUY_MST AS TBM
+                       ON TBM.BUY_CD = TMBP.BUY_CD
+                       
+             WHERE TMBP.YEAR_MON BETWEEN REPLACE(#{searchYearMnSt},'-','') AND REPLACE(#{searchYearMnEt},'-','')
+             <if test='searchBuyCd != null and searchBuyCd != ""'>
+               AND TBM.BUY_CD = #{searchBuyCd}
+             </if>
+               AND (TMBP.LBAL_AMT != 0 OR TMBP.BUY_AMT != 0)
+               AND TBM.USE_YN = 'Y'
+        ),
+        TBW AS (
+            SELECT TBW.WDRL_DT
+                   , TBW.BUY_CD
+                   , TBM.BUY_NM
+                   , TBW.SETL_AMT
+              FROM TBH_BUY_WDRL AS TBW
+              
+                   JOIN TFM_BUY_MST AS TBM
+                       ON TBM.BUY_CD = TBW.BUY_CD
+                       
+             WHERE TBW.WDRL_DT BETWEEN CONCAT(REPLACE(#{searchYearMnSt},'-',''),'01') AND CONCAT(REPLACE(#{searchYearMnEt},'-',''),'31')
+             <if test='searchBuyCd != null and searchBuyCd != ""'>
+               AND TBM.BUY_CD = #{searchBuyCd}
+             </if>
+               AND TBW.SETL_AMT != 0
+               AND TBM.USE_YN = 'Y'
+        )                  
+        SELECT A.BUY_NM
+               , CASE WHEN A.SORT='1' THEN '전월잔액'
+                      WHEN A.SORT='2' THEN '매입'
+                      WHEN A.SORT='3' THEN '지급'
+                      WHEN A.SORT='4' THEN '현잔고'
+                      WHEN A.SORT='5' THEN '전월잔액'
+                      WHEN A.SORT='6' THEN '매입'
+                      WHEN A.SORT='7' THEN '지급'
+                      WHEN A.SORT='8' THEN '현잔고' END AS CLASS_NM
+               , SUM(IFNULL(A.MON_1,0)) AS MON1
+               , SUM(IFNULL(A.MON_2,0)) AS MON2
+               , SUM(IFNULL(A.MON_3,0)) AS MON3
+               , SUM(IFNULL(A.MON_4,0)) AS MON4
+               , SUM(IFNULL(A.MON_5,0)) AS MON5
+               , SUM(IFNULL(A.MON_6,0)) AS MON6
+               , SUM(IFNULL(A.MON_7,0)) AS MON7
+               , SUM(IFNULL(A.MON_8,0)) AS MON8
+               , SUM(IFNULL(A.MON_9,0)) AS MON9
+               , SUM(IFNULL(A.MON_10,0)) AS MON10
+               , SUM(IFNULL(A.MON_11,0)) AS MON11
+               , SUM(IFNULL(A.MON_12,0)) AS MON12
+               , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+          FROM (SELECT '1' AS SORT
+                       , BUY_CD
+                       , BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(LBAL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(LBAL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(LBAL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(LBAL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(LBAL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(LBAL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(LBAL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(LBAL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(LBAL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(LBAL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(LBAL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(LBAL_AMT,0) END) AS MON_12
+                       , 0 AS TOT_AMT
+                  FROM TMBP
+                          
+	              GROUP BY BUY_CD
+                           , BUY_NM
+              UNION ALL
+                SELECT '2' AS SORT
+                       , BUY_CD
+                       , BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(BUY_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(BUY_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(BUY_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(BUY_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(BUY_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(BUY_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(BUY_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(BUY_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(BUY_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(BUY_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(BUY_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(BUY_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(BUY_AMT,0)) AS TOT_AMT                       
+                  FROM TMBP
+                 GROUP BY BUY_CD
+                          , BUY_NM
+             UNION ALL
+                SELECT '3' AS SORT
+                       , BUY_CD
+                       , BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='01' THEN IFNULL(SETL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='02' THEN IFNULL(SETL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='03' THEN IFNULL(SETL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='04' THEN IFNULL(SETL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='05' THEN IFNULL(SETL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='06' THEN IFNULL(SETL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='07' THEN IFNULL(SETL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='08' THEN IFNULL(SETL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='09' THEN IFNULL(SETL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='10' THEN IFNULL(SETL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='11' THEN IFNULL(SETL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='12' THEN IFNULL(SETL_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(SETL_AMT,0)) AS TOT_AMT
+                  FROM TBW
+                  GROUP BY BUY_CD
+                           , BUY_NM
+             UNION ALL
+                SELECT '4' AS SORT
+                       , A.BUY_CD
+                       , A.BUY_NM
+                       , SUM(IFNULL(A.MON_1,0)) AS MON_1
+                       , SUM(IFNULL(A.MON_2,0)) AS MON_2
+                       , SUM(IFNULL(A.MON_3,0)) AS MON_3
+                       , SUM(IFNULL(A.MON_4,0)) AS MON_4
+                       , SUM(IFNULL(A.MON_5,0)) AS MON_5
+                       , SUM(IFNULL(A.MON_6,0)) AS MON_6
+                       , SUM(IFNULL(A.MON_7,0)) AS MON_7
+                       , SUM(IFNULL(A.MON_8,0)) AS MON_8
+                       , SUM(IFNULL(A.MON_9,0)) AS MON_9
+                       , SUM(IFNULL(A.MON_10,0)) AS MON_10
+                       , SUM(IFNULL(A.MON_11,0)) AS MON_11
+                       , SUM(IFNULL(A.MON_12,0)) AS MON_12
+                       , 0 AS TOT_AMT
+                  FROM (SELECT BUY_CD
+                               , BUY_NM
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(LBAL_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(LBAL_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(LBAL_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(LBAL_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(LBAL_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(LBAL_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(LBAL_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(LBAL_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(LBAL_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(LBAL_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(LBAL_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(LBAL_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(LBAL_AMT,0)) AS AMT
+                          FROM TMBP
+                         GROUP BY BUY_CD
+                                  , BUY_NM
+                      UNION ALL
+                        SELECT BUY_CD
+                               , BUY_NM
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(BUY_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(BUY_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(BUY_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(BUY_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(BUY_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(BUY_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(BUY_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(BUY_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(BUY_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(BUY_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(BUY_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(BUY_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(BUY_AMT,0)) AS AMT
+                          FROM TMBP
+                         GROUP BY BUY_CD
+                                  , BUY_NM
+                      UNION ALL
+                        SELECT BUY_CD
+                               , BUY_NM
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='01' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='02' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='03' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='04' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='05' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='06' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='07' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='08' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='09' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='10' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='11' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='12' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_12
+                               , SUM(IFNULL(SETL_AMT,0))*-1 AS AMT
+                          FROM TBW
+                         GROUP BY BUY_CD
+                                  , BUY_NM
+                       ) AS A
+                 GROUP BY A.BUY_CD
+                          , A.BUY_NM
+              UNION ALL
+                SELECT '5' AS SORT
+                       , '99999' AS BUY_CD
+                       , '전체계 :' AS BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(LBAL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(LBAL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(LBAL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(LBAL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(LBAL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(LBAL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(LBAL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(LBAL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(LBAL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(LBAL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(LBAL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(LBAL_AMT,0) END) AS MON_12
+                       , 0 AS TOT_AMT
+                  FROM TMBP
+              UNION ALL
+                SELECT '6' AS SORT
+                       , '99999' AS BUY_CD
+                       , '전체계 :' AS BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(BUY_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(BUY_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(BUY_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(BUY_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(BUY_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(BUY_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(BUY_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(BUY_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(BUY_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(BUY_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(BUY_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(BUY_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(BUY_AMT,0)) AS TOT_AMT
+                  FROM TMBP
+             UNION ALL
+                SELECT '7' AS SORT
+                       , '99999' AS BUY_CD
+                       , '전체계 :' AS BUY_NM
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='01' THEN IFNULL(SETL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='02' THEN IFNULL(SETL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='03' THEN IFNULL(SETL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='04' THEN IFNULL(SETL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='05' THEN IFNULL(SETL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='06' THEN IFNULL(SETL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='07' THEN IFNULL(SETL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='08' THEN IFNULL(SETL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='09' THEN IFNULL(SETL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='10' THEN IFNULL(SETL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='11' THEN IFNULL(SETL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='12' THEN IFNULL(SETL_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(SETL_AMT,0)) AS TOT_AMT
+                  FROM TBW
+             UNION ALL
+                SELECT '8' AS SORT
+                       , '99999' AS BUY_CD
+                       , '전체계 :' AS BUY_NM
+                       , SUM(IFNULL(A.MON_1,0)) AS MON_1
+                       , SUM(IFNULL(A.MON_2,0)) AS MON_2
+                       , SUM(IFNULL(A.MON_3,0)) AS MON_3
+                       , SUM(IFNULL(A.MON_4,0)) AS MON_4
+                       , SUM(IFNULL(A.MON_5,0)) AS MON_5
+                       , SUM(IFNULL(A.MON_6,0)) AS MON_6
+                       , SUM(IFNULL(A.MON_7,0)) AS MON_7
+                       , SUM(IFNULL(A.MON_8,0)) AS MON_8
+                       , SUM(IFNULL(A.MON_9,0)) AS MON_9
+                       , SUM(IFNULL(A.MON_10,0)) AS MON_10
+                       , SUM(IFNULL(A.MON_11,0)) AS MON_11
+                       , SUM(IFNULL(A.MON_12,0)) AS MON_12
+                       , 0 AS TOT_AMT
+                  FROM (SELECT   SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(LBAL_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(LBAL_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(LBAL_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(LBAL_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(LBAL_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(LBAL_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(LBAL_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(LBAL_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(LBAL_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(LBAL_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(LBAL_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(LBAL_AMT,0) END) AS MON_12
+                          FROM TMBP
+                      UNION ALL
+                        SELECT   SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='01' THEN IFNULL(BUY_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='02' THEN IFNULL(BUY_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='03' THEN IFNULL(BUY_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='04' THEN IFNULL(BUY_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='05' THEN IFNULL(BUY_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='06' THEN IFNULL(BUY_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='07' THEN IFNULL(BUY_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='08' THEN IFNULL(BUY_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='09' THEN IFNULL(BUY_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='10' THEN IFNULL(BUY_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='11' THEN IFNULL(BUY_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(YEAR_MON,5,2)='12' THEN IFNULL(BUY_AMT,0) END) AS MON_12
+                          FROM TMBP
+                     UNION ALL
+                        SELECT   SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='01' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='02' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='03' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='04' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='05' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='06' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='07' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='08' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='09' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='10' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='11' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(WDRL_DT,5,2)='12' THEN IFNULL(SETL_AMT,0)*-1 END) AS MON_12
+                          FROM TBW
+                       ) AS A
+               ) A
+         GROUP BY A.BUY_CD
+                  , A.BUY_NM
+                  , A.SORT
+                  , CASE WHEN A.SORT='1' THEN '전월잔액'
+                         WHEN A.SORT='2' THEN '매입'
+                         WHEN A.SORT='3' THEN '지급'
+                         WHEN A.SORT='4' THEN '현잔고'
+                         WHEN A.SORT='5' THEN '전월잔액'
+                         WHEN A.SORT='6' THEN '매입'
+                         WHEN A.SORT='7' THEN '지급'
+                         WHEN A.SORT='8' THEN '현잔고' END
+         ORDER BY A.BUY_NM, A.SORT
+
+	</select>
+	
+</mapper>

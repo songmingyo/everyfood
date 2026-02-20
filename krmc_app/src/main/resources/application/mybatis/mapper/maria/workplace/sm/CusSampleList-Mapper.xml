@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusSampleListMapper">
+
+	
+	<!-- 샘플 출고 조회 -->
+	<select id="selectCusSampleList" parameterType="com.doppio.workplace.sm.service.CusSampleListVo" resultType="com.doppio.workplace.sm.service.CusSampleListVo">
+	/*CusSampleListMapper.selectCusSampleList*/	
+		SELECT TSF.FREE_DT
+			   , TWM.WH_NM
+			   , TSAI.SALES_NM
+			   , TSF.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TCD.DTL_NM AS FREE_CLASS_NM
+			   , TSF.FREE_QTY
+			   , TPM.COST
+			   , TPM.COST * TSF.FREE_QTY AS TOT_AMT
+			   , TSPM.SALES_PR_NM
+			   , TSF.REMARKS_1 AS REMARKS
+			   
+	      FROM (SELECT TSF.FREE_DT
+	                   , TSF.WH_CD
+	                   , TSF.SALES_CD
+	                   , TSF.PRDT_CD
+	                   , TSF.FREE_CLASS
+	                   , TSR.REMARKS_1
+	                   , SUM(TSF.FREE_QTY) AS FREE_QTY	                   
+	              FROM TSH_SALES_FREE AS TSF
+
+	                   LEFT OUTER JOIN TSH_SALES_REMARK AS TSR
+			               ON TSR.SALES_SLIP_NO = TSF.SALES_SLIP_NO
+			              AND TSR.SALES_SEQ = TSF.SALES_SEQ
+
+                 WHERE TSF.FREE_DT BETWEEN #{startDt} AND #{endDt}
+	             <if test='whCd != null and whCd != ""'> 
+		           AND TSF.WH_CD = #{whCd}
+   	             </if>
+   	             <if test='prdtCd != null and prdtCd != ""'> 
+	               AND TSF.PRDT_CD = #{prdtCd}
+                 </if>
+                 <if test='salesCd != null and salesCd != ""'> 
+	               AND TSF.SALES_CD = #{salesCd}
+                 </if>
+                 <if test='freeClass != null and freeClass != ""'> 
+	               AND TSF.FREE_CLASS = #{freeClass}
+                 </if>
+                 GROUP BY TSF.FREE_DT
+	                      , TSF.WH_CD
+	                      , TSF.SALES_CD
+	                      , TSF.PRDT_CD
+	                      , TSF.FREE_CLASS
+	                      , TSR.REMARKS_1
+	           ) AS TSF
+	      
+			   JOIN TFM_WH_MST AS TWM
+			       ON TWM.WH_CD = TSF.WH_CD
+			      
+			   JOIN TFM_SALES_ADD_INFO AS TSAI
+			       ON TSAI.SALES_CD = TSF.SALES_CD
+			       
+			   LEFT OUTER JOIN TFM_SALES_PR_MST AS TSPM
+			       ON TSAI.SALES_PR_CD = TSPM.SALES_PR_CD
+			       
+			   LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                   ON TCD.DTL_CD = TSF.FREE_CLASS
+                  AND TCD.COM_CD = 'M016'
+                  
+	           JOIN TFM_PRDT_MST AS TPM
+	               ON TPM.PRDT_CD = TSF.PRDT_CD
+	               
+	   <where>
+ 	     <if test='lCd != null and lCd != ""'> 
+	       AND TPM.L_CD = #{lCd}
+         </if>
+	     <if test='mCd != null and mCd != ""'> 
+	       AND TPM.M_CD = #{mCd}
+	     </if>
+	     
+	     <if test='salesPrNm != null and salesPrNm != ""'> 
+	       AND TSPM.SALES_PR_NM = #{salesPrNm}
+	     </if>
+	   </where>
+	     ORDER BY TSF.FREE_DT, TSF.SALES_CD, TSF.PRDT_CD
+	</select>
+
+	<!-- 샘플 출고 -->
+	<select id="selectCusSampleListExcelDown" parameterType="com.doppio.workplace.sm.service.CusSampleListVo" resultType="java.util.HashMap">
+	/*CusSampleListMapper.selectCusSampleListExcelDown*/
+		SELECT TSF.FREE_DT
+			   , TWM.WH_NM
+			   , TSAI.SALES_NM
+			   , TSF.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TCD.DTL_NM AS FREE_CLASS_NM
+			   , TSF.FREE_QTY
+			   , TPM.COST
+			   , CAST( TPM.COST * TSF.FREE_QTY AS UNSIGNED INTEGER) AS TOT_AMT
+			   , TSPM.SALES_PR_NM
+			   , TSF.REMARKS_1 AS REMARKS
+			   
+	      FROM (SELECT TSF.FREE_DT
+	                   , TSF.WH_CD
+	                   , TSF.SALES_CD
+	                   , TSF.PRDT_CD
+	                   , TSF.FREE_CLASS
+	                   , TSR.REMARKS_1
+	                   , SUM(TSF.FREE_QTY) AS FREE_QTY	                   
+	              FROM TSH_SALES_FREE AS TSF
+
+	                   LEFT OUTER JOIN TSH_SALES_REMARK AS TSR
+			               ON TSR.SALES_SLIP_NO = TSF.SALES_SLIP_NO
+			              AND TSR.SALES_SEQ = TSF.SALES_SEQ
+
+                 WHERE TSF.FREE_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+	             <if test='whCd != null and whCd != ""'> 
+		           AND TSF.WH_CD = #{whCd}
+   	             </if>
+   	             <if test='prdtCd != null and prdtCd != ""'> 
+	               AND TSF.PRDT_CD = #{prdtCd}
+                 </if>
+                 <if test='salesCd != null and salesCd != ""'> 
+	               AND TSF.SALES_CD = #{salesCd}
+                 </if>
+                 <if test='freeClass != null and freeClass != ""'> 
+	               AND TSF.FREE_CLASS = #{freeClass}
+                 </if>
+                 GROUP BY TSF.FREE_DT
+	                      , TSF.WH_CD
+	                      , TSF.SALES_CD
+	                      , TSF.PRDT_CD
+	                      , TSF.FREE_CLASS
+	                      , TSR.REMARKS_1
+	           ) AS TSF
+	      
+			   JOIN TFM_WH_MST AS TWM
+			       ON TWM.WH_CD = TSF.WH_CD
+			      
+			   JOIN TFM_SALES_ADD_INFO AS TSAI
+			       ON TSAI.SALES_CD = TSF.SALES_CD
+			       
+			   LEFT OUTER JOIN TFM_SALES_PR_MST AS TSPM
+			       ON TSAI.SALES_PR_CD = TSPM.SALES_PR_CD
+			       
+			   LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                   ON TCD.DTL_CD = TSF.FREE_CLASS
+                  AND TCD.COM_CD = 'M016'
+                  
+	           JOIN TFM_PRDT_MST AS TPM
+	               ON TPM.PRDT_CD = TSF.PRDT_CD
+	               
+	   <where>
+ 	     <if test='lCd != null and lCd != ""'> 
+	       AND TPM.L_CD = #{lCd}
+         </if>
+	     <if test='mCd != null and mCd != ""'> 
+	       AND TPM.M_CD = #{mCd}
+	     </if>
+	   </where>
+	     ORDER BY TSF.FREE_DT, TSF.SALES_CD, TSF.PRDT_CD
+	</select>
+
+</mapper>

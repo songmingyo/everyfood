@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sample.service.impl.SampleMapper">
+	
+	<!-- 샘플 엑셀다운로드 데이터 조회결과 맵 -->
+	<resultMap  id="resultSampleExcelData" type="com.doppio.workplace.sample.service.SampleExcelVo">
+		<result column="COM_CD"			property="comCd"		/>
+		<result column="COM_NM"			property="comNm"		/>
+		<result column="DTL_CD"			property="dtlCd"		/>
+		<result column="DTL_NM"			property="dtlNm"		/>
+		<result column="CODE_DECS"		property="codeDecs"	 	/>
+		<result column="SORT_NO"		property="sortNo"		/>		
+	</resultMap>
+
+
+	<!-- 샘플 엑셀다운로드 데이터 총갯수 -->
+	<select id="selectSampleExcelDataCount" parameterType="com.doppio.workplace.sample.service.SampleExcelVo" resultType="int">
+	/* SampleMapper.selectSampleExcelDataCount */
+		SELECT 
+			COUNT(*) AS totalCount
+		FROM TCM_CODE_MST A 
+		INNER JOIN TCM_CODE_DTL B 
+		ON A.COM_CD = B.COM_CD
+		WHERE A.USE_YN = 'Y'
+			<if test='srchComCd != null and srchComCd != ""'>
+				AND B.COM_CD = #{srchComCd}
+			</if>
+			<if test='srchDtlCd != null and srchDtlCd != ""'>
+				AND B.DTL_CD = #{srchDtlCd}
+			</if>
+	</select>
+
+
+	<!-- 샘플 엑셀다운로드 데이터 조회 -->
+	<select id="selectSampleExcelData" parameterType="com.doppio.workplace.sample.service.SampleExcelVo" resultType="com.doppio.workplace.sample.service.SampleExcelVo">
+	/* SampleMapper.selectSampleExcelData */
+		SELECT
+			S.COM_CD
+			, S.COM_NM
+			, S.DTL_CD
+			, S.DTL_NM
+			, S.CODE_DECS
+			, S.SORT_NO
+		FROM
+		(
+			SELECT
+				 ROW_NUMBER() OVER(ORDER BY C.COM_CD) AS ROWNUM
+				, CASE WHEN SORT_RUNM = 1 THEN C.COM_CD
+					ELSE ''
+					END AS COM_CD
+				, CASE WHEN SORT_RUNM = 1 THEN C.COM_NM
+					ELSE ''
+					END AS COM_NM
+				, C.DTL_CD
+				, C.DTL_NM
+				, CASE WHEN SORT_RUNM = 1 THEN C.COM_NM
+					ELSE ''
+					END AS CODE_DECS
+				, (C.SORT_NO * 1000) AS SORT_NO
+			FROM
+			(
+				SELECT 
+					ROW_NUMBER() OVER(PARTITION BY A.COM_CD ORDER BY A.COM_CD, B.SORT_NO) AS SORT_RUNM
+					, A.COM_CD
+					, A.COM_NM
+					, B.DTL_CD
+					, B.DTL_NM
+					, B.SORT_NO
+				FROM TCM_CODE_MST A 
+				INNER JOIN TCM_CODE_DTL B 
+				ON A.COM_CD = B.COM_CD
+				WHERE A.USE_YN = 'Y'
+					<if test='srchComCd != null and srchComCd != ""'>
+						AND B.COM_CD = #{srchComCd}
+					</if>
+					<if test='srchDtlCd != null and srchDtlCd != ""'>
+						AND B.DTL_CD = #{srchDtlCd}
+					</if>
+			) C
+		) S
+		WHERE ROWNUM BETWEEN #{startRowNo} AND #{endRowNo}
+	</select>
+
+
+	<!-- 다운로드용 샘플 엑셀데이터 조회 -->
+	<select id="selectSampleExcelDownData" parameterType="com.doppio.workplace.sample.service.SampleExcelVo" resultType="java.util.HashMap">
+	/* SampleMapper.selectSampleExcelDownData */
+		SELECT
+			CASE WHEN SORT_RUNM = 1 THEN C.COM_CD
+				ELSE ''
+				END AS COM_CD
+			, CASE WHEN SORT_RUNM = 1 THEN C.COM_NM
+				ELSE ''
+				END AS COM_NM
+			, C.DTL_CD
+			, C.DTL_NM
+			, CASE WHEN SORT_RUNM = 1 THEN C.COM_NM
+				ELSE ''
+				END AS CODE_DECS
+			, (C.SORT_NO * 1000) AS SORT_NO
+		FROM
+		(
+			SELECT 
+				ROW_NUMBER() OVER(PARTITION BY A.COM_CD ORDER BY A.COM_CD, B.SORT_NO) AS SORT_RUNM
+				, A.COM_CD
+				, A.COM_NM
+				, B.DTL_CD
+				, B.DTL_NM
+				, B.SORT_NO
+			FROM TCM_CODE_MST A  
+			INNER JOIN TCM_CODE_DTL B 
+			ON A.COM_CD = B.COM_CD
+			WHERE A.USE_YN = 'Y'
+				<if test='srchComCd != null and srchComCd != ""'>
+					AND B.COM_CD = #{srchComCd}
+				</if>
+				<if test='srchDtlCd != null and srchDtlCd != ""'>
+					AND B.DTL_CD = #{srchDtlCd}
+				</if>
+		) C
+	</select>
+
+
+	<!-- 샘플 엑셀데이터 템플테이블 삭제 -->
+	<delete id="deleteSampleExcelTemp"	parameterType="java.util.HashMap">
+	/** SampleMapper.deleteSampleExcelTemp */
+		DELETE FROM TCM_EXCEL_TEMP
+		WHERE REG_ID = #{regId}
+		<if test="excelSysKnd != null and excelSysKnd !=''">
+			AND EXCEL_SYS_KND = #{excelSysKnd}
+		</if>	
+		<if test="excelWorkKnd != null and excelWorkKnd !=''">
+			AND EXCEL_WORK_KND = #{excelWorkKnd}
+		</if>
+	</delete>
+
+
+	<!-- 샘플 엑셀데이터 템프테이블 등록 -->
+	<insert id="insertSampleExcelTemp" parameterType="com.doppio.common.model.ExcelTempUploadVo">
+	/* SampleMapper.insertSampleExcelTemp */
+	<![CDATA[
+		INSERT INTO TCM_EXCEL_TEMP
+		(
+			SEQ_NO
+			,EXCEL_SYS_KND
+			,EXCEL_WORK_KND
+			,DATA1
+			,DATA2
+			,DATA3
+			,DATA4
+			,DATA5
+			,DATA6
+			,DATA7
+			,DATA8
+			,DATA9
+			,DATA10
+			,DATA11
+			,DATA12
+			,DATA13
+			,DATA14
+			,DATA15
+			,DATA16
+			,DATA17
+			,DATA18
+			,DATA19
+			,DATA20
+			,REG_DT
+			,REG_ID
+		)
+		VALUES
+		(
+			(SELECT IFNULL(MAX(SEQ_NO),0) + 1 FROM TCM_EXCEL_TEMP WHERE EXCEL_SYS_KND = #{excelSysKnd, jdbcType=VARCHAR} AND EXCEL_WORK_KND = #{excelWorkKnd} AND REG_ID = #{regId, jdbcType=VARCHAR})
+			,#{excelSysKnd, jdbcType=VARCHAR}
+			,#{excelWorkKnd, jdbcType=VARCHAR}		
+			,#{data1, jdbcType=VARCHAR}
+			,#{data2, jdbcType=VARCHAR}
+			,#{data3, jdbcType=VARCHAR}
+			,#{data4, jdbcType=VARCHAR}
+			,#{data5, jdbcType=VARCHAR}
+			,#{data6, jdbcType=VARCHAR}
+			,#{data7, jdbcType=VARCHAR}
+			,#{data8, jdbcType=VARCHAR}
+			,#{data9, jdbcType=VARCHAR}
+			,#{data10, jdbcType=VARCHAR}
+			,#{data11, jdbcType=VARCHAR}
+			,#{data12, jdbcType=VARCHAR}
+			,#{data13, jdbcType=VARCHAR}
+			,#{data14, jdbcType=VARCHAR}
+			,#{data15, jdbcType=VARCHAR}
+			,#{data16, jdbcType=VARCHAR}
+			,#{data17, jdbcType=VARCHAR}
+			,#{data18, jdbcType=VARCHAR}
+			,#{data19, jdbcType=VARCHAR}
+			,#{data20, jdbcType=VARCHAR}
+			,NOW()
+			,#{regId, jdbcType=VARCHAR}
+		)
+	]]>
+    </insert>
+
+
+	<!-- 샘플 엑셀다운로드 데이터 조회결과 맵 -->
+	<resultMap  id="resultCodeMap" type="com.doppio.workplace.sample.service.SampleVmPdfVo">
+		<result column="COM_CD"			property="comCd"		/>
+		<result column="COM_NM"			property="comCd"		/>
+		<result column="COM_SUB_NM"		property="comSubNm"		/>
+		<result column="DTL_CD"			property="dtlCd"		/>
+		<result column="DTL_NM"			property="dtlNm"		/>
+		<result column="DTL_SUB_NM"		property="dtlSubNm"		/>
+		<result column="EXTENT01"		property="extent01"		/>
+		<result column="USE_YN"			property="useYn"		/>
+		<result column="SORT_NO"		property="sortNo"		/>				
+	</resultMap>
+
+
+	<!-- 코드마스터 조회 -->
+	<select id="selectCodeMst" parameterType="com.doppio.workplace.sample.service.SampleVmPdfVo" resultMap="resultCodeMap">
+	/* SampleMapper.selectCodeMst */
+		SELECT
+			COM_CD
+			, COM_NM
+			, COM_SUB_NM
+			, USE_YN AS useYn
+		FROM TCM_CODE_MST 
+		WHERE COM_CD = #{srchComCd}
+	</select>
+	
+	
+	<!-- 코드상세 조회 -->	
+	<select id="selectCodeDtl" parameterType="com.doppio.workplace.sample.service.SampleVmPdfVo" resultMap="resultCodeMap">
+	/* SampleMapper.selectCodeDtl */
+		SELECT
+			COM_CD
+			, DTL_CD
+			, DTL_NM
+			, DTL_SUB_NM
+			, EXTENT01
+			, USE_YN
+			, SORT_NO * 1000 AS SORT_NO
+		FROM TCM_CODE_DTL 
+		WHERE COM_CD = #{srchComCd}
+	</select>
+	
+	
+	
+	
+		
+	<resultMap id="userMap" type="com.doppio.workplace.sample.service.SampleJasperVo">
+		  <result column="USER_ID"			property="memberCd" 			/>	<!--	MEMBER CD       -->				
+        <result column="USER_ID"			property="userId" 			/>	<!--	ID				-->				
+		<result column="USER_NM"			property="userNm" 			/>	<!--	이름	    	    -->
+		<result column="TEL_NO"				property="telNo" 			/>	<!--	전화번호	        -->
+		<result column="HP_NO"				property="hpNo" 			/>	<!--	핸드폰번호	        -->
+		<result column="EMAIL"				property="email" 			/>	<!--	이메일	        -->
+		<result column="MASTER_ID"			property="masterId" 		/>	<!--	소속Master_ID	    -->
+		<result column="COMP_NM"			property="compNm" 			/>	<!--	회사명 	    -->
+    </resultMap>
+	
+	
+	<!-- 사용자 정보 조회 -->
+	 <select id="selectUserInfo" resultMap="userMap" parameterType="com.doppio.workplace.sample.service.SampleJasperVo">
+	 	/*SampleMapper.selectUserInfo*/
+	   	SELECT TM.MEMBER_CD
+				  ,TM.USER_ID
+        		  ,TM.USER_NM
+                  ,TM.TEL_NO
+                  ,TM.HP_NO
+                  ,TM.EMAIL
+                  ,TC.MASTER_ID  
+                  ,TC.COMP_NM
+          FROM     TCM_MEMBER TM INNER JOIN VCM_COMPINFO TC ON TM.MASTER_ID = TC.MASTER_ID 
+       <where>
+        <if test='memberCd != null and memberCd != ""'>
+			   AND   TC.MEMBER_CD = #{memberCd}
+		</if>
+		<if test='userType != null and userType != ""'>
+			   AND  TM.USER_TYPE  = #{userType}
+		</if>
+      </where>
+   	 </select>
+   	 
+
+</mapper>

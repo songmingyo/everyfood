@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.management.service.impl.MgrInterfaceMapper">
+
+	<resultMap id = "ifInfoMap" type = "com.doppio.management.service.MgrInterfaceVo">
+		<result column = "LOG_IDX_NO"				property = "logIdxNo"			/>
+		<result column = "APPL_CD"					property = "applCd"				/>
+		<result column = "IF_CD"					property = "ifCd"				/>
+		<result column = "IF_CD_NM"					property = "ifCdNm"				/>
+		<result column = "START_DT"					property = "startDt"			/>
+		<result column = "END_DT"					property = "endDt"				/>
+		<result column = "APPL_NM"					property = "applNm"				/>
+		<result column = "SUCC_YN"					property = "succYn"				/>
+		<result column = "RSLT_CD"					property = "rsltCd"				/>
+		<result column = "RSLT_CD_NM"				property = "rsltCdNm"			/>
+		<result column = "RSLT_MSG"					property = "rsltMsg"			/>
+		<result column = "REC_CNT"					property = "recCnt"				/>		
+		<result column = "GEN_DY"					property = "genDy"				/>
+		<result column = "COM_CD"					property = "comCd"				/>
+		<result column = "DTL_CD"					property = "dtlCd"				/>
+		<result column = "DTL_NM"					property = "dtlNm"				/>
+	</resultMap>
+	
+	<!-- 작업 리스트 조회 -->
+	<select id = "selectIfMasterList" resultMap = "ifInfoMap" parameterType = "com.doppio.management.service.MgrInterfaceVo">
+		/* MgrInterfaceMapper.selectIfMasterList */
+		SELECT
+			LOG_IDX_NO 
+			, APPL_CD
+			, IF_CD
+			, FN_CODE_RTN('IF03', IF_CD) AS IF_CD_NM
+			, DATE_FORMAT(START_DT, '%Y-%m-%d %H:%i:%s') AS START_DT
+			, DATE_FORMAT(END_DT, '%Y-%m-%d %H:%i:%s') AS END_DT
+			, APPL_NM
+			, APPL_SUB_NM
+			, SUCC_YN
+			, RSLT_CD
+			, FN_CODE_RTN('IF02', RSLT_CD) AS RSLT_CD_NM
+			, RSLT_MSG
+			, REC_CNT
+		FROM	TCM_IF_MONITOR
+		<where>
+			<if test = 'applCd != null and applCd != ""'>
+				AND	APPL_CD = #{applCd}
+			</if>
+			<if test = 'rsltCd != null and rsltCd != ""'>
+				AND	RSLT_CD = #{rsltCd}
+			</if>
+			<if test = 'genDy != null and genDy != ""'>
+				AND GEN_DY = #{genDy}
+			</if>
+		</where>
+		ORDER BY LOG_IDX_NO DESC
+	</select>
+	
+	<select id = "selectIfSubList" resultMap = "ifInfoMap" parameterType = "com.doppio.management.service.MgrInterfaceVo">
+		/* MgrInterfaceMapper.selectIfSubList */
+		SELECT
+			COM_CD
+			, DTL_CD
+			, DTL_NM
+		FROM	TCM_CODE_DTL
+		WHERE	EXTENT01 = '1'
+		AND		USE_YN = 'Y'
+		AND		COM_CD = 'IF01'
+	</select>
+</mapper>

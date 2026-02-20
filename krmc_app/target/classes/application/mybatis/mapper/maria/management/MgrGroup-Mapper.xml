@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.management.service.impl.MgrGroupMapper">
+
+	<!-- 그룹정보 MAP -->
+	<resultMap id="groupInfoMap"   type="com.doppio.management.service.MgrGroupVo">
+		<result column="GROUP_ID"			property="groupId"		/>  <!-- 그룹아이디	   	-->
+		<result column="GROUP_NM"			property="groupNm"	  	/>	<!-- 그룹명	   	    -->
+		<result column="GROUP_SUB_NM"		property="groupSubNm"	/>	<!-- 그룹확장명	   	-->
+		<result column="GROUP_DESC" 		property="groupDesc" 	/>  <!-- 그룹설명	   		-->
+		<result column="GROUP_FG"			property="groupFg"		/>  <!-- 그룹구분코드[CODE 9201 B:시스템,F:내부사용자, V:외부사용자,C:공통]   		  -->
+		<result column="GROUP_FG_NM"		property="groupFgNm"	/>  <!-- 그룹구분코드명칭   	-->
+		<result column="USE_YN"				property="useYn"		/>  <!-- 사용유무(Y/N)  	-->
+		<result column="SYS_YN"				property="sysYn"		/>  <!-- 빌트인여부(Y/N) 	-->
+		<result column="MOD_DT"				property="modDt"		/>  <!-- 수정일시	   		-->
+	</resultMap>
+
+   	<!-- 매핑외 사용자 목록 MAP -->
+	<resultMap id="groupAuthMemberMap"   type="com.doppio.management.service.MgrMemberVo">
+		<result column="MEMBER_CD"			property="memberCd"		/>  <!-- 사용자코드	     -->
+		<result column="USER_ID"			property="userId"	  	/>	<!-- 사용자아이디	     -->
+		<result column="USER_NM" 			property="userNm" 		/>  <!-- 사용자명	   	     -->
+		<result column="USER_TYPE_NAME"		property="userTypeName" /> 	<!-- 사용자타입         -->
+		<result column="COMP_NM"			property="compNm" 		/> 	<!-- 소속회사명 (점포)   -->
+	</resultMap>
+
+   	<!-- 권한메뉴조회 MAP -->
+	<resultMap id="authInfoMap"   type="com.doppio.management.service.MgrAuthVo">
+			 <result column="MENU_ID"       	property="menuId"     	/>	<!-- 메뉴아이디 	 	-->
+             <result column="PARENT_ID"     	property="parentId"  	/>	<!-- 부모아이디 	 	-->
+             <result column="TITLE"         	property="title"     	/>	<!-- 메뉴명		 	-->
+             <result column="TITLE_SUB"     	property="titleSub"     />	<!-- 메뉴확장명     	-->
+             <result column="WEB_PAGE"      	property="webPage"    	/>	<!-- URL 		 	-->
+             <result column="EXC_TYPE_FG" 		property="excTypeFg"	/>	<!-- DEVICE[W/M/R] 	-->
+             <result column="GROUP_ID"      	property="groupId"    	/>	<!-- 그룹아이디 	 	-->
+             <result column="PGM_QRY"       	property="pgmQry"     	/>	<!-- 조회권한 	 	 	-->
+             <result column="PGM_INT"       	property="pgmInt"     	/>	<!-- 등록권한 	 	 	-->
+             <result column="PGM_UPT"       	property="pgmUpt"     	/>	<!-- 수정권한 	 	 	-->
+             <result column="PGM_DEL"       	property="pgmDel"     	/>	<!-- 삭제권한 	 	 	-->
+             <result column="PGM_PRT"       	property="pgmPrt"     	/>	<!-- 출력권한  	 	-->
+             <result column="AUTH_ALL_YN"   	property="authAllYn"  	/>	<!-- 전체권한 	 	 	-->
+             <result column="PARENT_NM"     	property="parentNm"   	/>	<!-- 상위분류명  	 	-->
+             <result column="PARENT_SUB_NM"   	property="parentSubNm"  />	<!-- 상위분류확장명  	-->
+             <result column="ROWSPAN"       	property="rowspan"    	/>	<!-- ROW병합카운트  	-->
+	</resultMap>
+
+
+   	<!-- 그룹정보 조회 -->
+	<select id="selectGroupList" resultMap="groupInfoMap" parameterType="com.doppio.management.service.MgrGroupVo">
+		/*MgrGroupMapper.selectGroupList*/
+		SELECT	GROUP_ID
+				,GROUP_NM
+				,GROUP_SUB_NM
+				,GROUP_DESC
+				,GROUP_FG
+				,FN_CODE_LANG_RTN('9202',GROUP_FG,#{langCd}) AS GROUP_FG_NM
+				,USE_YN
+				,SYS_YN
+				,DATE_FORMAT(MOD_DT, '%Y-%m-%d %H:%i') AS MOD_DT
+		FROM TCM_GROUP
+		<where>
+		    <if test='groupId != null and groupId != ""'>
+		        AND GROUP_ID LIKE CONCAT(#{groupId},'%')
+		    </if>
+		    <if test='groupNm != null and groupNm != ""'>
+		    	  AND GROUP_NM LIKE CONCAT(#{groupNm},'%')
+		    </if>
+		    <if test='groupFg != null and groupFg != ""'>
+		    	  AND GROUP_FG =  #{groupFg}
+		    </if>
+		</where>
+	   ORDER BY GROUP_ID, GROUP_NM 
+    </select>
+
+    <!-- 그룹정보 상세 조회 -->
+	<select id="selectGroupData" resultMap="groupInfoMap" parameterType="com.doppio.management.service.MgrGroupVo">
+		/*MgrGroupMapper.selectGroupData*/
+		SELECT   GROUP_ID
+				,GROUP_NM
+				,GROUP_SUB_NM
+				,GROUP_DESC
+				,GROUP_FG
+				,USE_YN
+				,SYS_YN
+				,DATE_FORMAT(MOD_DT, '%Y-%m-%d %H:%I') AS MOD_DT 
+	    FROM	TCM_GROUP
+		WHERE	GROUP_ID = #{groupId}
+    </select>
+
+
+	<!-- 그룹정보 삭제 -->
+    <delete id="deleteGroup" parameterType="com.doppio.management.service.MgrGroupVo">
+     	/*MgrGroupMapper.deleteGroup*/
+     	DELETE FROM TCM_GROUP WHERE GROUP_ID = #{groupId}
+    </delete>
+
+       <!-- 그룹정보 권한 삭제 -->
+    <delete id="deleteGroupAuth" parameterType="com.doppio.management.service.MgrGroupVo">
+    	/*MgrGroupMapper.deleteGroupAuth*/
+    	DELETE FROM TCM_GROUP_AUTH WHERE GROUP_ID = #{groupId}
+    </delete>
+
+    <!-- 사용자 그룹 메핑정보 삭제 -->
+    <delete id="deleteMemberAuth" parameterType="com.doppio.management.service.MgrGroupVo">
+    	/*MgrGroupMapper.deleteMemberAuth*/
+    	DELETE FROM TCM_MEMBER_AUTH WHERE GROUP_ID = #{groupId}
+    </delete>
+
+
+    <!-- 그룹에 매핑된 사용자 정보 조회 -->
+    <select id="selectGroupAuthMemberList" resultMap="groupAuthMemberMap" parameterType="com.doppio.management.service.MgrMemberVo">
+    	/*MgrGroupMapper.selectGroupAuthMemberList*/
+         SELECT  A.MEMBER_CD
+            	,A.USER_ID
+            	,A.USER_NM
+            	,FN_CODE_LANG_RTN('9001',A.USER_TYPE,#{langCd}) AS USER_TYPE_NAME
+            	,C.COMP_NM
+           FROM TCM_MEMBER A
+           	   INNER JOIN TCM_MEMBER_AUTH B ON A.MEMBER_CD = B.MEMBER_CD
+          								   AND B.GROUP_ID = #{groupId}
+          	   LEFT OUTER JOIN VCM_COMPINFO C ON  A.MASTER_ID = C.MASTER_ID								 
+         ORDER BY USER_NM
+    </select>
+
+
+       <!-- 매핑된 그룹외 사용자 조회 -->
+    <select id="selectGroupMemberList" resultMap="groupAuthMemberMap" parameterType="com.doppio.management.service.MgrMemberVo">
+		/*MgrGroupMapper.selectGroupMemberList*/
+    	SELECT  A.MEMBER_CD
+        		,A.USER_ID
+            	,A.USER_NM
+            	,FN_CODE_LANG_RTN('9001',A.USER_TYPE,#{langCd}) AS USER_TYPE_NAME
+            	,B.COMP_NM
+		FROM	TCM_MEMBER A
+                LEFT OUTER JOIN VCM_COMPINFO B ON A.MASTER_ID = B.MASTER_ID
+		WHERE	A.MEMBER_CD NOT IN(
+                		SELECT MEMBER_CD FROM TCM_MEMBER_AUTH
+                 		 WHERE GROUP_ID = #{groupId}
+          				)
+          				
+          <!-- AND A.USER_TYPE IN('SU','SA') -->
+		<if test='userNm != null and userNm != ""'>
+		    AND A.USER_NM like CONCAT(#{userNm},'%')
+		</if>
+		<if test='userId != null and userId != ""'>
+		    AND A.USER_ID like CONCAT(#{userId},'%')
+		</if>
+		<if test='compNm != null and compNm != ""'>
+		    AND B.COMP_NM like CONCAT(#{compNm},'%')
+		</if>
+		<if test='userType != null and userType != ""'>
+		    AND A.USER_TYPE = #{userType}
+		</if>
+		<if test='useYn != null and useYn != ""'>
+		    AND A.USE_YN = #{useYn}
+		</if>
+		<if test='memberCds != null and memberCds != ""'>
+		    AND A.MEMBER_CD IN
+		    <foreach collection="memberCds" item="item" separator="," close=")" open="(">
+     	  		#{item}
+     	  	</foreach>
+		</if>
+
+		  ORDER BY  B.COMP_NM,  A.USER_NM
+    </select>
+
+
+    <!-- 그룹아이디 중복확인 카운트 -->
+    <select id="selectGroupIdValidation" resultType="Integer" parameterType="String">
+    	/*MgrGroupMapper.selectGroupIdValidation*/
+		SELECT
+			COUNT(*) AS CNT
+		FROM TCM_GROUP
+		WHERE GROUP_ID = #{groupId}
+    </select>
+
+
+    <!-- 사용자 등록/수정 -->
+    <update id="mergeGroupData_BACK" parameterType="com.doppio.management.service.MgrMemberVo">
+      /*MgrGroupMapper.mergeGroupData*/
+      INSERT INTO TCM_GROUP
+      	(
+      		GROUP_ID
+		   ,GROUP_NM
+		   ,GROUP_SUB_NM
+		   ,GROUP_DESC
+		   ,GROUP_FG
+		   ,USE_YN
+		   ,REG_DT
+		   ,REG_ID
+		   ,MOD_DT
+	       ,MOD_ID
+     	 )VALUES
+     	 (
+     	    #{groupId}
+		   ,#{groupNm}
+		   ,#{groupSubNm}
+		   ,#{groupDesc}
+		   ,#{groupFg}
+		   ,#{useYn}
+		   ,NOW()
+		   ,#{workId, jdbcType=VARCHAR}
+    	   ,NOW()
+		   ,#{workId, jdbcType=VARCHAR}
+     	 )
+     	 ON DUPLICATE KEY UPDATE
+     	 	 GROUP_NM            =	 #{groupNm}
+			,GROUP_SUB_NM        =   #{groupSubNm}
+			,GROUP_DESC          =   #{groupDesc}
+			,GROUP_FG 	     	 =   #{groupFg}
+			,USE_YN              =   #{useYn}
+			,MOD_DT              =   NOW()
+			,MOD_ID              =   #{workId, jdbcType=VARCHAR}
+    </update>
+
+
+    <!-- 사용자 등록/수정 -->
+    <update id="mergeGroupData" parameterType="com.doppio.management.service.MgrMemberVo">
+	/* MgrGroupMapper.mergeGroupData */
+     	INSERT INTO TCM_GROUP
+         (
+            GROUP_ID
+         ,GROUP_NM
+         ,GROUP_SUB_NM
+         ,GROUP_DESC
+         ,GROUP_FG
+         ,USE_YN
+         ,REG_DT
+         ,REG_ID
+         ,MOD_DT
+          ,MOD_ID
+         )VALUES
+         (
+            #{groupId}
+         ,#{groupNm}
+         ,#{groupSubNm}
+         ,#{groupDesc}
+         ,#{groupFg}
+         ,#{useYn}
+         ,SYSDATE()
+         ,#{workId, jdbcType=VARCHAR}
+          ,SYSDATE()
+         ,#{workId, jdbcType=VARCHAR}
+         )
+         ON DUPLICATE KEY UPDATE
+             GROUP_NM            =    #{groupNm}
+         ,GROUP_SUB_NM        =   #{groupSubNm}
+         ,GROUP_DESC          =   #{groupDesc}
+         ,GROUP_FG             =   #{groupFg}
+         ,USE_YN              =   #{useYn}
+         ,MOD_DT              =   SYSDATE()
+         ,MOD_ID              =   #{workId, jdbcType=VARCHAR}
+    </update>
+
+
+
+    <!-- 사용자 그룹권한 등록 -->
+ 	<insert id="insertGroupMemberAuth" parameterType="com.doppio.management.service.MgrAuthVo">
+ 		/*MgrGroupMapper.insertGroupMemberAuth*/
+       	INSERT INTO TCM_MEMBER_AUTH(GROUP_ID,MEMBER_CD,REG_DT,REG_ID)
+		SELECT #{groupId} , A.MEMBER_CD, NOW(), #{workId, jdbcType=VARCHAR}
+		FROM TCM_MEMBER A
+		WHERE A.MEMBER_CD NOT IN( SELECT S.MEMBER_CD FROM TCM_MEMBER_AUTH S WHERE S.GROUP_ID = #{groupId} )
+		<if test='memberCds != null and memberCds != ""'>
+		    AND A.MEMBER_CD IN
+		    <foreach collection="memberCds" item="item" separator="," close=")" open="(">
+     	  		#{item}
+     	  	</foreach>
+		</if>
+		<if test='memberCds == null or memberCds == ""'>
+		    AND MEMBER_CD = '0'
+		</if>
+     </insert>
+
+	<!-- 사용자 그룹권한 제거 -->
+	<delete id="deleteGroupMemberAuth" parameterType="com.doppio.management.service.MgrAuthVo">
+		/*MgrGroupMapper.deleteGroupMemberAuth*/
+		DELETE FROM TCM_MEMBER_AUTH
+		WHERE GROUP_ID = #{groupId}
+		<if test='memberCds != null and memberCds != ""'>
+		    AND MEMBER_CD IN
+		    <foreach collection="memberCds" item="item" separator="," close=")" open="(">
+     	  		#{item}
+     	  	</foreach>
+		</if>
+		<if test='memberCds == null or memberCds == ""'>
+		    AND MEMBER_CD = '0'
+		</if>
+    </delete>
+
+
+    <!-- 그룹별메뉴권한  -->
+    <select id="selectAuthMenuList" resultMap="authInfoMap" parameterType="com.doppio.management.service.MgrAuthVo">
+    /*MgrGroupMapper.selectAuthMenuList*/
+    SELECT    A.MENU_ID
+             ,A.PARENT_ID
+             ,A.TITLE
+             ,A.TITLE_SUB
+             ,A.WEB_PAGE
+             ,A.EXC_TYPE_FG
+             ,#{groupId} 		 AS GROUP_ID
+             ,IFNULL(B.PGM_QRY,' ') AS PGM_QRY
+             ,IFNULL(B.PGM_INT,' ') AS PGM_INT
+             ,IFNULL(B.PGM_UPT,' ') AS PGM_UPT
+             ,IFNULL(B.PGM_DEL,' ') AS PGM_DEL
+             ,IFNULL(B.PGM_PRT,' ') AS PGM_PRT
+             ,CASE WHEN  CONCAT(B.PGM_QRY,B.PGM_INT,B.PGM_UPT,B.PGM_DEL,B.PGM_PRT) ='YYYYY' THEN 'Y' ELSE ' ' END AS AUTH_ALL_YN
+             ,CASE WHEN  T.TITLE = P.TITLE THEN T.TITLE ELSE CONCAT(T.TITLE,' | ',P.TITLE) END AS PARENT_NM
+             ,CASE WHEN  T.TITLE_SUB = P.TITLE_SUB THEN T.TITLE_SUB ELSE CONCAT(T.TITLE_SUB,' | ',P.TITLE_SUB) END AS PARENT_SUB_NM
+             ,C.CNT AS ROWSPAN
+         FROM TCM_MENU A LEFT OUTER JOIN TCM_GROUP_AUTH B
+                                ON A.MENU_ID = B.MENU_ID
+								<if test='groupId != null and groupId != ""'>
+								    AND B.GROUP_ID  = #{groupId}
+								</if>
+               INNER JOIN
+                 ( SELECT MENU_ID, TITLE, TITLE_SUB, PARENT_ID ,COMMAND_FG,  MENU_ID AS PGM
+                     FROM TCM_MENU A
+                     WHERE  COMMAND_FG = '0'
+                     AND A.MENU_LEVEL  = '1'
+                  UNION ALL
+                   SELECT MENU_ID, TITLE, TITLE_SUB, PARENT_ID ,COMMAND_FG,   PARENT_ID AS PGM
+                     FROM TCM_MENU A
+                     WHERE  COMMAND_FG  = '0'
+                       AND A.MENU_LEVEL = '2'
+                  ) P ON  A.PARENT_ID  = P.MENU_ID
+
+                INNER JOIN
+                 (SELECT  PARENT_ID, COUNT(*) AS CNT
+                    FROM TCM_MENU WHERE COMMAND_FG = '1'
+                   GROUP BY PARENT_ID  )  C ON  A.PARENT_ID  = C.PARENT_ID
+
+              LEFT OUTER JOIN
+                    (SELECT  TITLE, TITLE_SUB, MENU_ID FROM TCM_MENU WHERE PARENT_ID = '10001' ) T  ON P.PGM = T.MENU_ID
+       WHERE A.COMMAND_FG = '1'
+       <if test='menuId != null and menuId != ""'>
+           AND P.PGM =  #{menuId}
+       </if>
+      ORDER BY A.PARENT_ID, A.SORT_IN_LEVEL,  P.TITLE, A.TITLE
+    </select>
+
+
+    <!-- 권한 신규등록 -->
+	<insert  id="insertAuthMenu" parameterType="com.doppio.management.service.MgrAuthVo">
+	   /* MgrGroupMapper.insertAuthMenu*/
+			INSERT INTO TCM_GROUP_AUTH (
+		             GROUP_ID
+		            ,MENU_ID
+		            ,PGM_QRY
+		            ,PGM_INT
+		            ,PGM_UPT
+		            ,PGM_DEL
+		            ,PGM_PRT
+		            ,REG_DT
+		            ,REG_ID
+		            ,MOD_DT
+		            ,MOD_ID )
+		    VALUES ( #{groupId}
+		             ,#{menuId}
+		             ,IFNULL(#{pgmQry},'N')
+		             ,IFNULL(#{pgmInt},'N')
+		             ,IFNULL(#{pgmUpt},'N')
+		             ,IFNULL(#{pgmDel},'N')
+		             ,IFNULL(#{pgmPrt},'N')
+		             ,NOW()
+		             ,#{workId}
+		             ,NOW()
+		             ,#{workId})
+	</insert>
+
+    <!-- 권한 수정등록 -->
+	<update  id="updateAuthMenu" parameterType="com.doppio.management.service.MgrAuthVo">
+	   /* MgrGroupMapper.updateAuthMenu*/
+	      UPDATE TCM_GROUP_AUTH SET
+		         PGM_QRY   = IFNULL(#{pgmQry},'N')
+		        ,PGM_INT   = IFNULL(#{pgmInt},'N')
+		        ,PGM_UPT   = IFNULL(#{pgmUpt},'N')
+		        ,PGM_DEL   = IFNULL(#{pgmDel},'N')
+		        ,PGM_PRT   = IFNULL(#{pgmPrt},'N')
+		        ,MOD_DT = NOW()
+		        ,MOD_ID = #{workId}
+		  WHERE GROUP_ID  = #{groupId}
+		    AND MENU_ID   = #{menuId}
+	</update>
+
+
+	 <!-- 권한 삭제처리 -->
+	<delete  id="deleteAuthMenu" parameterType="com.doppio.management.service.MgrAuthVo">
+	   /* MgrGroupMapper.deleteAuthMenu*/
+	   DELETE FROM TCM_GROUP_AUTH
+	   	WHERE GROUP_ID  = #{groupId}
+		 AND MENU_ID    = #{menuId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.scheduler.service.impl.SchedulerMapper">
+
+
+
+
+
+
+
+	<!--테스트 사용자 정보 업데이트  (패스워드오류 카운트 초기화, 잠김 초기화 ) -->
+	<update id="updateUserinfoData"    parameterType="com.doppio.workplace.scheduler.service.SchedulerSampleVo">
+	/* SchedulerMapper.updateUserinfoData */
+		UPDATE KRMC.TCM_MEMBER SET PASS_FAIL_CNT ='0' , LOCK_YN = 'N'
+		<if test='memberCd != null and memberCd != ""'>			 
+			WHERE MEMBER_CD	= #{memberCd}
+		</if>	
+	</update>
+	
+	
+	
+	<!-- I/F 결과등록 -->
+	<insert id="insertInterFaceResult"    parameterType="com.doppio.workplace.scheduler.service.InterfaceVo">
+		/* SchedulerMapper.insertInterFaceResult */
+			INSERT INTO TCM_IF_MONITOR
+			(
+				 APPL_CD
+				,IF_CD
+				,START_DT
+				,END_DT
+				,APPL_NM
+				,APPL_SUB_NM
+				,SUCC_YN
+				,RSLT_CD
+				,RSLT_MSG
+				,REC_CNT
+				,GEN_DY
+				,REG_DT
+				,REG_ID
+			)
+			VALUES
+			(
+				 #{applCd}
+				,#{ifCd}
+				,#{startDt}
+				,#{endDt}
+				,(SELECT CASE WHEN IFNULL(#{applNm},'') ='' THEN DTL_NM ELSE  CONCAT(DTL_NM,'(',#{applNm},')')  END 
+				  FROM TCM_CODE_DTL WHERE COM_CD = 'IF01' AND DTL_CD = #{applCd} )
+				,#{applSubNm}
+				,CASE WHEN SUBSTRING(#{rsltCd},1,1) IN('S','W') THEN 'Y' ELSE 'N' END 
+				,#{rsltCd}
+				,#{rsltMsg}
+				,<choose>
+           			<when test='recCnt != null and recCnt != ""'>#{recCnt}</when>
+           			<otherwise>'0'</otherwise>
+           		</choose>
+           		,DATE_FORMAT(SYSDATE(),'%Y%m%d')
+				,SYSDATE()
+				,#{workId}
+			)
+	</insert>
+	
+	
+	<!-- I/F 결과갱신 -->
+	<update id="updateInterFaceResult"    parameterType="com.doppio.workplace.scheduler.service.InterfaceVo">
+		/* SchedulerMapper.updateInterFaceResult */
+		UPDATE TCM_IF_MONITOR SET
+				 START_DT		= #{startDt}
+				,END_DT			= #{endDt}
+				,APPL_NM		= SELECT CASE WHEN IFNULL(#{applNm},'') ='' THEN DTL_NM ELSE  CONCAT(DTL_NM,'(',#{applNm},')')  END 
+				  				 	FROM TCM_CODE_DTL WHERE COM_CD = 'IF01' AND DTL_CD = #{applCd}
+				,APPL_SUB_NM	= #{applSubNm}
+				,SUCC_YN		= #{succYn}
+				,RSLT_CD		= #{rsltCd}
+				,RSLT_MSG		= #{rsltMsg}
+				,REC_CNT		= #{recCnt}
+		  WHERE LOG_IDX_NO = #{logIdxNo}
+	</update>	
+
+
+
+   	 
+   	<!-- BATCH JOB 마감 SP Parameter Map --> 
+    <parameterMap id="spBatchClosejobMap" type="com.doppio.workplace.scheduler.service.BatchCommVo">
+			<parameter mode="IN"  jdbcType="VARCHAR" javaType="String" 	property="paramData01" 		/>	<!--1. 기준년월(yyyyMM)  [필수] -->
+			
+			<parameter mode="OUT" jdbcType="VARCHAR" javaType="String"	property="spRspnsCd" 	/>	<!--1.응답코드 -->
+			<parameter mode="OUT" jdbcType="VARCHAR" javaType="String" 	property="spMessage" 	/>	<!--2.MESSAGE-->
+	</parameterMap>
+	
+	<!-- SAMPLE BATCH JOB SP CALL -->
+	<select id="insertBatchCloseJobSp" statementType="CALLABLE" parameterMap="spBatchClosejobMap">
+			{CALL SP_MON_CLOSE_SUM_SCH (?, ?, ?)}
+	</select>	
+	
+	
+	<!-- BATCH JOB 펌뱅킹 데이터 이관 SP Parameter Map --> 
+    <parameterMap id="spBatchFirmbankingjobMap" type="com.doppio.workplace.scheduler.service.BatchCommVo">
+			<parameter mode="IN"  jdbcType="VARCHAR" javaType="String" 	property="paramData01" 		/>	<!--1. 일자yyyymmdd -->
+			
+			<parameter mode="OUT" jdbcType="VARCHAR" javaType="String"	property="spRspnsCd" 	/>	<!--1.응답코드 -->
+			<parameter mode="OUT" jdbcType="VARCHAR" javaType="String" 	property="spMessage" 	/>	<!--2.MESSAGE-->
+	</parameterMap>
+	
+	<!-- SAMPLE BATCH JOB SP CALL -->
+	<select id="insertBatchFirmBankingSp" statementType="CALLABLE" parameterMap="spBatchFirmbankingjobMap">
+			{CALL SP_FIRM_BANKING_TRAN (?, ?, ?)}
+	</select>	
+	
+	<!-- BATCH JOB 펌뱅킹 이관 데이터 실 테이블에 반영 SP --> 
+	<select id="insertFirmBankingConfirmSp" statementType="CALLABLE" parameterMap="spBatchFirmbankingjobMap">
+			{CALL SP_FIRM_BANKING_CONFIRM (?, ?, ?)}
+	</select>	
+	
+</mapper>
+

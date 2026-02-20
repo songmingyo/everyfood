@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.bm.service.impl.BuyMgmtMapper">
+
+	
+	<!-- 매입처 조회 리스트 검색조건-->
+	<sql id="selectBuyMgmtList_Where">
+		/*BuyMgmtMapper.selectBuyMgmtList_Where*/
+		<where>
+			<if test='buyCd != null and buyCd != ""'>			<!-- 매입처처코드  --> 
+				AND TBM.BUY_CD = #{buyCd}
+			</if>
+			<if test='buyNm != null and buyNm != ""'>			<!-- 매입처명  --> 
+				AND TBM.BUY_NM LIKE CONCAT('%',#{buyNm},'%')
+			</if>
+			<if test='useYn != null and useYn != ""'>			<!-- 사용유무  --> 
+				AND TBM.USE_YN = #{useYn}
+			</if>
+			<if test='bossNm != null and bossNm != ""'>			<!-- 대표자 --> 
+				AND TBM.BOSS_NM LIKE CONCAT('%',#{bossNm},'%')
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 매입처 조회 -->
+	<select id="selectBuyMgmtList" parameterType="com.doppio.workplace.bm.service.BuyMgmtVo" resultType="com.doppio.workplace.bm.service.BuyMgmtVo">
+	/*BuyMgmtMapper.selectBuyMgmtList*/	
+		SELECT TBM.BUY_CD
+               , TBM.BUY_NM
+               , TBM.BUY_S_NM
+               , TBM.BSNS_NUM
+               , TBM.BOSS_NM
+               , TBM.BUSI_CON
+               , TBM.BUSI_TYPE
+               , TBM.TEL_NO
+               , TBM.FAX_NO
+               , TBM.CORP_NUM
+               , TBM.SALES_PR_NM
+               , TBM.SALES_PR_HP
+               , TBM.CLOSE_PR_NM
+               , TBM.CLOSE_PR_HP
+               , TBM.CENTER_PR_HP
+               , TBM.CENTER_FAX
+               , TBM.ZIP_CD
+               , TBM.ADDR_1
+               , TBM.ADDR_2
+               , TBM.CENTER_ZIP_CD
+               , TBM.CENTER_ZIP_ADDR
+               , TBM.CENTER_DTL_ADDR
+               , TBM.EMAIL
+               , TBM.EMAIL_TAX
+               , TBM.SETL_CON
+               , TBM.SETL_DT
+               , TBM.BANK_DEP
+               , TBM.BANK_NM
+               , TBM.BANK_ACC_NUM
+               , TBM.SUBSIDY_YN
+               , TBM.REM_FEE_CLASS
+               , TBM.CR_PUR_YN
+               , TBM.START_DT
+               , TBM.USE_YN
+               , TBM.REG_ID
+               , TM_1.USER_NM AS REG_NM
+               , TBM.REG_DT
+               , TBM.MOD_ID
+               , TM_2.USER_NM AS MOD_NM
+               , TBM.MOD_DT
+		  FROM KRMC.TFM_BUY_MST AS TBM
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_1
+		         ON TBM.REG_ID = TM_1.USER_ID
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_2
+		         ON TBM.MOD_ID = TM_2.USER_ID
+		 <include refid="selectBuyMgmtList_Where"/>
+		 ORDER BY TBM.BUY_CD
+	</select>
+	
+	<!-- 매입처 상세 조회 -->
+	<select id="selectBuyMgmtData" parameterType="com.doppio.workplace.bm.service.BuyMgmtVo" resultType="com.doppio.workplace.bm.service.BuyMgmtVo">
+	/*BuyMgmtMapper.selectBuyMgmtData*/	
+		SELECT TBM.BUY_CD
+               , TBM.BUY_NM
+               , TBM.BUY_S_NM
+               , TBM.BSNS_NUM
+               , TBM.BOSS_NM
+               , TBM.BUSI_CON
+               , TBM.BUSI_TYPE
+               , TBM.TEL_NO
+               , TBM.FAX_NO
+               , TBM.CORP_NUM
+               , TBM.SALES_PR_NM
+               , TBM.SALES_PR_HP
+               , TBM.CLOSE_PR_NM
+               , TBM.CLOSE_PR_HP
+               , TBM.CENTER_PR_HP
+               , TBM.CENTER_FAX
+               , TBM.ZIP_CD
+               , TBM.ADDR_1
+               , TBM.ADDR_2
+               , TBM.CENTER_ZIP_CD
+               , TBM.CENTER_ZIP_ADDR
+               , TBM.CENTER_DTL_ADDR
+               , TBM.EMAIL
+               , TBM.EMAIL_TAX
+               , TBM.SETL_CON
+               , TBM.SETL_DT
+               , TBM.BANK_DEP
+               , TBM.BANK_NM
+               , TBM.BANK_ACC_NUM
+               , TBM.SUBSIDY_YN
+               , TBM.REM_FEE_CLASS
+               , TBM.CR_PUR_YN
+               , TBM.START_DT
+               , TBM.USE_YN
+               , TBM.REG_ID
+               , TM_1.USER_NM AS REG_NM
+               , TBM.REG_DT
+               , TBM.MOD_ID
+               , TM_2.USER_NM AS MOD_NM
+               , TBM.MOD_DT
+		  FROM KRMC.TFM_BUY_MST AS TBM
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_1
+		         ON TBM.REG_ID = TM_1.USER_ID
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_2
+		         ON TBM.MOD_ID = TM_2.USER_ID
+		 <include refid="selectBuyMgmtList_Where"/>
+	</select>
+	
+	
+	<!-- 매입처 신규 저장 -->
+	<insert id="insertBuyMgmt" parameterType="com.doppio.workplace.bm.service.BuyMgmtVo">
+	/*BuyMgmtMapper.insertBuyMgmt*/
+	<selectKey keyProperty="buyCd" resultType="String" order="BEFORE">
+		SELECT CAST(IFNULL(MAX(TBM.BUY_CD),'10000') AS DECIMAL)+1 AS BUY_CD 
+		  FROM KRMC.TFM_BUY_MST AS TBM
+	</selectKey>
+	    INSERT INTO KRMC.TFM_BUY_MST
+           (BUY_CD, BUY_NM, BUY_S_NM, BSNS_NUM, BOSS_NM, BUSI_CON, BUSI_TYPE
+             , TEL_NO, FAX_NO, CORP_NUM, SALES_PR_NM, SALES_PR_HP, CLOSE_PR_NM, CLOSE_PR_HP, CENTER_PR_HP
+             , CENTER_FAX, ZIP_CD, ADDR_1, ADDR_2, CENTER_ZIP_CD, CENTER_ZIP_ADDR, CENTER_DTL_ADDR, EMAIL, EMAIL_TAX, SETL_CON, SETL_DT, BANK_DEP
+             , BANK_NM, BANK_ACC_NUM, SUBSIDY_YN, REM_FEE_CLASS, CR_PUR_YN, START_DT, USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT)
+        VALUES
+            (
+               	#{buyCd}
+				, #{buyNm}
+				, #{buySNm}
+				, #{bsnsNum}
+				, #{bossNm}
+				, #{busiCon}
+				, #{busiType}
+				, #{telNo}
+				, #{faxNo}
+				, #{corpNum}
+				, #{salesPrNm}
+				, #{salesPrHp}
+				, #{closePrNm}
+				, #{closePrHp}
+				, #{centerPrHp}
+				, #{centerFax}
+				, #{zipCd}
+				, #{addr1}
+				, #{addr2}
+				, #{centerZipCd}
+				, #{centerZipAddr}
+				, #{centerDtlAddr}
+				, #{email}
+				, #{emailTax}
+				, #{setlCon}
+				, #{setlDt}
+				, #{bankDep}
+				, #{bankNm}
+				, #{bankAccNum}
+				, #{subsidyYn}
+				, #{remFeeClass}
+				, #{crPurYn}
+				, #{startDt}
+				, #{useYn}
+				, #{regId, jdbcType=VARCHAR}
+               	, NOW()
+               	, #{modId, jdbcType=VARCHAR}
+               	, NOW()
+            )
+	</insert>
+	
+
+	<!-- 매입처 업데이트 -->
+	<insert id="updateBuyMgmt" parameterType="com.doppio.workplace.bm.service.BuyMgmtVo">
+	/*BuyMgmtMapper.updateBuyMgmt*/	
+        UPDATE TFM_BUY_MST
+           SET BUY_CD           	  = #{buyCd}
+               , BUY_NM        	      = #{buyNm}
+               , BUY_S_NM             = #{buySNm}
+               , BSNS_NUM         	  = #{bsnsNum}
+               , BOSS_NM              = #{bossNm}
+               , BUSI_CON             = #{busiCon}
+               , BUSI_TYPE            = #{busiType}
+               , TEL_NO               = #{telNo}
+               , FAX_NO               = #{faxNo}
+               , CORP_NUM             = #{corpNum}
+               , SALES_PR_NM          = #{salesPrNm}
+               , SALES_PR_HP          = #{salesPrHp}
+               , CLOSE_PR_NM          = #{closePrNm}
+               , CLOSE_PR_HP          = #{closePrHp}
+               , CENTER_PR_HP         = #{centerPrHp}
+               , CENTER_FAX           = #{centerFax}
+               , ZIP_CD               = #{zipCd}
+               , ADDR_1               = #{addr1}
+               , ADDR_2               = #{addr2}
+               , CENTER_ZIP_CD        = #{centerZipCd}
+               , CENTER_ZIP_ADDR      = #{centerZipAddr}
+               , CENTER_DTL_ADDR      = #{centerDtlAddr}
+               , EMAIL                = #{email}
+               , EMAIL_TAX            = #{emailTax}
+               , SETL_CON             = #{setlCon}
+               , SETL_DT              = #{setlDt}
+               , BANK_DEP             = #{bankDep}
+               , BANK_NM              = #{bankNm}
+               , BANK_ACC_NUM         = #{bankAccNum}
+               , SUBSIDY_YN           = #{subsidyYn}
+               , REM_FEE_CLASS        = #{remFeeClass}
+               , CR_PUR_YN            = #{crPurYn}
+               , START_DT             = #{startDt}
+               , USE_YN               = #{useYn}
+               , MOD_ID               = #{modId, jdbcType=VARCHAR}
+               , MOD_DT               = NOW()
+         WHERE BUY_CD =  #{buyCd}
+	</insert>
+	
+
+	<!-- 매입처 신규 ID 저장 -->
+	<insert id="insertMember" parameterType="com.doppio.workplace.bm.service.BuyMgmtVo">
+	/*BuyMgmtMapper.insertMember*/
+	    INSERT INTO TCM_MEMBER
+		(MEMBER_CD, USER_ID, USER_NM, USER_PW, USER_TYPE, USER_ROLES, PASS_CHG_YN, PASS_LAST_DY, PASS_FAIL_CNT, USE_YN, LOCK_YN, GEN_DIVN_CD, REG_DT, REG_ID, MOD_DT, MOD_ID 
+		)
+		VALUES
+		(#{buyCd}, #{buyCd}, #{buyNm}, #{buyCd}, 'B1', 'ROLE_USER', 'Y', '99991231', 0, #{useYn}, 'N', '9007001', NOW(), #{regId, jdbcType=VARCHAR}, NOW(), #{regId, jdbcType=VARCHAR}
+		)
+	</insert>
+	
+		<!-- 매출처 신규 ID 권한 저장 -->
+	<insert id="insertMemberAuth" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*BuyMgmtMapper.insertMemberAuth*/
+	    INSERT INTO TCM_MEMBER_AUTH
+		(GROUP_ID, MEMBER_CD, REG_DT, REG_ID 
+		)
+		VALUES
+		('SU60', #{buyCd}, NOW(), #{regId, jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!-- 매입처 신규 ID 수정 -->
+	<update id="updateMember" parameterType="com.doppio.workplace.bm.service.BuyMgmtVo">
+	/*BuyMgmtMapper.updateMember*/
+	    UPDATE TCM_MEMBER
+	       SET USER_NM = #{buyNm}
+	           , USE_YN = #{useYn}
+	           , MOD_DT = NOW()
+	           , MOD_ID = #{modId, jdbcType=VARCHAR}
+	     WHERE USER_ID = #{buyCd}
+	</update>
+	
+	
+	
+	<!-- 매입처 조회 Excel Down add by song min kyo 2024.09.22 -->
+	<select id="selectBuyMgmtListExcelDown" parameterType="com.doppio.workplace.bm.service.BuyMgmtVo" resultType="java.util.HashMap">
+	/*BuyMgmtMapper.selectBuyMgmtListExcelDown*/	
+	SELECT 	 IFNULL(TBM.BUY_NM, '')				AS BUY_NM
+           , IFNULL(TBM.TEL_NO, '')				AS TEL_NO
+           , IFNULL(TBM.USE_YN, '')				AS USE_YN 
+           , IFNULL(TBM.BUY_S_NM, '')			AS BUY_S_NM
+           , IFNULL(TBM.BSNS_NUM, '')			AS BSNS_NUM
+           , IFNULL(TBM.BOSS_NM, '')			AS BOSS_NM
+           , IFNULL(TBM.BUSI_CON, '')      		AS BUSI_CON         
+           , IFNULL(TBM.BUSI_TYPE, '')			AS BUSI_TYPE
+           , IFNULL(TBM.FAX_NO, '')				AS FAX_NO
+           , IFNULL(TBM.CORP_NUM, '')			AS CORP_NUM
+           , IFNULL(TBM.SALES_PR_NM, '')		AS SALES_PR_NM
+           , IFNULL(TBM.SALES_PR_HP, '')		AS SALES_PR_HP
+           , IFNULL(TBM.CLOSE_PR_NM, '')		AS CLOSE_PR_NM
+           , IFNULL(TBM.CLOSE_PR_HP, '')		AS CLOSE_PR_HP
+           , IFNULL(TBM.CENTER_PR_HP, '')     	AS CENTER_PR_HP         
+           , IFNULL(TBM.CENTER_FAX, '')			AS CENTER_FAX
+           , IFNULL(TBM.ZIP_CD, '')				AS ZIP_CD
+           , IFNULL(TBM.ADDR_1, '')				AS ADDR_1
+           , IFNULL(TBM.ADDR_2, '')				AS ADDR_2
+           , IFNULL(TBM.CENTER_ZIP_CD, '')		AS CENTER_ZIP_CD
+           , IFNULL(TBM.CENTER_ZIP_ADDR, '')	AS CENTER_ZIP_ADDR
+           , IFNULL(TBM.CENTER_DTL_ADDR, '')	AS CENTER_DTL_ADDR
+           , IFNULL(TBM.EMAIL, '')			AS EMAIL
+           , IFNULL(TBM.EMAIL_TAX, '')		AS EMAIL_TAX
+           , IFNULL(TBM.SETL_CON, '')		AS SETL_CON
+           , IFNULL(TBM.SETL_DT, '')		AS SETL_DT
+           , IFNULL(TBM.BANK_DEP, '')		AS BANK_DEP
+           , IFNULL(TBM.BANK_NM, '')		AS BANK_NM
+           , IFNULL(TBM.BANK_ACC_NUM, '')	AS BANK_ACC_NUM
+           , IFNULL(TBM.SUBSIDY_YN, '')		AS SUBSIDY_YN
+           , IFNULL(TBM.REM_FEE_CLASS, '')	AS REM_FEE_CLASS
+           , '' 							AS SUBSIDY_PRCS_YN
+           , IFNULL(TBM.CR_PUR_YN, '')		AS CR_PUR_YN
+           , IFNULL(TBM.START_DT, '')		AS START_DT
+           , ''								AS END_DT
+           , '' 							AS REMARK1
+           , '' 							AS REMARK2	
+           , IFNULL(TM_1.USER_NM, '') 		AS REG_NM
+           , IFNULL(TBM.REG_DT, '')			AS REG_DT
+           , IFNULL(TM_2.USER_NM, '')		AS MOD_NM
+           , IFNULL(TBM.MOD_DT, '')			AS MOD_DT
+FROM KRMC.TFM_BUY_MST AS TBM
+     LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_1
+       ON TBM.REG_ID = TM_1.USER_ID
+     LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_2
+		         ON TBM.MOD_ID = TM_2.USER_ID
+		 <include refid="selectBuyMgmtList_Where"/>
+	</select>
+	
+</mapper>

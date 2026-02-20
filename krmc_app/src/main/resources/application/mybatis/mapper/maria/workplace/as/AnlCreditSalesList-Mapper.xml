@@ -1,0 +1,498 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.AnlCreditSalesListMapper">
+
+	
+	<!-- 외상매출금(상세) 조회 -->
+	<select id="selectAnlCreditSalesList" parameterType="com.doppio.workplace.as.service.AnlCreditSalesListVo" resultType="com.doppio.workplace.as.service.AnlCreditSalesListVo">
+	/*AnlSalesCreditListMapper.selectAnlCreditSalesList*/	
+         SELECT TCD.DTL_NM AS SALES_CLASS_NM
+                , TSAI.SALES_CD
+                , TSAI.SALES_NM
+                , SUM(A.BAL_AMT1) AS BAL_AMT1
+                , SUM(A.SALES_AMT2) AS SALES_AMT2
+                , SUM(A.DEP_AMT2) AS DEP_AMT2
+                , SUM(A.BAL_AMT2) AS BAL_AMT2
+                , SUM(A.SALES_AMT3) AS SALES_AMT3
+                , SUM(A.DEP_AMT3) AS DEP_AMT3
+                , SUM(A.BAL_AMT2 + A.SALES_AMT3 - A.DEP_AMT3) AS BAL_AMT3
+                , TSAI.SETL_CON
+                , TSPM.SALES_PR_NM
+                , TSAI.CRE_LIM
+                , TSM.BSNS_NUM
+                
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -2 MONTH),'%Y년%m'), '월잔액') AS TITLE_1
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -1 MONTH),'%Y년%m'), '월매출') AS TITLE_2
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -1 MONTH),'%Y년%m'), '월입금') AS TITLE_3
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -1 MONTH),'%Y년%m'), '월잔액') AS TITLE_4
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL 0  MONTH),'%Y년%m'), '월매출') AS TITLE_5
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL 0  MONTH),'%Y년%m'), '월입금') AS TITLE_6
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL 0  MONTH),'%Y년%m'), '월잔액') AS TITLE_7
+                
+                , #{startDt} 		AS START_DT
+		        , #{endDt} 			AS END_DT
+			    , #{salesPrNm} 		AS SALES_PR_NM_SEARCH
+			    , #{salesNm} 		AS SALES_NM_SEARCH
+			    , FN_CODE_RTN('M004', #{searchHqCd})	AS SEARCH_HQ_CD_NM
+                
+           FROM (SELECT A.SALES_CD AS SALES_CD
+                        , 0 AS BAL_AMT1
+                        , 0 AS SALES_AMT2
+                        , 0 AS DEP_AMT2
+                        , 0 AS BAL_AMT2
+                        , SUM(A.SALES_AMT3) AS SALES_AMT3
+                        , 0 AS DEP_AMT3
+                   FROM (SELECT A.SALES_CD
+                                , SUM(A.SALES_AMT3) AS SALES_AMT3
+                           FROM (SELECT SALES_CD
+                                        , SUM(TOT_AMT) AS SALES_AMT3
+                                   FROM TSH_SALES_DLV
+                                  WHERE SALES_DT BETWEEN #{startDt} AND #{endDt}
+                                    AND SALES_QTY != 0
+                                  GROUP BY SALES_CD
+                               UNION ALL
+                                 SELECT SALES_CD
+                                        , SUM(TOT_AMT)*-1 AS SALES_AMT3
+                                   FROM TSH_SALES_RETURN
+                                  WHERE RTN_DT BETWEEN #{startDt} AND #{endDt}
+                                    AND RTN_QTY != 0
+                                  GROUP BY SALES_CD
+                                ) AS A
+                          GROUP BY A.SALES_CD
+                        ) AS A
+                 GROUP BY A.SALES_CD
+              UNION ALL
+                SELECT A.SALES_CD
+                       , SUM(A.BAL_AMT1) AS BAL_AMT1
+                       , SUM(A.SALES_AMT2) AS SALES_AMT2
+                       , SUM(A.DEP_AMT2) AS DEP_AMT2
+                       , SUM(A.BAL_AMT2) AS BAL_AMT2
+                       , 0 AS SALES_AMT3
+                       , SUM(A.DEP_AMT3) AS DEP_AMT3
+                  FROM (
+                        SELECT SALES_CD
+                               , SUM(BAL_AMT) AS BAL_AMT1
+                               , 0 AS SALES_AMT2
+                               , 0 AS DEP_AMT2
+                               , 0 AS BAL_AMT2
+                               , 0 AS DEP_AMT3
+                          FROM TMH_MON_SALES_PAYMENT
+                         WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -2 MONTH),'%Y%m')
+                         GROUP BY SALES_CD
+                      UNION ALL
+                        SELECT SALES_CD
+                               , 0 AS BAL_AMT1
+                               , SUM(SALES_AMT) AS SALES_AMT2
+                               , SUM(DEP_AMT) AS DEP_AMT2
+                               , SUM(BAL_AMT) AS BAL_AMT2
+                               , 0 AS DEP_AMT3
+                          FROM TMH_MON_SALES_PAYMENT
+                         WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -1 MONTH),'%Y%m')
+                         GROUP BY SALES_CD
+                      UNION ALL
+                        SELECT SALES_CD
+                               , 0 AS BAL_AMT1
+                               , 0 AS SALES_AMT2
+                               , 0 AS DEP_AMT2
+                               , 0 AS BAL_AMT2
+                               , SUM(SETL_AMT) AS DEP_AMT3
+                          FROM TSH_SALES_DEP
+                         WHERE DEP_DT BETWEEN #{startDt} AND #{endDt}
+                         GROUP BY SALES_CD
+                       ) AS A
+                 GROUP BY A.SALES_CD
+               ) AS A
+               
+               <if test='salesCd != null and salesCd != ""'> 
+	               JOIN
+	                   (SELECT CASE WHEN #{searchHqCd}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+	                           , SALES_CD
+	                      FROM V_SALES_HQ_CD
+	                     WHERE HQ_CLASS = #{searchHqCd}
+	                     <if test='searchHqCd == "10"'>
+		                     <if test='salesCd != null and salesCd != ""'> 
+		                       AND HQ_CD = #{salesCd}
+		                     </if>
+	                     </if>
+	                     <if test='searchHqCd == "20"'>
+		                     <if test='salesCd != null and salesCd != ""'> 
+		                       AND SALES_CD = #{salesCd}
+		                     </if>
+	                     </if>
+	                   ) AS VSHC
+	                   ON VSHC.SALES_CD = A.SALES_CD
+	               
+	               JOIN TFM_SALES_ADD_INFO AS TSAI
+	                   ON TSAI.SALES_CD = VSHC.SALES_CD
+               </if>
+               <if test='salesCd == null or salesCd == ""'> 
+	               JOIN
+	                   (SELECT CASE WHEN #{searchHqCd}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+	                           , SALES_CD
+	                      FROM V_SALES_HQ_CD
+	                     WHERE HQ_CLASS = #{searchHqCd}
+	                     <if test='searchHqCd == "10"'>
+		                     <if test='salesCd != null and salesCd != ""'> 
+		                       AND HQ_CD = #{salesCd}
+		                     </if>
+	                     </if>
+	                     <if test='searchHqCd == "20"'>
+		                     <if test='salesCd != null and salesCd != ""'> 
+		                       AND SALES_CD = #{salesCd}
+		                     </if>
+	                     </if>
+	                   ) AS VSHC
+	                   ON VSHC.SALES_CD = A.SALES_CD
+	               
+	               JOIN TFM_SALES_ADD_INFO AS TSAI
+	                   ON TSAI.SALES_CD = VSHC.HQ_CD
+               </if>
+               
+               LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                   ON TSAI.SALES_CLASS = TCD.DTL_CD
+                  AND TCD.COM_CD = 'M013'
+                  
+               LEFT OUTER JOIN TFM_SALES_PR_MST AS TSPM
+                   ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+                   
+               LEFT OUTER JOIN TFM_SALES_MST AS TSM
+                   ON TSM.SALES_CD = TSAI.SALES_CD
+                   
+        <where>
+           <if test='salesPrCd != null and salesPrCd != ""'> 
+		  	AND TSAI.SALES_PR_CD = #{salesPrCd}
+	      </if>
+           <if test='salesClass != null and salesClass != ""'> 
+		  	AND TSAI.SALES_CLASS = #{salesClass}
+	      </if>
+        </where>
+        
+         GROUP BY TCD.DTL_NM, TSAI.SALES_CD, TSAI.SALES_NM, TSAI.SETL_CON, TSPM.SALES_PR_NM, TSAI.CRE_LIM
+         HAVING SUM(A.BAL_AMT1) != 0 OR SUM(A.SALES_AMT2) != 0 OR SUM(A.DEP_AMT2) != 0 
+              OR SUM(A.BAL_AMT2) != 0 OR SUM(A.SALES_AMT3) != 0 OR SUM(A.DEP_AMT3) != 0
+              OR SUM(A.BAL_AMT2 + A.SALES_AMT3 - A.DEP_AMT3) != 0
+
+	</select>
+
+	<!-- 외상매출금(상세) 엑셀 -->
+	<select id="selectAnlCreditSalesListExcelDown" parameterType="com.doppio.workplace.as.service.AnlCreditSalesListVo" resultType="java.util.HashMap">
+	/*AnlSalesCreditListMapper.selectAnlCreditSalesListExcelDown*/	
+         SELECT TCD.DTL_NM AS SALES_CLASS_NM
+                , TSAI.SALES_CD
+                , TSAI.SALES_NM
+                , SUM(A.BAL_AMT1) AS BAL_AMT1
+                , SUM(A.SALES_AMT2) AS SALES_AMT2
+                , SUM(A.DEP_AMT2) AS DEP_AMT2
+                , SUM(A.BAL_AMT2) AS BAL_AMT2
+                , SUM(A.SALES_AMT3) AS SALES_AMT3
+                , SUM(A.DEP_AMT3) AS DEP_AMT3
+                , SUM(A.BAL_AMT2 + A.SALES_AMT3 - A.DEP_AMT3) AS BAL_AMT3
+                , TSAI.SETL_CON
+                , TSPM.SALES_PR_NM
+                , TSAI.CRE_LIM
+                , TSM.BSNS_NUM
+                
+           FROM (SELECT A.SALES_CD AS SALES_CD
+                        , 0 AS BAL_AMT1
+                        , 0 AS SALES_AMT2
+                        , 0 AS DEP_AMT2
+                        , 0 AS BAL_AMT2
+                        , SUM(A.SALES_AMT3) AS SALES_AMT3
+                        , 0 AS DEP_AMT3
+                   FROM (SELECT A.SALES_CD
+                                , SUM(A.SALES_AMT3) AS SALES_AMT3
+                           FROM (SELECT SALES_CD
+                                        , SUM(TOT_AMT) AS SALES_AMT3
+                                   FROM TSH_SALES_DLV
+                                  WHERE SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                                    AND SALES_QTY != 0
+                                  GROUP BY SALES_CD
+                               UNION ALL
+                                 SELECT SALES_CD
+                                        , SUM(TOT_AMT)*-1 AS SALES_AMT3
+                                   FROM TSH_SALES_RETURN
+                                  WHERE RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                                    AND RTN_QTY != 0
+                                  GROUP BY SALES_CD
+                                ) AS A
+                          GROUP BY A.SALES_CD
+                        ) AS A
+                 GROUP BY A.SALES_CD
+              UNION ALL
+                SELECT A.SALES_CD
+                       , SUM(A.BAL_AMT1) AS BAL_AMT1
+                       , SUM(A.SALES_AMT2) AS SALES_AMT2
+                       , SUM(A.DEP_AMT2) AS DEP_AMT2
+                       , SUM(A.BAL_AMT2) AS BAL_AMT2
+                       , 0 AS SALES_AMT3
+                       , SUM(A.DEP_AMT3) AS DEP_AMT3
+                  FROM (
+                        SELECT SALES_CD
+                               , SUM(BAL_AMT) AS BAL_AMT1
+                               , 0 AS SALES_AMT2
+                               , 0 AS DEP_AMT2
+                               , 0 AS BAL_AMT2
+                               , 0 AS DEP_AMT3
+                          FROM TMH_MON_SALES_PAYMENT
+                         WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -2 MONTH),'%Y%m')
+                         GROUP BY SALES_CD
+                      UNION ALL
+                        SELECT SALES_CD
+                               , 0 AS BAL_AMT1
+                               , SUM(SALES_AMT) AS SALES_AMT2
+                               , SUM(DEP_AMT) AS DEP_AMT2
+                               , SUM(BAL_AMT) AS BAL_AMT2
+                               , 0 AS DEP_AMT3
+                          FROM TMH_MON_SALES_PAYMENT
+                         WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -1 MONTH),'%Y%m')
+                         GROUP BY SALES_CD
+                      UNION ALL
+                        SELECT SALES_CD
+                               , 0 AS BAL_AMT1
+                               , 0 AS SALES_AMT2
+                               , 0 AS DEP_AMT2
+                               , 0 AS BAL_AMT2
+                               , SUM(SETL_AMT) AS DEP_AMT3
+                          FROM TSH_SALES_DEP
+                         WHERE DEP_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         GROUP BY SALES_CD
+                       ) AS A
+                 GROUP BY A.SALES_CD
+               ) AS A
+               
+               <if test='salesCd != null and salesCd != ""'> 
+	               JOIN
+	                   (SELECT CASE WHEN #{searchHqCd}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+	                           , SALES_CD
+	                      FROM V_SALES_HQ_CD
+	                     WHERE HQ_CLASS = #{searchHqCd}
+	                     <if test='searchHqCd == "10"'>
+		                     <if test='salesCd != null and salesCd != ""'> 
+		                       AND HQ_CD = #{salesCd}
+		                     </if>
+	                     </if>
+	                     <if test='searchHqCd == "20"'>
+		                     <if test='salesCd != null and salesCd != ""'> 
+		                       AND SALES_CD = #{salesCd}
+		                     </if>
+	                     </if>
+	                   ) AS VSHC
+	                   ON VSHC.SALES_CD = A.SALES_CD
+	               
+	               JOIN TFM_SALES_ADD_INFO AS TSAI
+	                   ON TSAI.SALES_CD = VSHC.SALES_CD
+               </if>
+               <if test='salesCd == null or salesCd == ""'> 
+	               JOIN
+	                   (SELECT CASE WHEN #{searchHqCd}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+	                           , SALES_CD
+	                      FROM V_SALES_HQ_CD
+	                     WHERE HQ_CLASS = #{searchHqCd}
+	                     <if test='searchHqCd == "10"'>
+		                     <if test='salesCd != null and salesCd != ""'> 
+		                       AND HQ_CD = #{salesCd}
+		                     </if>
+	                     </if>
+	                     <if test='searchHqCd == "20"'>
+		                     <if test='salesCd != null and salesCd != ""'> 
+		                       AND SALES_CD = #{salesCd}
+		                     </if>
+	                     </if>
+	                   ) AS VSHC
+	                   ON VSHC.SALES_CD = A.SALES_CD
+	               
+	               JOIN TFM_SALES_ADD_INFO AS TSAI
+	                   ON TSAI.SALES_CD = VSHC.HQ_CD
+               </if>
+               
+               LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                   ON TSAI.SALES_CLASS = TCD.DTL_CD
+                  AND TCD.COM_CD = 'M013'
+                  
+               LEFT OUTER JOIN TFM_SALES_PR_MST AS TSPM
+                   ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+                   
+               LEFT OUTER JOIN TFM_SALES_MST AS TSM
+                   ON TSM.SALES_CD = TSAI.SALES_CD
+                   
+        <where>
+           <if test='salesPrCd != null and salesPrCd != ""'> 
+		  	AND TSAI.SALES_PR_CD = #{salesPrCd}
+	      </if>
+           <if test='salesClass != null and salesClass != ""'> 
+		  	AND TSAI.SALES_CLASS = #{salesClass}
+	      </if>
+        </where>
+        
+         GROUP BY TCD.DTL_NM, TSAI.SALES_CD, TSAI.SALES_NM, TSAI.SETL_CON, TSPM.SALES_PR_NM, TSAI.CRE_LIM
+         HAVING SUM(A.BAL_AMT1) != 0 OR SUM(A.SALES_AMT2) != 0 OR SUM(A.DEP_AMT2) != 0 
+              OR SUM(A.BAL_AMT2) != 0 OR SUM(A.SALES_AMT3) != 0 OR SUM(A.DEP_AMT3) != 0
+              OR SUM(A.BAL_AMT2 + A.SALES_AMT3 - A.DEP_AMT3) != 0
+	</select>
+
+
+	<!-- 외상매출금(상세) 출력 -->
+		
+	<select id="selectAnlCreditPrintList" parameterType="com.doppio.workplace.as.service.AnlCreditSalesListVo" resultType="com.doppio.workplace.as.service.AnlCreditSalesListVo">
+		/*CusShipDtlListMapper.selectAnlCreditPrintList*/	
+         SELECT #{startDt} AS START_DT
+		        , #{endDt} AS END_DT
+			    , #{salesPrNm} AS SALES_PR_NM_SEARCH
+			    , #{salesNm} AS SALES_NM_SEARCH
+                , TSAI.SALES_CD
+                , TSAI.SALES_NM
+                , SUM(A.BAL_AMT1) AS PRT_BAL_AMT1
+                , SUM(A.SALES_AMT2) AS PRT_SALES_AMT2
+                , SUM(A.DEP_AMT2) AS PRT_DEP_AMT2
+                , SUM(A.BAL_AMT2) AS PRT_BAL_AMT2
+                , SUM(A.SALES_AMT3) AS PRT_SALES_AMT3
+                , SUM(A.DEP_AMT3) AS PRT_DEP_AMT3
+                , SUM(A.BAL_AMT2 + A.SALES_AMT3 - A.DEP_AMT3) AS PRT_BAL_AMT3
+                , TSAI.SETL_CON
+                , TSAI.CRE_LIM AS PRT_CRE_LIM
+                , TSPM.SALES_PR_NM
+                , '본사' AS GUBUN
+                , TCD.DTL_NM AS SALES_CLASS_NM
+                
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -2 MONTH),'%Y-%m'), '월잔액') AS TITLE_1
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -1 MONTH),'%Y-%m'), '월매출') AS TITLE_2
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -1 MONTH),'%Y-%m'), '월입금') AS TITLE_3
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -1 MONTH),'%Y-%m'), '월잔액') AS TITLE_4
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL 0  MONTH),'%Y-%m'), '월매출') AS TITLE_5
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL 0  MONTH),'%Y-%m'), '월입금') AS TITLE_6
+                , CONCAT(DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL 0  MONTH),'%Y-%m'), '월잔액') AS TITLE_7
+           FROM (SELECT A.SALES_CD
+                        , 0 AS BAL_AMT1
+                        , 0 AS SALES_AMT2
+                        , 0 AS DEP_AMT2
+                        , 0 AS BAL_AMT2
+                        , SUM(A.SALES_AMT3) AS SALES_AMT3
+                        , 0 AS DEP_AMT3
+                   FROM (SELECT A.SALES_CD
+                                , SUM(A.SALES_AMT3) AS SALES_AMT3
+                           FROM (SELECT SALES_CD
+                                        , SUM(TOT_AMT) AS SALES_AMT3
+                                   FROM TSH_SALES_DLV
+                                  WHERE SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                                    AND SALES_QTY != 0
+                                  GROUP BY SALES_CD
+                               UNION ALL
+                                 SELECT SALES_CD
+                                        , SUM(TOT_AMT)*-1 AS SALES_AMT3
+                                   FROM TSH_SALES_RETURN
+                                  WHERE RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                                    AND RTN_QTY != 0
+                                  GROUP BY SALES_CD
+                                ) AS A
+                          GROUP BY A.SALES_CD
+                        ) AS A
+                 GROUP BY A.SALES_CD
+              UNION ALL
+                SELECT A.SALES_CD
+                       , SUM(A.BAL_AMT1) AS BAL_AMT1
+                       , SUM(A.SALES_AMT2) AS SALES_AMT2
+                       , SUM(A.DEP_AMT2) AS DEP_AMT2
+                       , SUM(A.BAL_AMT2) AS BAL_AMT2
+                       , 0 AS SALES_AMT3
+                       , SUM(A.DEP_AMT3) AS DEP_AMT3
+                  FROM (
+                        SELECT SALES_CD
+                               , SUM(BAL_AMT) AS BAL_AMT1
+                               , 0 AS SALES_AMT2
+                               , 0 AS DEP_AMT2
+                               , 0 AS BAL_AMT2
+                               , 0 AS DEP_AMT3
+                          FROM TMH_MON_SALES_PAYMENT
+                         WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -2 MONTH),'%Y%m')
+                         GROUP BY SALES_CD
+                      UNION ALL
+                        SELECT SALES_CD
+                               , 0 AS BAL_AMT1
+                               , SUM(SALES_AMT) AS SALES_AMT2
+                               , SUM(DEP_AMT) AS DEP_AMT2
+                               , SUM(BAL_AMT) AS BAL_AMT2
+                               , 0 AS DEP_AMT3
+                          FROM TMH_MON_SALES_PAYMENT
+                         WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(#{startDt}, INTERVAL -1 MONTH),'%Y%m')
+                         GROUP BY SALES_CD
+                      UNION ALL
+                        SELECT SALES_CD
+                               , 0 AS BAL_AMT1
+                               , 0 AS SALES_AMT2
+                               , 0 AS DEP_AMT2
+                               , 0 AS BAL_AMT2
+                               , SUM(SETL_AMT) AS DEP_AMT3
+                          FROM TSH_SALES_DEP
+                         WHERE DEP_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         GROUP BY SALES_CD
+                       ) AS A
+                GROUP BY A.SALES_CD
+               ) AS A
+               
+               <if test='salesCd != null and salesCd != ""'> 
+	               JOIN
+	                   (SELECT CASE WHEN #{searchHqCd}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+	                           , SALES_CD
+	                      FROM V_SALES_HQ_CD
+	                     WHERE HQ_CLASS = #{searchHqCd}
+	                     <if test='searchHqCd == "10"'>
+		                     <if test='salesCd != null and salesCd != ""'> 
+		                       AND HQ_CD = #{salesCd}
+		                     </if>
+	                     </if>
+	                     <if test='searchHqCd == "20"'>
+		                     <if test='salesCd != null and salesCd != ""'> 
+		                       AND SALES_CD = #{salesCd}
+		                     </if>
+	                     </if>
+	                   ) AS VSHC
+	                   ON VSHC.SALES_CD = A.SALES_CD
+	               
+	               JOIN TFM_SALES_ADD_INFO AS TSAI
+	                   ON TSAI.SALES_CD = VSHC.SALES_CD
+               </if>
+               <if test='salesCd == null or salesCd == ""'> 
+	               JOIN
+	                   (SELECT CASE WHEN #{searchHqCd}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+	                           , SALES_CD
+	                      FROM V_SALES_HQ_CD
+	                     WHERE HQ_CLASS = #{searchHqCd}
+	                     <if test='searchHqCd == "10"'>
+		                     <if test='salesCd != null and salesCd != ""'> 
+		                       AND HQ_CD = #{salesCd}
+		                     </if>
+	                     </if>
+	                     <if test='searchHqCd == "20"'>
+		                     <if test='salesCd != null and salesCd != ""'> 
+		                       AND SALES_CD = #{salesCd}
+		                     </if>
+	                     </if>
+	                   ) AS VSHC
+	                   ON VSHC.SALES_CD = A.SALES_CD
+	               
+	               JOIN TFM_SALES_ADD_INFO AS TSAI
+	                   ON TSAI.SALES_CD = VSHC.HQ_CD
+               </if>
+               
+               LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                   ON TSAI.SALES_CLASS = TCD.DTL_CD
+                  AND TCD.COM_CD = 'M013'
+                  
+               LEFT OUTER JOIN TFM_SALES_PR_MST AS TSPM
+                   ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+		<where>
+		  <if test='salesPrCd != null and salesPrCd != ""'>	<!-- 판매처코드  --> 
+		  	AND TSAI.SALES_PR_CD = #{salesPrCd}
+	      </if>
+           <if test='salesClass != null and salesClass != ""'>	<!-- 판매처코드  --> 
+		  	AND TSAI.SALES_CLASS = #{salesClass}
+	      </if>
+		</where>
+		
+         GROUP BY TCD.DTL_NM, TSAI.SALES_CD, TSAI.SALES_NM, TSAI.SETL_CON, TSPM.SALES_PR_NM, TSAI.CRE_LIM
+         HAVING SUM(A.BAL_AMT1) != 0 OR SUM(A.SALES_AMT2) != 0 OR SUM(A.DEP_AMT2) != 0 
+              OR SUM(A.BAL_AMT2) != 0 OR SUM(A.SALES_AMT3) != 0 OR SUM(A.DEP_AMT3) != 0
+              OR SUM(A.BAL_AMT2 + A.SALES_AMT3 - A.DEP_AMT3) != 0
+
+	</select>
+</mapper>

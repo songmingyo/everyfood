@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusSalesStkMapper">
+
+	<!-- 매출처 발주 현황 조회 -->
+	<select id="selectSalesStkList" parameterType="com.doppio.workplace.sm.service.CusSalesStkVo" resultType="com.doppio.workplace.sm.service.CusSalesStkVo">
+	 /*CusSalesStkMapper.selectSalesStkList*/
+	     SELECT A.RNUM
+	 			, A.TOTAL_COUNT
+	 		 	, A.PRDT_CD
+			  	, A.PRDT_NM 
+			  	, A.PRDT_STD
+			  	, A.HA_STK_QTY
+			  	, A.YEO_STK_QTY
+			  	     
+	 	   FROM (SELECT ROW_NUMBER () OVER ( ORDER BY STK.PRDT_CD ) AS RNUM
+	 	                , COUNT(1) OVER() TOTAL_COUNT  
+				  	    , STK.PRDT_CD
+					    , TPM.PRDT_NM 
+					    , TPM.PRDT_STD
+		     			, SUM(CASE WHEN STK.WH_CD='10001' THEN STK.STK_QTY END) AS HA_STK_QTY
+					    , SUM(CASE WHEN STK.WH_CD='10002' THEN STK.STK_QTY END) AS YEO_STK_QTY
+					    
+				   FROM V_WH_PRDT_STK_NEW AS STK
+				   
+	                    JOIN TFM_PRDT_MST AS TPM
+		                    ON TPM.PRDT_CD = STK.PRDT_CD
+				  
+				  WHERE TPM.PRDT_NM LIKE CONCAT('%',#{prdtNm},'%')
+				    AND TPM.USE_YN = 'Y'
+				  GROUP BY STK.PRDT_CD
+					       , TPM.PRDT_NM 
+					       , TPM.PRDT_STD
+			    	  
+	            ) AS A 
+	      ORDER BY A.RNUM	
+   </select> 	  	
+   
+  
+   <!--상품정보 상세  조회 -->
+	<select id="selectPrdtSearch" parameterType="com.doppio.workplace.sm.service.CusSalesStkVo" resultType="com.doppio.workplace.sm.service.CusSalesStkVo">
+	 /*CusSalesStkMapper.selectPrdtSearch*/
+	 	SELECT   TPM.PRDT_CD 		-- 상품코드
+				,TPM.PRDT_NM		-- 상품명 
+				,TPM.COST			-- 단가
+				,TPM.COST_START_DT  -- 단가 적용시작일 
+				,TPM.PRDT_STD		-- 규격
+				,TPM.EXPRT_DT		-- 유통기한
+				,TPM.L_CD 			-- 대분류 코드
+		       	,TPCM1.L_NM 		-- 대분류 명칭
+		       	,TPM.M_CD 			-- 중분류 코드 
+		       	,TPCM2.M_NM   		-- 중분류 명칭 
+		       	,TPM.QTY_BOX		-- 박스당수량 
+		       	,TPM.COST_START_DT	-- 단가 시작일 
+		       	,TPM.STRG_TYPE 		-- 저장형태
+		       	,TCD1.DTL_NM  AS STRG_TYPE_NM 		-- 저장형태명칭 
+		       	,TPM.ORD_UNIT		--	주문단위
+		       	,TCD2.DTL_NM  AS ORD_UNIT_NM 		-- 주문단위명칭 
+		       	,TPM.BUY_CD			-- 매입처코드 
+		       	,TBM.BUY_NM 		-- 매입처명칭
+	 	  FROM  TFM_PRDT_MST TPM  	-- 품목 마스터 관리
+	 	  	    LEFT OUTER JOIN TFM_BUY_MST TBM -- 매입처 
+	 	  	         ON TPM.BUY_CD	 = TBM.BUY_CD 
+	    	    LEFT OUTER JOIN TFM_PRDT_CLASS1_MST TPCM1 	  --  대분류 등록
+		       		 ON TPM.L_CD  	   = TPCM1.L_CD 
+	   			LEFT OUTER JOIN TFM_PRDT_CLASS2_MST TPCM2	  -- 중분류 등록
+		       		 ON TPM.M_CD  	   = TPCM2.M_CD 	
+		        LEFT OUTER JOIN TCM_CODE_DTL TCD1 
+		             ON  TPM.STRG_TYPE  = TCD1.DTL_CD 
+		             AND TCD1.COM_CD = 'M001'
+		        LEFT OUTER JOIN TCM_CODE_DTL AS TCD2
+		         ON TPM.ORD_UNIT = TCD2.DTL_CD
+		         AND TCD2.COM_CD = 'M006'     
+		             
+		  WHERE TPM.PRDT_CD = #{prdtCd}		-- 상품코드
+   	</select>
+	
+</mapper>

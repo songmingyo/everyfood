@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.br.service.impl.BuyCostUptMapper">
+
+	<!-- 매입처 입고 내역 검색조건-->
+	<sql id="selectBuyCostUptList_Where">
+		/*BuyCostUptMapper.selectBuyCostUptList_Where*/
+		<where>
+			<if test='buyStartDt != null and buyStartDt != ""'>		<!-- 입고일자  --> 
+				AND TPR.BUY_DT BETWEEN #{buyStartDt} AND #{buyEndDt}
+			</if>
+			<if test='buyCd != null and buyCd != ""'>		<!-- 매입처코드  --> 
+				AND TPR.BUY_CD = #{buyCd}
+			</if>
+			<if test='prdtCd != null and prdtCd != ""'>		<!-- 매입처코드  --> 
+				AND TPR.PRDT_CD = #{prdtCd}
+			</if>
+		</where>
+	</sql>
+	
+	
+	<!-- 매입처 입고된 내역 카운트 -->
+	<select id="selectBuyCostUptListCount" parameterType="com.doppio.workplace.br.service.BuyCostUptVo" resultType="int">
+		/* BuyCostUptMapper.selectBuyCostUptListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM KRMC.TBH_PRDT_RCPT AS TPR
+		<include refid="selectBuyCostUptList_Where"/>
+	</select>
+	
+	
+	<!-- 매입 내역 상세 조회 -->
+	<select id="selectBuyCostUptList" parameterType="com.doppio.workplace.br.service.BuyCostUptVo" resultType="com.doppio.workplace.br.service.BuyCostUptVo">
+	/*BuyCostUptMapper.selectBuyCostUptDetailList*/	
+		SELECT TPR.BUY_SLIP_NO
+		       , TPR.BUY_SEQ
+		       , TPR.BUY_DT
+		       , TPR.BUY_CD
+			   , TBM.BUY_NM
+			   , TPR.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TCD_1.DTL_NM AS ORD_UNIT
+			   , TPR.BUY_QTY
+			   , TPR.COST
+			   , TPM.VAT_YN
+			   , IFNULL(TPR.PURE_AMT,0) AS PURE_AMT
+			   , IFNULL(TPR.VAT_AMT,0) AS VAT_AMT
+			   , IFNULL(TPR.TOT_AMT,0) AS TOT_AMT
+			   
+			   , 'N' AS GRID_FLAG
+			                  
+		  FROM KRMC.TBH_PRDT_RCPT AS TPR
+		       LEFT OUTER JOIN KRMC.TFM_BUY_MST AS TBM
+			       ON TBM.BUY_CD = TPR.BUY_CD
+			   
+			   LEFT OUTER JOIN KRMC.TFM_PRDT_MST AS TPM
+		           ON TPM.PRDT_CD = TPR.PRDT_CD
+		           
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_1
+		           ON TCD_1.DTL_CD = TPM.ORD_UNIT
+		           AND TCD_1.COM_CD = 'M006'
+
+		<include refid="selectBuyCostUptList_Where"/>
+		 ORDER BY TPR.PRDT_CD
+	</select>
+	
+
+	<!-- 매입처 입고 수정 -->
+	<update id="updateBuyCostUptData" parameterType="com.doppio.workplace.br.service.BuyCostUptVo">
+	/*BuyCostUptMapper.updateBuyCostUptData*/
+        UPDATE KRMC.TBH_PRDT_RCPT
+           SET COST			= #{cost}
+           	   , PURE_AMT   = #{pureAmt}
+               , VAT_AMT    = #{vatAmt}
+               , TOT_AMT    = #{totAmt}
+               , MOD_ID     = #{workId}
+               , MOD_DT     = NOW()
+         WHERE BUY_SLIP_NO = #{buySlipNo}
+           AND BUY_SEQ = #{buySeq}
+	</update>
+	
+</mapper>
+

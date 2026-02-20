@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns:context="http://www.springframework.org/schema/context"
+     xmlns:util="http://www.springframework.org/schema/util"
+     xmlns:task="http://www.springframework.org/schema/task"
+     xsi:schemaLocation="
+     http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+     http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+     http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd
+     http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd
+     ">
+	<!-- Root Context: defines shared resources visible to all other web components -->
+
+ 	<context:property-placeholder location="classpath:property/*.properties"  />
+	<util:properties id="config" location="classpath:/property/config.properties" />
+	<util:properties id="jdbc" location="classpath:/property/jdbc.properties" />
+
+	<!--
+		CSRF protection. Here we only include the CsrfFilter instead of all of Spring Security.
+		See http://docs.spring.io/spring-security/site/docs/3.2.x/reference/htmlsingle/#csrf for more information on
+		Spring Security's CSRF protection
+	-->
+	<bean id="csrfFilter" class="org.springframework.security.web.csrf.CsrfFilter">
+		<constructor-arg>
+			<bean class="org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository"/>
+		</constructor-arg>
+	</bean>
+	<!--
+		Provides automatic CSRF token inclusion when using Spring MVC Form tags or Thymeleaf. See
+		http://localhost:8080/#forms and form.jsp for examples
+	-->
+	<bean id="requestDataValueProcessor" class="org.springframework.security.web.servlet.support.csrf.CsrfRequestDataValueProcessor"/>
+
+
+	<context:component-scan base-package="com.doppio" use-default-filters="false">
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+    </context:component-scan>
+	
+	
+	<!-- Root Context: defines shared resources visible to all other web components -->
+	 <import resource="classpath:spring/appServlet/datasource-context.xml"/>
+     <import resource="classpath:spring/appServlet/mybatis-context.xml" />
+     <import resource="classpath:spring/appServlet/transaction-context.xml" />
+     <import resource="classpath:spring/appServlet/message-context.xml" />
+    
+     
+	<context:component-scan base-package="com.doppio, com.another" use-default-filters="false">
+    	<context:include-filter type="annotation" expression="org.springframework.stereotype.Service" />
+    	<context:include-filter type="annotation" expression="org.springframework.stereotype.Repository" />
+    	<context:include-filter type="annotation" expression="org.springframework.stereotype.Component" />
+       <!--  <context:include-filter type="annotation" expression="org.aspectj.lang.annotation.Aspect" />  -->
+    </context:component-scan>
+    
+    <context:component-scan base-package="org.springframework.tronic" use-default-filters="false" >
+    	<context:include-filter type="annotation" expression="org.springframework.stereotype.Component" />
+    </context:component-scan> 
+    
+   	<task:executor id="taskExecutor" pool-size="10" queue-capacity="255" rejection-policy="ABORT" />
+	<task:scheduler id="taskScheduler" pool-size="10" />
+	<task:annotation-driven executor="taskExecutor" scheduler="taskScheduler" />
+  
+</beans>

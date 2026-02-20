@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.AnlSalesLdgrVatEcptListMapper">
+
+	<!-- 매출처원장부가세제외 조회 -->
+	<select id="selectAnlSalesLdgrVatEcptList" parameterType="com.doppio.workplace.as.service.AnlSalesLdgrVatEcptListVo" resultType="com.doppio.workplace.as.service.AnlSalesLdgrVatEcptListVo">
+	/*AnlSalesLdgrVatEcptListMapper.selectAnlSalesLdgrVatEcptList*/	
+        SELECT TSAI.SALES_NM
+               , SUM(IFNULL(A.MON_1,0)) AS MON_1
+               , SUM(IFNULL(A.MON_2,0)) AS MON_2
+               , SUM(IFNULL(A.MON_3,0)) AS MON_3
+               , SUM(IFNULL(A.MON_4,0)) AS MON_4
+               , SUM(IFNULL(A.MON_5,0)) AS MON_5
+               , SUM(IFNULL(A.MON_6,0)) AS MON_6
+               , SUM(IFNULL(A.MON_7,0)) AS MON_7
+               , SUM(IFNULL(A.MON_8,0)) AS MON_8
+               , SUM(IFNULL(A.MON_9,0)) AS MON_9
+               , SUM(IFNULL(A.MON_10,0)) AS MON_10
+               , SUM(IFNULL(A.MON_11,0)) AS MON_11
+               , SUM(IFNULL(A.MON_12,0)) AS MON_12
+               , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+               , TSPM.SALES_PR_NM
+          FROM (SELECT SALES_CD
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='01' THEN IFNULL(PURE_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='02' THEN IFNULL(PURE_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='03' THEN IFNULL(PURE_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='04' THEN IFNULL(PURE_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='05' THEN IFNULL(PURE_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='06' THEN IFNULL(PURE_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='07' THEN IFNULL(PURE_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='08' THEN IFNULL(PURE_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='09' THEN IFNULL(PURE_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='10' THEN IFNULL(PURE_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='11' THEN IFNULL(PURE_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='12' THEN IFNULL(PURE_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(PURE_AMT,0)) AS TOT_AMT
+                  FROM TMH_MON_SALES_TOT
+                 WHERE YEAR_MON BETWEEN #{searchYearMnSt} AND #{searchYearMnEt}
+                 GROUP BY SALES_CD
+               ) AS A
+               
+               JOIN
+                   (SELECT DISTINCT CASE WHEN #{searchSalesHqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                           , SALES_CD
+                      FROM V_SALES_HQ_CD
+                     <where>
+                     <if test='searchSalesHqClass != null and searchSalesHqClass != ""'> 
+                       AND HQ_CLASS = #{searchSalesHqClass}
+                     </if>
+                     <if test='searchSalesCd != null and searchSalesCd != ""'> 
+                       AND (HQ_CD = #{searchSalesCd} OR SALES_CD = #{searchSalesCd})
+                     </if>
+                     </where>
+                   ) AS VSHC
+                   ON VSHC.SALES_CD = A.SALES_CD
+	           
+	           JOIN TFM_SALES_ADD_INFO AS TSAI
+	               ON TSAI.SALES_CD = VSHC.HQ_CD
+                   
+               JOIN TFM_SALES_PR_MST AS TSPM
+                   ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+        <where>
+          <if test='searchSalesClass != null and searchSalesClass != ""'>
+	        AND TSAI.SALES_CLASS = #{searchSalesClass}
+          </if>
+          <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+            AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+          </if>
+        </where>
+        GROUP BY TSAI.SALES_NM, TSPM.SALES_PR_NM
+               
+	</select>
+	
+	
+	<!-- 매출처원장부가세제외 조회 -->
+	<select id="selectAnlSalesLdgrVatEcptListExcelDown" parameterType="com.doppio.workplace.as.service.AnlSalesLdgrVatEcptListVo" resultType="java.util.HashMap">
+	/*AnlSalesLdgrVatEcptListMapper.selectAnlSalesLdgrVatEcptListExcelDown*/	
+        SELECT TSAI.SALES_NM
+               , SUM(IFNULL(A.MON_1,0)) AS MON_1
+               , SUM(IFNULL(A.MON_2,0)) AS MON_2
+               , SUM(IFNULL(A.MON_3,0)) AS MON_3
+               , SUM(IFNULL(A.MON_4,0)) AS MON_4
+               , SUM(IFNULL(A.MON_5,0)) AS MON_5
+               , SUM(IFNULL(A.MON_6,0)) AS MON_6
+               , SUM(IFNULL(A.MON_7,0)) AS MON_7
+               , SUM(IFNULL(A.MON_8,0)) AS MON_8
+               , SUM(IFNULL(A.MON_9,0)) AS MON_9
+               , SUM(IFNULL(A.MON_10,0)) AS MON_10
+               , SUM(IFNULL(A.MON_11,0)) AS MON_11
+               , SUM(IFNULL(A.MON_12,0)) AS MON_12
+               , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+               , TSPM.SALES_PR_NM
+          FROM (SELECT SALES_CD
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='01' THEN IFNULL(PURE_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='02' THEN IFNULL(PURE_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='03' THEN IFNULL(PURE_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='04' THEN IFNULL(PURE_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='05' THEN IFNULL(PURE_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='06' THEN IFNULL(PURE_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='07' THEN IFNULL(PURE_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='08' THEN IFNULL(PURE_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='09' THEN IFNULL(PURE_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='10' THEN IFNULL(PURE_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='11' THEN IFNULL(PURE_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN RIGHT(YEAR_MON,2)='12' THEN IFNULL(PURE_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(PURE_AMT,0)) AS TOT_AMT
+                  FROM TMH_MON_SALES_TOT
+                 WHERE YEAR_MON BETWEEN REPLACE(#{searchYearMnSt},'-','') AND REPLACE(#{searchYearMnEt},'-','')
+                 GROUP BY SALES_CD
+               ) AS A
+               
+               JOIN
+                   (SELECT DISTINCT CASE WHEN #{searchSalesHqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                           , SALES_CD
+                      FROM V_SALES_HQ_CD
+                     <where>
+                     <if test='searchSalesHqClass != null and searchSalesHqClass != ""'> 
+                       AND HQ_CLASS = #{searchSalesHqClass}
+                     </if>
+                     <if test='searchSalesCd != null and searchSalesCd != ""'> 
+                       AND (HQ_CD = #{searchSalesCd} OR SALES_CD = #{searchSalesCd})
+                     </if>
+                     </where>
+                   ) AS VSHC
+                   ON VSHC.SALES_CD = A.SALES_CD
+	           
+	           JOIN TFM_SALES_ADD_INFO AS TSAI
+	               ON TSAI.SALES_CD = VSHC.HQ_CD
+                   
+               JOIN TFM_SALES_PR_MST AS TSPM
+                   ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+        <where>
+          <if test='searchSalesClass != null and searchSalesClass != ""'>
+	        AND TSAI.SALES_CLASS = #{searchSalesClass}
+          </if>
+          <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+            AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+          </if>
+        </where>
+        GROUP BY TSAI.SALES_NM, TSPM.SALES_PR_NM
+               
+	</select>
+</mapper>

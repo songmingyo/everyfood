@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.common.taglibs.service.impl.CustomTagComboMapper">
+
+
+	<!-- 코드 LIST -->
+	<select id="selectInternalCode" parameterType="java.util.HashMap" resultType="java.util.HashMap" flushCache="false" useCache="true">
+	/* CustomTagComboMapper.selectInternalCode */
+		SELECT
+			DTL_CD AS CODE_ID
+			<choose>
+				<when test='language == "EN"'>
+			      	,CONCAT(IFNULL(DTL_SUB_NM,DTL_NM),' (',DTL_CD,')') AS CODE_NAME_S1
+					,IFNULL(DTL_SUB_NM,DTL_NM) AS CODE_NAME
+				</when>
+				<when test='language == "KO"'>
+			      	,CONCAT(DTL_NM,' (',DTL_CD,')') AS CODE_NAME_S1
+					,DTL_NM AS CODE_NAME
+				</when>
+			    <otherwise>
+			    	,CONCAT(IFNULL(DTL_EXTEND_NM,DTL_NM),' (',DTL_CD,')') AS CODE_NAME_S1
+					,IFNULL(DTL_EXTEND_NM,DTL_NM) AS CODE_NAME
+			    </otherwise>
+			</choose>
+		FROM TCM_CODE_DTL 
+		WHERE USE_YN = 'Y'
+			AND COM_CD = #{parentId}
+			<if test='dtlCode != null and dtlCode != ""'>
+				AND DTL_CD
+			     <choose>
+					<when test='dtlNotIn == "Y"'><![CDATA[<>]]></when>
+					<otherwise>=</otherwise>
+				</choose>
+					#{dtlCode}
+			</if>
+			<if test='dtlCodes != null and dtlCodes != ""'>
+				AND DTL_CD
+				<choose>
+			    	<when test='dtlNotIn == "Y"'>
+			    		NOT IN
+			    	</when>
+					<otherwise>IN</otherwise>
+				</choose>
+				<foreach collection="dtlCodes" item="dtlCodes" index="index" open="(" close=")" separator=",">
+					#{dtlCodes}
+				</foreach>
+			</if>
+			<if test='subCode != null and subCode != ""'>
+				AND EXTENT01
+			     <choose>
+					<when test='notIn == "Y"'><![CDATA[<>]]></when>
+					<otherwise>=</otherwise>
+				</choose>
+			    	#{subCode}
+			</if>			
+			<if test='subCodes != null and subCodes != ""'>
+			    AND EXTENT01
+			    <choose>
+			    	<when test='notIn == "Y"'>
+			    		NOT IN
+			    	</when>
+					<otherwise>IN</otherwise>
+				</choose>
+			    <foreach collection="subCodes" item="subCodes" index="index" open="(" close=")" separator=",">
+					#{subCodes}
+				</foreach>
+			</if>
+			<if test='subCode2 != null and subCode2 != ""'>
+				AND EXTENT02
+			     <choose>
+					<when test='notIn2 == "Y"'><![CDATA[<>]]></when>
+					<otherwise>=</otherwise>
+				</choose>
+			    	#{subCode2}
+			</if>			
+			<if test='subCodes2 != null and subCodes2 != ""'>
+			    AND EXTENT02
+			    <choose>
+			    	<when test='notIn2 == "Y"'>
+			    		NOT IN
+			    	</when>
+					<otherwise>IN</otherwise>
+				</choose>
+			    <foreach collection="subCodes2" item="subCodes2" index="index" open="(" close=")" separator=",">
+					#{subCodes2}
+				</foreach>
+			</if>
+	ORDER BY SORT_NO
+	</select>
+
+
+	<!-- 메뉴 LIST -->
+	<select id="selectInternalMenu" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		/* CustomTagComboMapper.selectInternalMenu */
+		SELECT CONCAT(MENU_ID) AS CODE_ID
+     	<choose>
+     		<when test='language == "VN"'>
+     		  ,IFNULL(TITLE_EXTEND, TITLE_SUB) AS CODE_NAME
+     		</when>
+			<when test='language == "EN"'>
+    	  	  ,IFNULL(TITLE_SUB,TITLE)   AS CODE_NAME
+      		</when>
+      		<otherwise>
+      	  	 ,TITLE   AS CODE_NAME
+      		</otherwise>
+     	</choose>
+      	FROM TCM_MENU
+ 	 	WHERE COMMAND_FG = '0'
+   	   	AND MENU_LEVEL = '1'
+		ORDER BY SORT_IN_LEVEL
+	</select>
+
+	<!-- 코드 LIST (jqGrid구성용)  -->
+	<select id="getCodeName" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		/* CustomTagComboMapper.getCodeName */
+		SELECT	DTL_CD  AS CODE_ID
+		<choose>
+			<when test='language == "EN"'> 
+		      	,NVL(DTL_SUB_NM,DTL_NM)||' ('||DTL_CD||')' AS CODE_NAME_S1
+				,NVL(DTL_SUB_NM,DTL_NM) AS CODE_NAME
+			</when>
+		    <otherwise>
+		    	,DTL_NM||' ('||DTL_CD||')' AS CODE_NAME_S1
+				,DTL_NM AS CODE_NAME
+		    </otherwise>
+		</choose> 	
+		  FROM 	TCM_CODE_DTL 
+		 WHERE	USE_YN='Y'
+		   AND	COM_CD=#{parentId}
+		<if test='subCodes != null and subCodes != ""'>
+		    AND EXTENT01 
+		    <choose>
+				<when test='notIn != null and notIn != ""'>NOT IN</when>
+				<otherwise>IN</otherwise>
+			</choose>
+		    <foreach collection="subCodes" item="subCodes" index="index" open="(" close=")" separator=",">                
+				#{subCodes}         
+			</foreach>
+		</if>
+		<if test='subCod != null and subCode != ""'>
+		    AND EXTENT01 
+		     <choose>
+				<when test='notIn != null and notIn != ""'>  <![CDATA[<>]]> </when>
+				<otherwise> = </otherwise>
+			</choose>
+		    #{subCode}
+		</if>
+		ORDER BY SORT_NO
+	</select>
+	
+	<!-- 서브코드 List (EXTENT01 = COM_CD로 맵핑되는 코드 리스트) -->
+	<select id="selectInternalSubCode" parameterType="java.util.HashMap" resultType="java.util.HashMap" flushCache="false" useCache="true">
+		/* CustomTagComboMapper.selectInternalSubCode */
+		SELECT
+			A.DTL_CD AS CODE_ID
+			<choose>
+				<when test='language == "EN"'>
+			      	,CONCAT(IFNULL(A.DTL_SUB_NM,A.DTL_NM),' (',A.DTL_CD,')') AS CODE_NAME_S1
+					,IFNULL(A.DTL_SUB_NM,A.DTL_NM) AS CODE_NAME
+				</when>
+				<when test='language == "KO"'>
+			      	,CONCAT(A.DTL_NM,' (',A.DTL_CD,')') AS CODE_NAME_S1
+					,A.DTL_NM AS CODE_NAME
+				</when>
+			    <otherwise>
+			    	,CONCAT(IFNULL(A.DTL_EXTEND_NM,A.DTL_NM),' (',A.DTL_CD,')') AS CODE_NAME_S1
+					,IFNULL(A.DTL_EXTEND_NM,A.DTL_NM) AS CODE_NAME
+			    </otherwise>
+			</choose>
+		FROM TCM_CODE_DTL A
+		INNER JOIN TCM_CODE_DTL B 
+			ON B.COM_CD = #{masterParentCd}
+			AND B.DTL_CD = #{masterDtlCd}
+			AND A.COM_CD = B.EXTENT01
+			AND B.USE_YN = 'Y'
+		WHERE A.USE_YN = 'Y'
+		<if test='dtlCode != null and dtlCode != ""'>
+			AND A.DTL_CD
+		     <choose>
+				<when test='dtlNotIn == "Y"'><![CDATA[<>]]></when>
+				<otherwise>=</otherwise>
+			</choose>
+				#{dtlCode}
+		</if>
+		<if test='dtlCodes != null and dtlCodes != ""'>
+			AND A.DTL_CD
+			<choose>
+		    	<when test='dtlNotIn == "Y"'>
+		    		NOT IN
+		    	</when>
+				<otherwise>IN</otherwise>
+			</choose>
+			<foreach collection="dtlCodes" item="dtlCodes" index="index" open="(" close=")" separator=",">
+				#{dtlCodes}
+			</foreach>
+		</if>
+		<if test='subCode != null and subCode != ""'>
+			AND A.EXTENT01
+		     <choose>
+				<when test='notIn == "Y"'><![CDATA[<>]]></when>
+				<otherwise>=</otherwise>
+			</choose>
+		    	#{subCode}
+		</if>			
+		<if test='subCodes != null and subCodes != ""'>
+		    AND A.EXTENT01
+		    <choose>
+		    	<when test='notIn == "Y"'>
+		    		NOT IN
+		    	</when>
+				<otherwise>IN</otherwise>
+			</choose>
+		    <foreach collection="subCodes" item="subCodes" index="index" open="(" close=")" separator=",">
+				#{subCodes}
+			</foreach>
+		</if>
+		<if test='subCode2 != null and subCode2 != ""'>
+			AND A.EXTENT02
+		     <choose>
+				<when test='notIn2 == "Y"'><![CDATA[<>]]></when>
+				<otherwise>=</otherwise>
+			</choose>
+		    	#{subCode2}
+		</if>			
+		<if test='subCodes2 != null and subCodes2 != ""'>
+		    AND A.EXTENT02
+		    <choose>
+		    	<when test='notIn2 == "Y"'>
+		    		NOT IN
+		    	</when>
+				<otherwise>IN</otherwise>
+			</choose>
+		    <foreach collection="subCodes2" item="subCodes2" index="index" open="(" close=")" separator=",">
+				#{subCodes2}
+					</foreach>
+				</if>
+		ORDER BY A.SORT_NO
+	</select>
+	
+	
+	<!-- 대분류 LIST -->
+	<select id="selectProdtClass1" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	  /*CustomTagComboMapper.selectProdtClass1*/
+		SELECT TPCM.L_CD   AS CODE_ID 
+	    	 , TPCM.L_NM   AS CODE_NAME
+	  	FROM  KRMC.TFM_PRDT_CLASS1_MST AS TPCM 
+	  <where>
+		  <if test='parentId != null and parentId != ""'>
+		  	 AND TPCM.USE_YN = #{parentId}
+		  </if>
+	  </where>
+	</select>
+	
+	<!-- 중분류 LIST -->
+	<select id="selectProdtClass2" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	  /*CustomTagComboMapper.selectProdtClass2*/
+		SELECT TPCM.M_CD   AS CODE_ID
+	    	   , TPCM.M_NM   AS CODE_NAME
+	  	  FROM KRMC.TFM_PRDT_CLASS2_MST AS TPCM
+	  <where>
+		  <if test='parentId != null and parentId != ""'>
+		  	 AND TPCM.USE_YN = #{parentId}
+		  </if>
+	  </where>
+	</select>
+
+	<!-- 창고 LIST -->
+	<select id="selectWhCd" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	  /*CustomTagComboMapper.selectWhCd*/
+		SELECT TWM.WH_CD   AS CODE_ID
+	    	   , TWM.WH_NM   AS CODE_NAME
+	  	  FROM KRMC.TFM_WH_MST AS TWM
+	  <where>
+		  <if test='parentId != null and parentId != ""'>
+		  	 AND TWM.USE_YN = #{parentId}
+		  </if>
+	  </where>
+	</select>
+	
+	<!-- 배송차량 LIST -->
+	<select id="selectCarCd" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	  /*CustomTagComboMapper.selectCarCd*/
+		SELECT TDM.CAR_CD     AS CODE_ID
+	    	   , TDM.CAR_NM   AS CODE_NAME
+	  	  FROM KRMC.TFM_DLVR_MST AS TDM
+	  <where>
+		  <if test='parentId != null and parentId != ""'>
+		  	 AND TDM.USE_YN = #{parentId}
+		  </if>
+	  </where>
+	  ORDER BY TDM.CAR_NM
+	</select>
+	
+	<!-- 본사리스트 LIST -->
+	<select id="selectHqCd" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	  /*CustomTagComboMapper.selectHqCd*/
+		SELECT TSAI.SALES_CD     AS CODE_ID
+	    	   , TSAI.SALES_NM   AS CODE_NAME
+	  	  FROM KRMC.TFM_SALES_HQ_CLASS AS TSHC
+	  	       JOIN KRMC.TFM_SALES_ADD_INFO AS TSAI
+	  	           ON TSAI.SALES_CD = TSHC.SALES_CD
+	  	 WHERE TSHC.HQ_CLASS = '10'
+		  <if test='parentId != null and parentId != ""'>
+		  	 AND TSAI.USE_YN = #{parentId}
+		  </if>
+	</select>
+	
+	<!-- 영업사원관리 LIST -->
+	<select id="selecSalesPrCd" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	  /*CustomTagComboMapper.selecSalesPrCd*/
+		SELECT TSPM.SALES_PR_CD     AS CODE_ID
+	    	   , TSPM.SALES_PR_NM   AS CODE_NAME
+	  	  FROM KRMC.TFM_SALES_PR_MST AS TSPM
+	  	 <where>
+			  <if test='parentId != null and parentId != ""'>
+			  	 AND TSPM.USE_YN = #{parentId}
+			  </if>
+		 </where>
+	</select>
+
+</mapper>
+

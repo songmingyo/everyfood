@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/mvc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:cache="http://www.springframework.org/schema/cache"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/cache
+        http://www.springframework.org/schema/cache/spring-cache.xsd
+        http://www.springframework.org/schema/aop
+    	http://www.springframework.org/schema/aop/spring-aop.xsd
+    	">
+
+
+
+    <mvc:annotation-driven  conversion-service="conversionService" enable-matrix-variables="true">
+		<mvc:path-matching suffix-pattern="false" />	<!-- RequestMapping URL define -->
+		<argument-resolvers>
+			<beans:bean class="org.springframework.mvc.data.custom.CustomArgumentResolver"/>
+		</argument-resolvers>
+		<async-support default-timeout="3000">
+			<callable-interceptors>
+				<beans:bean class="org.springframework.mvc.async.TimeoutCallableProcessingInterceptor" />
+			</callable-interceptors>
+		</async-support>
+	</mvc:annotation-driven>
+
+
+	<!-- suffix-pattern 과 충돌 -->
+	<!-- <mvc:annotation-driven></mvc:annotation-driven> -->
+
+
+	<security:global-method-security secured-annotations="enabled" pre-post-annotations="enabled" />
+ 
+ 
+	<!--
+	<annotation-driven>
+	  <argument-resolvers>
+	    <beans:bean class="org.springframework.mobile.device.site.SitePreferenceWebArgumentResolver" />
+	  </argument-resolvers>
+	</annotation-driven>
+	 -->
+
+	<!-- Handles HTTP GET requests for /resources/** by efficiently serving up static resources in the ${webappRoot}/resources/ directory -->
+	<resources mapping="/resources/**" 	location="/resources/" />
+	<!-- <resources mapping="/favicon.ico" location="/resources/images/common/favicon.ico" />  -->
+	
+	<!-- Resolves views selected for rendering by @Controllers to .jsp resources in the /WEB-INF/views directory -->
+	<beans:bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<beans:property name="prefix" value="/WEB-INF/views/" />
+		<beans:property name="suffix" value=".jsp" />
+	</beans:bean>
+
+	<!-- Only needed because we install custom converters to support the examples in the org.springframewok.mvc.convert package -->
+	<beans:bean id="conversionService" class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+		<beans:property name="formatters">
+            <beans:bean class="org.springframework.mvc.convert.MaskFormatAnnotationFormatterFactory" />
+		</beans:property>
+	</beans:bean>
+
+	<!-- Only needed because we require fileupload in the org.springframework.mvc.fileupload package -->
+	<beans:bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver" />
+
+
+	<!--  user-defined @Controller beans that process client requests -->
+	<!-- Maps '/' requests to the 'main' view -->
+	<mvc:view-controller path="/" 				view-name="redirect:/main/mainDashboard" />
+	<mvc:view-controller path="/admin" 			view-name="security/securityForm" />
+	<!-- controller request to the 'form' View  -->
+	<mvc:view-controller path="/web/common/working" 			view-name="common/error/working" />
+	<mvc:view-controller path="/web/res/common/working" 		view-name="common/error/resWorking" />
+
+	<!-- Security controller request to the 'form' View -->
+	<mvc:view-controller path="/security/securityForm" 		view-name="security/securityForm" />
+	<mvc:view-controller path="/security/securityFail" 		view-name="security/securityFail" />
+	<mvc:view-controller path="/security/securitySignout"	view-name="security/securitySignout" />
+	<mvc:view-controller path="/security/accessDenied"		view-name="security/accessDenied" />
+	<mvc:view-controller path="/security/securityIndex"		view-name="security/securityIndex" />
+
+	<context:component-scan base-package="org.springframework" use-default-filters="false">
+		<context:include-filter expression="org.springframework.stereotype.Controller" type="annotation" />
+	</context:component-scan>
+
+	<context:component-scan base-package="com.doppio" use-default-filters="false" >
+		<context:include-filter expression="org.springframework.stereotype.Controller" type="annotation" />
+	</context:component-scan>
+
+
+	<!-- Exception Resolver  org.springframework.web.servlet.handler.SimpleMappingExceptionResolver
+	org.springframework.tronic.resolver.CustomGenericExceptionResolver
+	-->
+    <!-- 
+    <beans:bean id="exceptionResolver" class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+         <beans:property name="defaultErrorView" value="common/error/commonException"/>
+         <beans:property name="exceptionMappings">
+         	 <beans:props>
+         	    <beans:prop key="org.springframework.tronic.exception.CustomGenericException">common/error/customeException</beans:prop>
+         	 </beans:props>
+         </beans:property>
+	</beans:bean>
+	-->
+	
+	 <!-- application/json for CustomerExceptionResolver extends SimpleMappingExceptionResolver   -->
+	<!-- 
+	  <beans:bean id="exceptionResolver" class="org.springframework.tronic.resolver.CustomGenericExceptionResolver">
+     	<beans:property name="defaultErrorView" value="common/error/customeException"/>
+     	<beans:property name="exceptionMappings">
+            <beans:props>
+                <beans:prop key="org.springframework.dao.DataAccessException">common/error/customeException</beans:prop> 
+                <beans:prop key="org.springframework.transaction.TransactionException">common/error/customeException</beans:prop>
+                <beans:prop key="org.springframework.security.AccessDeniedException">common/error/customeException</beans:prop>
+                <beans:prop key="org.directwebremoting.extend.AccessDeniedException">common/error/customeException</beans:prop>
+				<beans:prop key="org.springframework.web.HttpSessionRequiredException">common/error/customeException</beans:prop>
+			</beans:props>
+        </beans:property>
+        <beans:property name="order" value="1" /> 
+	</beans:bean> 
+  -->
+
+	<!-- Json 기반의 메시지 컨버터 설정 (Maven, Spring 4.1.6.RELEASE) -->
+	<!--
+	<beans:property name="messageConverters">
+			<beans:list>
+				<beans:ref bean="jsonMessageConverter"/>
+	  		</beans:list>
+	 	</beans:property>
+	</beans:bean>
+
+	<beans:bean id="jsonMessageConverter" class="org.springframework.http.converter.json.GsonHttpMessageConverter">
+   </beans:bean>
+   -->
+
+
+
+  	<!-- Locale 설정 common.Language.Type config.properties에서 가져옴 -->
+	<beans:bean id="localeResolver" class="org.springframework.web.servlet.i18n.SessionLocaleResolver">
+		<beans:property name="defaultLocale" value="${Common.Language.Type}" />
+	</beans:bean>
+
+
+	<mvc:interceptors>
+    	<beans:bean id="localeChangeInterceptor" class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor">
+    		<beans:property name="paramName" value="language" />
+    	</beans:bean>
+    </mvc:interceptors>
+
+
+ 	<!-- Interceptor -->
+    <mvc:interceptors>
+        <mvc:interceptor>
+        	<mvc:mapping path="/" />
+        	<mvc:mapping path="/main/**" />
+        	<mvc:mapping path="/web/**" />
+			<mvc:mapping path="/app/**" />		<!-- 정보관리 -->
+			<mvc:mapping path="/front/**" />	<!-- 정보관리 -->
+			<mvc:mapping path="/res/**" />		<!-- 모바일 -->
+			<exclude-mapping path="/err/**" />	<!-- 에러 리다이렉트 -->
+        	<!-- <mvc:mapping path="/frame/commonFrameMenu" /> -->
+		    <beans:bean class="com.doppio.common.interceptor.AuthenticInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
+    <!-- jxl Excel Download ViewResolver -->
+<!--    <beans:bean id="jxlExcelFileDownLoadViewResolver" class="org.springframework.tronic.resolver.JxlExcelFileDownLoadViewResolver" />-->
+
+	<!-- File Download ViewResolver -->
+	<beans:bean id="downloadView" class="org.springframework.tronic.resolver.FileDownLoadViewResolver" />
+	<beans:bean id="downloadViewResolver" class="org.springframework.web.servlet.view.BeanNameViewResolver">
+		<beans:property name="order">
+			<beans:value>0</beans:value>
+		</beans:property>
+	</beans:bean>
+	
+	<!-- zip File Download View Resolver -->
+	<beans:bean id="downloadListView" class="org.springframework.tronic.resolver.FileDownLoadListViewResolver" />
+	<beans:bean id="downloadListViewResolver" class="org.springframework.web.servlet.view.BeanNameViewResolver">
+		<beans:property name="order">
+			<beans:value>0</beans:value>
+		</beans:property>
+	</beans:bean>
+
+    <!-- Aspect -->
+    <!-- spring Aspect-logging -->
+	<beans:bean id="loggingAspect" class="com.doppio.common.logging.LoggingAspect" />
+	<aop:config proxy-target-class="true">
+	    <aop:aspect id="aspectLoggging" ref="loggingAspect">
+	        <aop:pointcut id="controllerPointcut" expression="execution(* com.doppio..controller.*Controller.*(..))" />
+	        <aop:around method="logAround" pointcut-ref="controllerPointcut"  />
+
+	        <aop:pointcut id="mapperPointcut" expression="execution(* com.doppio..service.impl.*Mapper.*(..))" />
+	        <aop:around method="logAfter" pointcut-ref="mapperPointcut"  />
+	    </aop:aspect>
+	</aop:config>
+	
+		
+	<!--spring Aspet - login-Downloadresol -->
+	<beans:bean id="fileDownloadControllerAspect" class="com.doppio.common.logging.FileDownloadAspect" />
+		<aop:config proxy-target-class="true">
+			<aop:aspect id="aspectLogggingFileDown" ref="fileDownloadControllerAspect">
+		  		<aop:pointcut id="controllerFilePointcut" expression="execution(* com.doppio.common.controller.FileDownLoadController.fileDownloadInit(..))" />
+	      		<aop:around method="logAround" pointcut-ref="controllerFilePointcut"  />
+	     	</aop:aspect>   
+	</aop:config>
+   
+	
+	<!--spring Aspet - login-ExcelDownloadresol -->
+	<beans:bean id="excelfileDownloadResolverAspect" class="com.doppio.common.logging.FileDownloadAspect" />
+	<aop:config proxy-target-class="true">
+		<aop:aspect id="aspectLogggingExcelDown" ref="excelfileDownloadResolverAspect">
+			<aop:pointcut id="controllerExcelPointcut" expression="execution(* com.doppio..controller.*Controller.*ExcelDown(..))"/>
+			<aop:around method="excellogAround" pointcut-ref="controllerExcelPointcut"/>
+		</aop:aspect>
+	</aop:config>
+	
+	
+	<context:property-placeholder location="classpath:property/config.properties" />
+
+<!--
+    http://www.springframework.org/schema/cache namespace dtd 필요
+    annotation 기반 cache 지정을 위한 설정
+-->
+<!--
+<cache:annotation-driven cache-manager="cacheManager" key-generator="customKeyGenerator" />
+<beans:bean id="customKeyGenerator" class="org.springframework.tronic.interceptors.CustomKeyGenerator" />
+
+<beans:bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager">
+    <beans:property name="cacheManager">
+        <beans:bean class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+            <beans:property name="configLocation" value="classpath:ehcache.xml" />
+            <beans:property name="shared" value="true" />
+        </beans:bean>
+    </beans:property>
+</beans:bean>
+ -->
+<!-- declare ehCache -->
+ <!--
+  <ehcache:annotation-driven />
+
+  <ehcache:config cache-manager="cacheManager">
+    <ehcache:evict-expired-elements interval="60" />
+  </ehcache:config>
+
+  <beans:bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean" >
+    <beans:property name="configLocation"  value="classpath:ehcache.xml"/>
+  </beans:bean>
+  -->
+</beans:beans>

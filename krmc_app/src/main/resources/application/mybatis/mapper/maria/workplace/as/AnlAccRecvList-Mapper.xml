@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.AnlAccRecvListMapper">
+
+	
+	<!-- 외상매입금 조회 -->
+	<select id="selectAnlAccRecvList" parameterType="com.doppio.workplace.as.service.AnlAccRecvListVo" resultType="com.doppio.workplace.as.service.AnlAccRecvListVo">
+	/*AnlSalesCreditListMapper.selectAnlAccRecvList*/	
+        SELECT TBM.BUY_NM
+               , A.BAL_AMT1
+               , A.BUY_AMT2
+               , A.PAY_AMT2
+               , A.BAL_AMT2
+               , A.BUY_AMT3
+               , A.PAY_AMT3
+               , IFNULL(A.BAL_AMT2,0) + IFNULL(A.BUY_AMT3,0) - IFNULL(A.PAY_AMT3,0) AS BAL_AMT3
+               , TBM.SETL_CON
+               , TBM.BANK_NM
+               , TBM.BANK_DEP
+               , TBM.BANK_ACC_NUM
+               , TBM.TEL_NO
+               , TBM.BSNS_NUM
+          FROM (SELECT A.BUY_CD
+                       , SUM(A.BAL_AMT1) AS BAL_AMT1
+                       , SUM(A.BUY_AMT2) AS BUY_AMT2
+                       , SUM(A.PAY_AMT2) AS PAY_AMT2
+                       , SUM(A.BAL_AMT2) AS BAL_AMT2
+                       , SUM(A.BUY_AMT3) AS BUY_AMT3
+                       , SUM(A.PAY_AMT3) AS PAY_AMT3
+                  FROM (SELECT BUY_CD
+                               , SUM(LBAL_AMT) AS BAL_AMT1
+                               , SUM(BUY_AMT) AS BUY_AMT2
+                               , SUM(PAY_AMT) AS PAY_AMT2
+                               , SUM(BAL_AMT) AS BAL_AMT2
+                               , 0 AS BUY_AMT3
+                               , 0 AS PAY_AMT3
+                          FROM TMH_MON_BUY_PAYMENT
+                         WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 MONTH),'%Y%m')
+                         GROUP BY BUY_CD
+                       UNION ALL
+                        SELECT BUY_CD
+                               , 0 AS BAL_AMT1
+                               , 0 AS BUY_AMT2
+                               , 0 AS PAY_AMT2
+                               , 0 AS BAL_AMT2
+                               , SUM(TOT_AMT) AS BUY_AMT3
+                               , 0 AS PAY_AMT3
+                          FROM TBH_PRDT_RCPT
+                         WHERE BUY_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                           AND BUY_CONF_YN = 'Y'
+                           AND BUY_QTY != 0
+                         GROUP BY BUY_CD
+                       UNION ALL
+                        SELECT BUY_CD AS SALES_CD
+                               , 0 AS BAL_AMT1
+                               , 0 AS BUY_AMT2
+                               , 0 AS PAY_AMT2
+                               , 0 AS BAL_AMT2
+                               , SUM(TOT_AMT)*-1 AS BUY_AMT3
+                               , 0 AS PAY_AMT3
+                          FROM TBH_PRDT_RETURN
+                         WHERE RTN_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                           AND RTN_QTY != 0
+                         GROUP BY BUY_CD
+                       UNION ALL
+                        SELECT BUY_CD AS SALES_CD
+                               , 0 AS BAL_AMT1
+                               , 0 AS BUY_AMT2
+                               , 0 AS PAY_AMT2
+                               , 0 AS BAL_AMT2
+                               , 0 AS BUY_AMT3
+                               , SUM(SETL_AMT) AS PAY_AMT3
+                          FROM TBH_BUY_WDRL
+                         WHERE WDRL_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                         GROUP BY BUY_CD
+                       ) AS A
+                 GROUP BY A.BUY_CD
+               ) AS A
+               
+               JOIN TFM_BUY_MST AS TBM
+                   ON TBM.BUY_CD = A.BUY_CD
+            
+         WHERE (BAL_AMT1 != 0 OR BUY_AMT2 != 0 OR PAY_AMT2 != 0 OR BAL_AMT2 != 0 OR BUY_AMT3 != 0 OR PAY_AMT3 != 0)
+         <if test='searchBuyCd != null and searchBuyCd != ""'>  <!-- 판매처코드  -->
+           AND A.BUY_CD LIKE CONCAT('%',#{searchBuyCd},'%')
+         </if>
+           AND TBM.USE_YN = 'Y'
+         ORDER BY TBM.BUY_NM
+
+    </select>
+
+
+	<!-- 외상매입금 조회 -->
+	<select id="selectAccRecvPrintList" parameterType="com.doppio.workplace.as.service.AnlAccRecvListVo" resultType="com.doppio.workplace.as.service.AnlAccRecvListVo">
+	/*AnlSalesCreditListMapper.selectAccRecvPrintList*/	
+        SELECT TBM.BUY_NM
+               , A.BAL_AMT1 AS PRT_BAL_AMT1
+               , A.BUY_AMT2 AS PRT_BUY_AMT2
+               , A.PAY_AMT2 AS PRT_PAY_AMT2
+               , A.BAL_AMT2 AS PRT_BAL_AMT2
+               , A.BUY_AMT3 AS PRT_BUY_AMT3
+               , A.PAY_AMT3 AS PRT_PAY_AMT3
+               , IFNULL(A.BAL_AMT2,0) + IFNULL(A.BUY_AMT3,0) - IFNULL(A.PAY_AMT3,0) AS PRT_BAL_AMT3
+               
+               , TBM.SETL_CON
+               
+               , CONCAT(DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -2 MONTH),'%Y-%m'),'월 잔액') AS BAL_AMT1_TITLE
+               , CONCAT(DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 MONTH),'%Y-%m'),'월 매입') AS BUY_AMT2_TITLE
+               , CONCAT(DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 MONTH),'%Y-%m'),'월 지급') AS PAY_AMT2_TITLE
+               , CONCAT(DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 MONTH),'%Y-%m'),'월 잔액') AS BAL_AMT2_TITLE
+               , CONCAT(DATE_FORMAT(#{searchStartDt},'%Y-%m'),'월 지급') AS BUY_AMT3_TITLE
+               , CONCAT(DATE_FORMAT(#{searchStartDt},'%Y-%m'),'월 매입') AS PAY_AMT3_TITLE
+               , CONCAT(DATE_FORMAT(#{searchStartDt},'%Y-%m'),'월 잔액') AS BAL_AMT3_TITLE
+               
+               , ROW_NUMBER() OVER (PARTITION BY 1) AS COLUMN_CNT
+               
+               , DATE_FORMAT(#{searchStartDt},'%Y-%m-%d') AS SEARCH_START_DT
+               , DATE_FORMAT(#{searchEndDt},'%Y-%m-%d') AS SEARCH_END_DT
+                              
+          FROM (SELECT A.BUY_CD
+                       , SUM(A.BAL_AMT1) AS BAL_AMT1
+                       , SUM(A.BUY_AMT2) AS BUY_AMT2
+                       , SUM(A.PAY_AMT2) AS PAY_AMT2
+                       , SUM(A.BAL_AMT2) AS BAL_AMT2
+                       , SUM(A.BUY_AMT3) AS BUY_AMT3
+                       , SUM(A.PAY_AMT3) AS PAY_AMT3
+                  FROM (SELECT BUY_CD
+                               , SUM(LBAL_AMT) AS BAL_AMT1
+                               , SUM(BUY_AMT) AS BUY_AMT2
+                               , SUM(PAY_AMT) AS PAY_AMT2
+                               , SUM(BAL_AMT) AS BAL_AMT2
+                               , 0 AS BUY_AMT3
+                               , 0 AS PAY_AMT3
+                          FROM TMH_MON_BUY_PAYMENT
+                         WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 MONTH),'%Y%m')
+                         GROUP BY BUY_CD
+                       UNION ALL
+                        SELECT BUY_CD
+                               , 0 AS BAL_AMT1
+                               , 0 AS BUY_AMT2
+                               , 0 AS PAY_AMT2
+                               , 0 AS BAL_AMT2
+                               , SUM(TOT_AMT) AS BUY_AMT3
+                               , 0 AS PAY_AMT3
+                          FROM TBH_PRDT_RCPT
+                         WHERE BUY_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND  REPLACE(#{searchEndDt},'-','')
+                           AND BUY_CONF_YN = 'Y'
+                           AND BUY_QTY != 0
+                         GROUP BY BUY_CD
+                       UNION ALL
+                        SELECT BUY_CD AS SALES_CD
+                               , 0 AS BAL_AMT1
+                               , 0 AS BUY_AMT2
+                               , 0 AS PAY_AMT2
+                               , 0 AS BAL_AMT2
+                               , SUM(TOT_AMT)*-1 AS BUY_AMT3
+                               , 0 AS PAY_AMT3
+                          FROM TBH_PRDT_RETURN
+                         WHERE RTN_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND  REPLACE(#{searchEndDt},'-','')
+                           AND RTN_QTY != 0
+                         GROUP BY BUY_CD
+                       UNION ALL
+                        SELECT BUY_CD AS SALES_CD
+                               , 0 AS BAL_AMT1
+                               , 0 AS BUY_AMT2
+                               , 0 AS PAY_AMT2
+                               , 0 AS BAL_AMT2
+                               , 0 AS BUY_AMT3
+                               , SUM(SETL_AMT) AS PAY_AMT3
+                          FROM TBH_BUY_WDRL
+                         WHERE WDRL_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND  REPLACE(#{searchEndDt},'-','')
+                         GROUP BY BUY_CD
+                       ) AS A
+                 GROUP BY A.BUY_CD
+               ) AS A
+               
+               JOIN TFM_BUY_MST AS TBM
+                   ON TBM.BUY_CD = A.BUY_CD
+            
+         WHERE (BAL_AMT1 != 0 OR BUY_AMT2 != 0 OR PAY_AMT2 != 0 OR BAL_AMT2 != 0 OR BUY_AMT3 != 0 OR PAY_AMT3 != 0)
+         <if test='searchBuyCd != null and searchBuyCd != ""'>
+           AND A.BUY_CD = #{searchBuyCd}
+         </if>
+           AND TBM.USE_YN = 'Y'
+         ORDER BY TBM.BUY_NM
+
+    </select>
+
+	<!-- 외상매입금 다운 -->
+	<select id="selectAnlAccRecvListExcelDown" parameterType="com.doppio.workplace.as.service.AnlAccRecvListVo" resultType="java.util.HashMap">
+	/*AnlSalesCreditListMapper.selectAnlAccRecvListExcelDown*/	
+        SELECT TBM.BUY_NM
+               , A.BAL_AMT1
+               , A.BUY_AMT2
+               , A.PAY_AMT2
+               , A.BAL_AMT2
+               , A.BUY_AMT3
+               , A.PAY_AMT3
+               , IFNULL(A.BAL_AMT2,0) + IFNULL(A.BUY_AMT3,0) - IFNULL(A.PAY_AMT3,0) AS BAL_AMT3
+               , TBM.SETL_CON
+               , TBM.BANK_NM
+               , TBM.BANK_DEP
+               , TBM.BANK_ACC_NUM
+               , TBM.TEL_NO
+               , TBM.BSNS_NUM
+          FROM (SELECT A.BUY_CD
+                       , SUM(A.BAL_AMT1) AS BAL_AMT1
+                       , SUM(A.BUY_AMT2) AS BUY_AMT2
+                       , SUM(A.PAY_AMT2) AS PAY_AMT2
+                       , SUM(A.BAL_AMT2) AS BAL_AMT2
+                       , SUM(A.BUY_AMT3) AS BUY_AMT3
+                       , SUM(A.PAY_AMT3) AS PAY_AMT3
+                  FROM (SELECT BUY_CD
+                               , SUM(LBAL_AMT) AS BAL_AMT1
+                               , SUM(BUY_AMT) AS BUY_AMT2
+                               , SUM(PAY_AMT) AS PAY_AMT2
+                               , SUM(BAL_AMT) AS BAL_AMT2
+                               , 0 AS BUY_AMT3
+                               , 0 AS PAY_AMT3
+                          FROM TMH_MON_BUY_PAYMENT
+                         WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 MONTH),'%Y%m')
+                         GROUP BY BUY_CD
+                       UNION ALL
+                        SELECT BUY_CD
+                               , 0 AS BAL_AMT1
+                               , 0 AS BUY_AMT2
+                               , 0 AS PAY_AMT2
+                               , 0 AS BAL_AMT2
+                               , SUM(TOT_AMT) AS BUY_AMT3
+                               , 0 AS PAY_AMT3
+                          FROM TBH_PRDT_RCPT
+                         WHERE BUY_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                           AND BUY_CONF_YN = 'Y'
+                           AND BUY_QTY != 0
+                         GROUP BY BUY_CD
+                       UNION ALL
+                        SELECT BUY_CD AS SALES_CD
+                               , 0 AS BAL_AMT1
+                               , 0 AS BUY_AMT2
+                               , 0 AS PAY_AMT2
+                               , 0 AS BAL_AMT2
+                               , SUM(TOT_AMT)*-1 AS BUY_AMT3
+                               , 0 AS PAY_AMT3
+                          FROM TBH_PRDT_RETURN
+                         WHERE RTN_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                           AND RTN_QTY != 0
+                         GROUP BY BUY_CD
+                       UNION ALL
+                        SELECT BUY_CD AS SALES_CD
+                               , 0 AS BAL_AMT1
+                               , 0 AS BUY_AMT2
+                               , 0 AS PAY_AMT2
+                               , 0 AS BAL_AMT2
+                               , 0 AS BUY_AMT3
+                               , SUM(SETL_AMT) AS PAY_AMT3
+                          FROM TBH_BUY_WDRL
+                         WHERE WDRL_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                         GROUP BY BUY_CD
+                       ) AS A
+                 GROUP BY A.BUY_CD
+               ) AS A
+               
+               JOIN TFM_BUY_MST AS TBM
+                   ON TBM.BUY_CD = A.BUY_CD
+            
+         WHERE (BAL_AMT1 != 0 OR BUY_AMT2 != 0 OR PAY_AMT2 != 0 OR BAL_AMT2 != 0 OR BUY_AMT3 != 0 OR PAY_AMT3 != 0)
+         <if test='searchBuyCd != null and searchBuyCd != ""'>  <!-- 판매처코드  -->
+           AND A.BUY_CD = #{searchBuyCd}
+         </if>
+           AND TBM.USE_YN = 'Y'
+         ORDER BY TBM.BUY_NM
+
+    </select>
+
+</mapper>

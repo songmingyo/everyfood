@@ -1,0 +1,67 @@
+<HTML>
+
+<BODY
+  style="background-color: #efefef; font-family: 'Nanum Gothic', sans-serif; font-weight: 300; display:flex; flex-direction:column;">
+  <DIV style="width: 800px; margin-top: 20px; border-radius: 5px; background-color:#ffffff; margin: 7% auto;">
+    <DIV style="font-size: 1.2em; width:100%; color:#45555f;  border-bottom: 1px solid #efefef;">
+        <div style="height: 170px; position: relative;">
+        <img src="$!Data.DOMAIN/resources/images/pearl/common/logo_wshopping.png" width="100%" alt="W-shopping ECS System" 
+        style="vertical-align: middle;">
+        <p style="position: absolute; right:10px; top:-15px; font-weight: bold; font-size: 24px; color: white">shopping wonderland</p>
+        <p style="position: absolute; right:180px; top: 40px; font-size: 10px; font-weight: 400; color: white; line-height: 1.3em;">
+          The “W” as in the word “W shopping”<br/>
+          is the initial letter of the word<br/>
+          “Wonder” which signifies a new and<br/>
+          Wonderful world of shopping.<br/>
+          <br/>
+          Resembling the shape of a radar dish,<br/>
+          W-shopping helps you find products<br/>
+          That set a new trend at amazing prices. 
+        </p>
+        </div>
+        
+    </DIV>
+    <DIV style="padding: 30px 40px 30px 40px; background-color: #f2f2f2;">
+      <div
+        style="margin: 20 auto 0 auto; width: 650px; height: 30px; line-height: 30px; display: grid; grid-template-columns: 5px auto; gap: 10px;">
+        <span style="background-color: #A3095C;"></span>
+        <span style="font-size: 17px;"><strong style="font-style: oblique;">W-shopping Partner Launching System</strong>&nbsp;&nbsp;<span style="font-weight:500;">(계약 서명 요청)</span></span>
+      </div>
+      <div style="margin:20px auto 60px auto; width: 650px;">
+        <table border="0" cellspacing="0" width="100%" style="border: 1px solid #c9c8c8;">
+          <colgroup>
+            <col width="24%" />
+            <col width="*" />
+          </colgroup>
+          <tr>
+            <th align="left" height="50"
+              style="font-size: 14px; color: #333; background-color: #c9c8c8; padding:10px 10px 10px 40px">업체명</th>
+            <td style="padding:10px 50px 10px 30px; background-color: #fff; font-weight: lighter; font-size: 13px;">
+				#if (($!Data.COMP_NM) && ($!Data.COMP_NM != "")) 
+					$!Data.COMP_NM  
+				#else 
+					(주)더블유쇼핑
+				#end             
+            </td>
+          </tr>
+          <tr>
+            <th align="left" height="50"
+              style="font-size: 14px; color: #333; background-color: #c9c8c8; padding:10px 50px 10px 40px">대표상품명</th>
+            <td style="padding:10px 50px 10px 30px; background-color: #fff; font-weight: lighter; font-size: 13px;">
+				$!Data.MAIN_PROD_NM
+			</td>
+          </tr>
+        </table>
+      </div>
+      <div style="color: #222; margin-top: 20px; text-align:center; font-weight: 400; font-size: 14px;">
+        좋은 상품 제안주셔서 대단히 감사드리며,
+		항상 노력하는 W쇼핑이 되겠습니다. 
+		
+		감사합니다.  
+      </div>
+    </div>
+  </DIV>
+  </DIV>
+</BODY>
+
+</HTML>

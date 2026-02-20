@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.br.service.impl.BuyInspectListMapper">
+
+	
+	<!-- 매입검수확인서 조회 -->
+	<select id="selectBuyConfirmList" parameterType="com.doppio.workplace.br.service.BuyInspectListVo" resultType="com.doppio.workplace.br.service.BuyInspectListVo">
+	/*BuyConfirmMapper.selectBuyConfirmList*/	
+		SELECT TBM.BUY_NM
+			   , TPM.LACK_NO_1
+			   , TWM.WH_NM
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TCD.DTL_NM AS ORD_UNIT
+			   , TPM.TIME_LIMIT
+			   , B.TERM_VAL
+			   , Z.STK_QTY
+			   , B.ORD_QTY
+			   , B.REG_NM
+			   , B.ORD_DT
+			   
+			   , A.B_ISS_QTY
+			   , A.W_ISS_QTY
+			   
+			   , TPM.QTY_BOX
+			   , TPM.STD_YN			   
+			   
+	      FROM (SELECT A.WH_CD
+					   ,A.PRDT_CD
+	                   ,SUM(A.B_ISS_QTY) AS B_ISS_QTY
+	                   ,SUM(A.W_ISS_QTY) AS W_ISS_QTY
+	              FROM (SELECT WH_CD
+	                           , PRDT_CD
+	                           , SUM(SALES_QTY) AS B_ISS_QTY
+		                       , 0 AS W_ISS_QTY
+	                      FROM TSH_SALES_DLV
+	                     WHERE SALES_DT LIKE CONCAT(DATE_FORMAT(DATE_ADD(#{buyStartDt}, INTERVAL -1 MONTH), '%Y%m'),'%')
+	                     <if test='whCd != null and whCd != ""'> 
+			 	  		   AND WH_CD = #{whCd}
+			 	  		 </if>
+	                     GROUP BY WH_CD, PRDT_CD
+	                 UNION ALL
+	                    SELECT WH_CD
+	                           , PRDT_CD
+	                           , SUM(RTN_QTY)*-1 AS B_ISS_QTY
+		                       , 0 AS W_ISS_QTY
+	                      FROM TSH_SALES_RETURN
+	                     WHERE RTN_DT LIKE CONCAT(DATE_FORMAT(DATE_ADD(#{buyStartDt}, INTERVAL -1 MONTH), '%Y%m'),'%')
+	                     <if test='whCd != null and whCd != ""'> 
+					   	   AND WH_CD = #{whCd}
+					   	 </if>
+	                     GROUP BY WH_CD, PRDT_CD
+	                 UNION ALL
+	                    SELECT WH_CD
+	                           , PRDT_CD
+	                           , 0 AS B_ISS_QTY
+		                       , SUM(SALES_QTY) AS W_ISS_QTY
+	                      FROM TSH_SALES_DLV
+	                     WHERE SALES_DT BETWEEN DATE_FORMAT(DATE_ADD(#{buyEndDt}, INTERVAL -7 DAY), '%Y%m%d') AND #{buyEndDt}
+	                     <if test='whCd != null and whCd != ""'> 
+					   	   AND WH_CD = #{whCd}
+					   	 </if>
+	                     GROUP BY WH_CD, PRDT_CD
+	                 UNION ALL
+	                    SELECT WH_CD
+	                           , PRDT_CD
+	                           , 0 AS B_ISS_QTY
+		                       , SUM(RTN_QTY)*-1 AS W_ISS_QTY
+	                      FROM TSH_SALES_RETURN
+	                     WHERE RTN_DT BETWEEN DATE_FORMAT(DATE_ADD(#{buyEndDt}, INTERVAL -7 DAY), '%Y%m%d') AND #{buyEndDt}
+	                     <if test='whCd != null and whCd != ""'> 
+					   	   AND WH_CD = #{whCd}
+					   	 </if>
+	                     GROUP BY WH_CD, PRDT_CD
+	                   ) AS A
+	             GROUP BY A.WH_CD, A.PRDT_CD
+	           ) AS A
+	           JOIN
+		           (SELECT A.WH_CD, A.BUY_CD, A.PRDT_CD, B.TERM_VAL, A.ORD_DT, A.REMARKS, A.ORD_QTY, A.REG_NM
+		              FROM (SELECT TPR.BUY_CD
+		                           , TPR.PRDT_CD
+		                           , TPR.TERM_VAL
+		                           , TPR.ORD_DT
+		                           , TPR.REMARKS
+		                           , SUM(TPR.BUY_QTY) AS ORD_QTY
+		                           , TM.USER_NM AS REG_NM
+			                       , TPR.WH_CD
+		                      FROM TBH_PRDT_RCPT AS TPR
+		                           LEFT OUTER JOIN TCM_MEMBER AS TM
+		                               ON TM.USER_ID = TPR.REG_ID 
+		                     WHERE TPR.BUY_DT = #{buyEndDt}
+		                     <if test='whCd != null and whCd != ""'> 
+							   AND TPR.WH_CD = #{whCd}
+							 </if>
+							 <if test='buyCd != null and buyCd != ""'> 
+							   AND TPR.BUY_CD = #{buyCd}
+							 </if>	
+		                     <if test='buyConfYn != null and buyConfYn != ""'>
+		                       AND TPR.BUY_CONF_YN = #{buyConfYn}
+		                     </if>
+		                     GROUP BY TPR.BUY_CD
+		                              , TPR.PRDT_CD
+		                              , TPR.TERM_VAL
+		                              , TPR.ORD_DT
+		                              , TPR.REMARKS
+		                              , TM.USER_NM
+			                          , TPR.WH_CD
+		                   ) AS A
+		                   LEFT OUTER JOIN
+		                       (SELECT B.WH_CD
+		                               , B.PRDT_CD
+		                               , MAX(B.TERM_VAL) AS TERM_VAL
+		                          FROM (SELECT WH_CD
+		                                       , PRDT_CD
+						 	   			       , MAX(BUY_DT) AS BUY_DT
+	   	                                  FROM TBH_PRDT_RCPT A
+		                                 WHERE BUY_DT BETWEEN DATE_FORMAT(DATE_ADD(#{buyEndDt}, INTERVAL -90 DAY), '%Y%m%d') AND DATE_FORMAT(DATE_ADD(#{buyEndDt}, INTERVAL -1 DAY), '%Y%m%d')
+		                                   AND BUY_CONF_YN = 'Y'
+						                 <if test='whCd != null and whCd != ""'> 
+						 	   	           AND WH_CD = #{whCd}
+						  	             </if>
+					     	             <if test='buyCd != null and buyCd != ""'> 
+						 	   	           AND BUY_CD = #{buyCd}
+						 	             </if>	
+		                                 GROUP BY WH_CD, PRDT_CD
+		                               ) AS A, TBH_PRDT_RCPT AS B
+		                         WHERE A.PRDT_CD = B.PRDT_CD
+		                           AND A.BUY_DT = B.BUY_DT
+		                           AND A.WH_CD = B.WH_CD
+		                           AND B.BUY_CONF_YN = 'Y'
+		                         <if test='whCd != null and whCd != ""'> 
+						 	   	   AND B.WH_CD = #{whCd}
+						 	   	 </if>
+		                         GROUP BY B.WH_CD, B.PRDT_CD
+		                       ) B
+		                    ON A.WH_CD = B.WH_CD
+		                   AND A.PRDT_CD = B.PRDT_CD
+		           ) B
+		           ON B.PRDT_CD = A.PRDT_CD
+		          AND B.WH_CD = A.WH_CD
+		          
+	           LEFT OUTER JOIN TFM_WH_MST AS TWM
+	               ON TWM.WH_CD = B.WH_CD
+	               
+	           JOIN TFM_BUY_MST AS TBM
+	               ON TBM.BUY_CD = B.BUY_CD
+	               
+	           JOIN TFM_PRDT_MST AS TPM
+	               ON TPM.PRDT_CD = A.PRDT_CD
+	               
+	           LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD
+                   ON TCD.DTL_CD = TPM.ORD_UNIT
+                  AND TCD.COM_CD = 'M006'
+               
+               LEFT OUTER JOIN               
+	               (SELECT PRDT_CD
+		                   , SUM(STK_QTY) AS STK_QTY
+				      FROM V_WH_PRDT_STK_NEW
+			         WHERE WH_CD = '10001'
+				     GROUP BY PRDT_CD
+				   ) AS Z ON A.PRDT_CD = Z.PRDT_CD
+       
+       	<where>
+	      <if test='lCd != null and lCd != ""'> 
+	        AND TPM.L_CD = #{lCd}
+          </if>
+	      <if test='mCd != null and mCd != ""'> 
+	        AND TPM.M_CD = #{mCd}
+	      </if>
+	    </where>
+       
+	</select>
+	
+	<!-- 매입검수확인서 출력 -->
+	<select id="selectBuyConfirmPrt" parameterType="com.doppio.workplace.br.service.BuyInspectListVo" resultType="com.doppio.workplace.br.service.BuyInspectListVo">
+	/*BuyConfirmMapper.selectBuyConfirmPrt*/	
+		SELECT IFNULL(TBM.BUY_NM,'') AS BUY_NM
+			   , IFNULL(TPM.LACK_NO_1,'') AS LACK_NO_1
+			   , IFNULL(TPM.PRDT_NM,'') AS PRDT_NM
+			   , IFNULL(TPM.PRDT_STD,'') AS PRDT_STD
+			   , IFNULL(TCD.DTL_NM,'') AS ORD_UNIT
+			   , IFNULL(TPM.TIME_LIMIT,'') AS TIME_LIMIT
+			   , IFNULL(B.TERM_VAL,'') AS TERM_VAL
+			   , IFNULL(Z.STK_QTY,0) AS STK_QTY
+			   , IFNULL(B.ORD_QTY,0) AS ORD_QTY
+			   , IFNULL(B.REMARKS,'') AS REMARKS
+			   , IFNULL(B.REG_NM,'') AS REG_NM
+			   , IFNULL(B.ORD_DT,'') AS ORD_DT
+			   
+			   , FN_QTY_FOR_BOXQTY(B.PRDT_CD, B.ORD_QTY) AS BOX_QTY
+			   , #{buyStartDt} AS BUY_START_DT
+			   , #{buyEndDt} AS BUY_END_DT
+			   
+	      FROM (SELECT A.WH_CD, A.BUY_CD, A.PRDT_CD, B.TERM_VAL, A.ORD_DT, A.REMARKS, A.ORD_QTY, A.REG_NM
+		          FROM (SELECT TPR.BUY_CD
+		                       , TPR.PRDT_CD
+		                       , TPR.TERM_VAL
+		                       , TPR.ORD_DT
+		                       , TPR.REMARKS
+		                       , TPR.BUY_QTY AS ORD_QTY
+		                       , TM.USER_NM AS REG_NM
+			                   , TPR.WH_CD
+		                  FROM TBH_PRDT_RCPT AS TPR
+		                       LEFT OUTER JOIN TCM_MEMBER AS TM
+		                           ON TM.USER_ID = TPR.REG_ID 
+		                 WHERE TPR.BUY_DT = REPLACE(#{buyEndDt},'-','')
+		                 <if test='whCd != null and whCd != ""'> 
+			               AND TPR.WH_CD = #{whCd}
+			             </if>
+			             <if test='buyCd != null and buyCd != ""'> 
+			               AND TPR.BUY_CD = #{buyCd}
+			             </if>	
+		                 <if test='buyConfYn != null and buyConfYn != ""'>
+		                   AND TPR.BUY_CONF_YN = #{buyConfYn}
+		                 </if>
+		               ) AS A
+		               LEFT OUTER JOIN
+		                   (SELECT B.WH_CD
+		                           , B.PRDT_CD
+		                           , MAX(B.TERM_VAL) AS TERM_VAL
+		                      FROM (SELECT WH_CD
+		                                   , PRDT_CD
+			    			       , MAX(BUY_DT) AS BUY_DT
+	   	                              FROM TBH_PRDT_RCPT A
+		                             WHERE BUY_DT BETWEEN DATE_FORMAT(DATE_ADD(REPLACE(#{buyEndDt},'-',''), INTERVAL -90 DAY), '%Y%m%d') AND DATE_FORMAT(DATE_ADD(REPLACE(#{buyEndDt},'-',''), INTERVAL -1 DAY), '%Y%m%d')
+		                               AND BUY_CONF_YN = 'Y'
+			                <if test='whCd != null and whCd != ""'> 
+			    	           AND WH_CD = #{whCd}
+			               </if>
+			   	             <if test='buyCd != null and buyCd != ""'> 
+			    	           AND BUY_CD = #{buyCd}
+			              </if>	
+		                             GROUP BY WH_CD, PRDT_CD
+		                           ) AS A, TBH_PRDT_RCPT AS B
+		                     WHERE A.PRDT_CD = B.PRDT_CD
+		                       AND A.BUY_DT = B.BUY_DT
+		                       AND A.WH_CD = B.WH_CD
+		                       AND B.BUY_CONF_YN = 'Y'
+		                     <if test='whCd != null and whCd != ""'> 
+					    	   AND B.WH_CD = #{whCd}
+					    	 </if>
+		                     GROUP BY B.WH_CD, B.PRDT_CD
+		                   ) B
+		                ON A.WH_CD = B.WH_CD
+		               AND A.PRDT_CD = B.PRDT_CD
+		       ) AS B
+		          
+	           JOIN TFM_BUY_MST AS TBM
+	               ON TBM.BUY_CD = B.BUY_CD
+	               
+	           JOIN TFM_PRDT_MST AS TPM
+	               ON TPM.PRDT_CD = B.PRDT_CD
+	               
+	           LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD
+                   ON TCD.DTL_CD = TPM.ORD_UNIT
+                  AND TCD.COM_CD = 'M006'
+	    
+			   LEFT OUTER JOIN               
+	               (SELECT PRDT_CD
+		                   , SUM(STK_QTY) AS STK_QTY
+				      FROM V_WH_PRDT_STK_NEW
+			         WHERE WH_CD = '10001'
+				     GROUP BY PRDT_CD
+				   ) AS Z 
+				       ON Z.PRDT_CD = B.PRDT_CD
+			   
+       	WHERE IFNULL(B.ORD_QTY,0) != 0
+	      <if test='lCd != null and lCd != ""'> 
+	        AND TPM.L_CD = #{lCd}
+          </if>
+	      <if test='mCd != null and mCd != ""'> 
+	        AND TPM.M_CD = #{mCd}
+	      </if>
+  	
+	</select>
+			
+	
+	<!-- 매입검수확인서 엑셀다운 -->
+	<select id="selectBuyInspectListExcelDown" parameterType="com.doppio.workplace.br.service.BuyInspectListVo" resultType="java.util.HashMap">
+	/*BuyConfirmMapper.selectBuyInspectListExcelDown*/	
+		SELECT TBM.BUY_NM
+			   , TPM.LACK_NO_1
+			   , TWM.WH_NM
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TCD.DTL_NM AS ORD_UNIT_NM
+			   , TPM.TIME_LIMIT
+			   , B.TERM_VAL
+			   , A.B_ISS_QTY
+			   , A.W_ISS_QTY
+			   , Z.STK_QTY
+			   , B.ORD_QTY
+			   , B.REG_NM
+			   , B.ORD_DT
+	      FROM (SELECT A.WH_CD
+					   ,A.PRDT_CD
+	                   ,SUM(A.B_ISS_QTY) AS B_ISS_QTY
+	                   ,SUM(A.W_ISS_QTY) AS W_ISS_QTY
+	              FROM (SELECT WH_CD
+	                           , PRDT_CD
+	                           , SUM(SALES_QTY) AS B_ISS_QTY
+		                       , 0 AS W_ISS_QTY
+	                      FROM TSH_SALES_DLV
+	                     WHERE SALES_DT LIKE CONCAT(DATE_FORMAT(DATE_ADD(REPLACE(#{buyStartDt},'-',''), INTERVAL -1 MONTH), '%Y%m'),'%')
+	                     <if test='whCd != null and whCd != ""'> 
+			 	  		   AND WH_CD = #{whCd}
+			 	  		 </if>
+	                     GROUP BY WH_CD, PRDT_CD
+	                 UNION ALL
+	                    SELECT WH_CD
+	                           , PRDT_CD
+	                           , SUM(RTN_QTY)*-1 AS B_ISS_QTY
+		                       , 0 AS W_ISS_QTY
+	                      FROM TSH_SALES_RETURN
+	                     WHERE RTN_DT LIKE CONCAT(DATE_FORMAT(DATE_ADD(REPLACE(#{buyStartDt},'-',''), INTERVAL -1 MONTH), '%Y%m'),'%')
+	                     <if test='whCd != null and whCd != ""'> 
+					   	   AND WH_CD = #{whCd}
+					   	 </if>
+	                     GROUP BY WH_CD, PRDT_CD
+	                 UNION ALL
+	                    SELECT WH_CD
+	                           , PRDT_CD
+	                           , 0 AS B_ISS_QTY
+		                       , SUM(SALES_QTY) AS W_ISS_QTY
+	                      FROM TSH_SALES_DLV
+	                     WHERE SALES_DT BETWEEN DATE_FORMAT(DATE_ADD(REPLACE(#{buyStartDt},'-',''), INTERVAL -7 DAY), '%Y%m%d') AND REPLACE(#{buyStartDt},'-','')
+	                     <if test='whCd != null and whCd != ""'> 
+					   	   AND WH_CD = #{whCd}
+					   	 </if>
+	                     GROUP BY WH_CD, PRDT_CD
+	                 UNION ALL
+	                    SELECT WH_CD
+	                           , PRDT_CD
+	                           , 0 AS B_ISS_QTY
+		                       , SUM(RTN_QTY)*-1 AS W_ISS_QTY
+	                      FROM TSH_SALES_RETURN
+	                     WHERE RTN_DT BETWEEN DATE_FORMAT(DATE_ADD(REPLACE(#{buyStartDt},'-',''), INTERVAL -7 DAY), '%Y%m%d') AND REPLACE(#{buyStartDt},'-','')
+	                     <if test='whCd != null and whCd != ""'> 
+					   	   AND WH_CD = #{whCd}
+					   	 </if>
+	                     GROUP BY WH_CD, PRDT_CD
+	                   ) AS A
+	             GROUP BY A.WH_CD, A.PRDT_CD
+	           ) AS A
+	           JOIN
+		           (SELECT A.WH_CD, A.BUY_CD, A.PRDT_CD, B.TERM_VAL, A.ORD_DT, A.REMARKS, A.ORD_QTY, A.REG_NM
+		              FROM (SELECT TPR.BUY_CD
+		                           , TPR.PRDT_CD
+		                           , TPR.TERM_VAL
+		                           , TPR.ORD_DT
+		                           , TPR.REMARKS
+		                           , SUM(TPR.BUY_QTY) AS ORD_QTY
+		                           , TM.USER_NM AS REG_NM
+			                       , TPR.WH_CD
+		                      FROM TBH_PRDT_RCPT AS TPR
+		                           LEFT OUTER JOIN TCM_MEMBER AS TM
+		                               ON TM.USER_ID = TPR.REG_ID 
+		                     WHERE TPR.BUY_DT = REPLACE(#{buyStartDt},'-','')
+		                     <if test='whCd != null and whCd != ""'> 
+							   AND TPR.WH_CD = #{whCd}
+							 </if>
+							 <if test='buyCd != null and buyCd != ""'> 
+							   AND TPR.BUY_CD = #{buyCd}
+							 </if>	
+		                     <if test='buyConfYn != null and buyConfYn != ""'>
+		                       AND TPR.BUY_CONF_YN = #{buyConfYn}
+		                     </if>
+		                     GROUP BY TPR.BUY_CD
+		                              , TPR.PRDT_CD
+		                              , TPR.TERM_VAL
+		                              , TPR.ORD_DT
+		                              , TPR.REMARKS
+		                              , TM.USER_NM
+			                          , TPR.WH_CD
+		                   ) AS A
+		                   LEFT OUTER JOIN
+		                       (SELECT B.WH_CD
+		                               , B.PRDT_CD
+		                               , MAX(B.TERM_VAL) AS TERM_VAL
+		                          FROM (SELECT WH_CD
+		                                       , PRDT_CD
+						 	   			       , MAX(BUY_DT) AS BUY_DT
+	   	                                  FROM TBH_PRDT_RCPT A
+		                                 WHERE BUY_DT BETWEEN DATE_FORMAT(DATE_ADD(REPLACE(#{buyStartDt},'-',''), INTERVAL -90 DAY), '%Y%m%d') AND DATE_FORMAT(DATE_ADD(REPLACE(#{buyStartDt},'-',''), INTERVAL -1 DAY), '%Y%m%d')
+		                                   AND BUY_CONF_YN = 'Y'
+						                 <if test='whCd != null and whCd != ""'> 
+						 	   	           AND WH_CD = #{whCd}
+						  	             </if>
+					     	             <if test='buyCd != null and buyCd != ""'> 
+						 	   	           AND BUY_CD = #{buyCd}
+						 	             </if>	
+		                                 GROUP BY WH_CD, PRDT_CD
+		                               ) AS A, TBH_PRDT_RCPT AS B
+		                         WHERE A.PRDT_CD = B.PRDT_CD
+		                           AND A.BUY_DT = B.BUY_DT
+		                           AND A.WH_CD = B.WH_CD
+		                           AND B.BUY_CONF_YN = 'Y'
+		                         <if test='whCd != null and whCd != ""'> 
+						 	   	   AND B.WH_CD = #{whCd}
+						 	   	 </if>
+		                         GROUP BY B.WH_CD, B.PRDT_CD
+		                       ) B
+		                    ON A.WH_CD = B.WH_CD
+		                   AND A.PRDT_CD = B.PRDT_CD
+		           ) B
+		           ON B.PRDT_CD = A.PRDT_CD
+		          AND B.WH_CD = A.WH_CD
+		          
+	           LEFT OUTER JOIN TFM_WH_MST AS TWM
+	               ON TWM.WH_CD = B.WH_CD
+	               
+	           JOIN TFM_BUY_MST AS TBM
+	               ON TBM.BUY_CD = B.BUY_CD
+	               
+	           JOIN TFM_PRDT_MST AS TPM
+	               ON TPM.PRDT_CD = A.PRDT_CD
+	               
+	           LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD
+                   ON TCD.DTL_CD = TPM.ORD_UNIT
+                  AND TCD.COM_CD = 'M006'
+               
+               LEFT OUTER JOIN               
+	               (SELECT PRDT_CD
+		                   , SUM(STK_QTY) AS STK_QTY
+				      FROM V_WH_PRDT_STK_NEW
+			         WHERE WH_CD = '10001'
+				     GROUP BY PRDT_CD
+				   ) AS Z ON A.PRDT_CD = Z.PRDT_CD
+       
+       	<where>
+	      <if test='lCd != null and lCd != ""'> 
+	        AND TPM.L_CD = #{lCd}
+          </if>
+	      <if test='mCd != null and mCd != ""'> 
+	        AND TPM.M_CD = #{mCd}
+	      </if>
+	    </where>
+	</select>
+
+
+</mapper>

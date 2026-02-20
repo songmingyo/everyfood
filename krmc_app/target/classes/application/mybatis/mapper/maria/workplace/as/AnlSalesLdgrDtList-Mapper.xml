@@ -1,0 +1,898 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.AnlSalesLdgrDtListMapper">
+
+	<!-- 매출처원장(일별) 조회 -->
+	<select id="selectAnlSalesLdgrDtList" parameterType="com.doppio.workplace.as.service.AnlSalesLdgrDtListVo" resultType="com.doppio.workplace.as.service.AnlSalesLdgrDtListVo">
+	/*AnlSalesCreditListMapper.selectAnlSalesLdgrDt*/	
+      SELECT A.DT_GUBUN
+             , A.SALES_CD
+             , B.SALES_NM
+             , A.GUBUN 
+             , A.PRDT_NM
+             , A.PRDT_STD
+             , B.SETL_CON
+             , SUM(IFNULL(A.QTY,0)) AS QTY
+             , IFNULL(A.PRICE,0) AS PRICE
+             , SUM(IFNULL(A.PURE_AMT,0)) AS PURE_AMT
+             , SUM(IFNULL(A.VAT_AMT,0)) AS VAT_AMT
+             , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+             , SUM(IFNULL(A.PAID_AMT1,0)) AS PAID_AMT1
+             , SUM(IFNULL(A.PAID_AMT2,0)) AS PAID_AMT2
+             , SUM(IFNULL(A.PAID_AMT3,0)) AS PAID_AMT3
+             , SUM(IFNULL(A.PAID_AMT4,0)) AS PAID_AMT4
+             , SUM(IFNULL(A.BAL_AMT,0)) AS BAL_AMT
+             , A.SORT
+        FROM (SELECT '1' AS SORT
+                     , #{startDt} AS DT
+                     , SALES_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS GUBUN
+                     , BAL_AMT AS BAL_AMT 
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS PRICE
+                     , 0 AS QTY
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                     , '전월이월' AS DT_GUBUN
+                FROM TMH_MON_SALES_PAYMENT
+               WHERE YEAR_MON =  DATE_FORMAT(DATE_ADD(CONCAT(#{startDt}), INTERVAL -1 month),'%Y%m')
+          UNION ALL
+              SELECT '2' AS SORT
+                     , A.DT AS DT
+                     , A.SALES_CD
+                     , TPM.PRDT_NM
+                     , TPM.PRDT_STD
+                     , '출고' AS GUBUN
+                     , SUM(A.TOT_AMT) AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , A.PRICE
+                     , SUM(A.QTY) AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , CONCAT(SUBSTRING(A.DT,5,2),'-',SUBSTRING(A.DT,7,2)) AS DT_GUBUN
+                FROM (SELECT A.SALES_DT AS DT
+                             , A.SALES_CD
+                             , A.PRDT_CD
+                             , A.PRICE
+                             , SUM(A.ORD_QTY) AS QTY
+                             , SUM(A.PURE_AMT) AS PURE_AMT
+                             , SUM(A.VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TSH_SALES_DLV AS A
+                       WHERE A.SALES_DT BETWEEN #{startDt} AND #{endDt}
+                         AND A.SALES_QTY != 0
+                       GROUP BY A.SALES_DT, A.SALES_CD, A.PRDT_CD, A.PRICE
+                   UNION ALL
+                      SELECT A.RTN_DT AS DT
+                             , A.SALES_CD
+                             , A.PRDT_CD
+                             , A.PRICE
+                             , SUM(A.RTN_QTY)*-1 AS QTY
+                             , SUM(A.PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(A.VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TSH_SALES_RETURN AS A
+                       WHERE A.RTN_DT BETWEEN #{startDt} AND #{endDt}
+                         AND A.RTN_QTY != 0
+                       GROUP BY A.RTN_DT, A.SALES_CD, A.PRDT_CD, A.PRICE
+                     ) AS A
+                     
+                     JOIN TFM_PRDT_MST AS TPM
+                         ON TPM.PRDT_CD = A.PRDT_CD
+	                     
+               GROUP BY A.DT
+                        , A.SALES_CD
+                        , TPM.PRDT_NM
+                        , TPM.PRDT_STD
+                        , A.PRICE
+          UNION ALL
+              SELECT '3' AS SORT
+                     , DEP_DT AS DT
+                     , SALES_CD AS SALES_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '입금' AS GUBUN
+                     , 0 AS BAL_AMT
+                     , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                     , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                     , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                     , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                     , 0 AS PRICE
+                     , 0 AS QTY
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                     , CONCAT(SUBSTRING(DEP_DT,5,2),'-',SUBSTRING(DEP_DT,7,2)) AS DT_GUBUN
+                FROM TSH_SALES_DEP
+               WHERE DEP_DT BETWEEN #{startDt} AND #{endDt}
+               GROUP BY DEP_DT, SALES_CD
+          UNION ALL
+              SELECT '4' AS SORT 
+                     , A.DT
+                     , A.SALES_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS GUBUN
+                     , 0 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS PRICE
+                     , 0 AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , '일계' AS DT_GUBUN
+                FROM (SELECT A.SALES_DT AS DT
+                             , A.SALES_CD
+                             , SUM(A.PURE_AMT) AS PURE_AMT
+                             , SUM(A.VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TSH_SALES_DLV A
+                       WHERE A.SALES_DT BETWEEN #{startDt} AND #{endDt}
+                         AND A.SALES_QTY != 0
+                       GROUP BY A.SALES_DT, A.SALES_CD
+                    UNION ALL
+                      SELECT A.RTN_DT AS DT
+                             , A.SALES_CD
+                             , SUM(A.PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(A.VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TSH_SALES_RETURN A
+                       WHERE A.RTN_DT BETWEEN #{startDt} AND #{endDt}
+                         AND A.RTN_QTY != 0
+                       GROUP BY A.RTN_DT, A.SALES_CD
+                     ) A
+               GROUP BY A.DT
+                        , A.SALES_CD
+           UNION ALL
+              SELECT '5' AS SORT 
+                     , CONCAT(LEFT(A.DT,6), RIGHT(#{endDt},2)) AS DT
+                     , A.SALES_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS GUBUN
+                     , 0 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS PRICE
+                     , 0 AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , '월계' AS DT_GUBUN
+                FROM (SELECT A.SALES_DT AS DT
+                             , A.SALES_CD
+                             , SUM(A.PURE_AMT) AS PURE_AMT
+                             , SUM(A.VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TSH_SALES_DLV A
+                       WHERE A.SALES_DT BETWEEN #{startDt} AND #{endDt}
+                         AND A.SALES_QTY != 0
+                       GROUP BY A.SALES_DT, A.SALES_CD
+                   UNION ALL
+                      SELECT A.RTN_DT AS DT
+                             , A.SALES_CD AS SALES_CD
+                             , SUM(A.PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(A.VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TSH_SALES_RETURN A
+                       WHERE A.RTN_DT BETWEEN #{startDt} AND #{endDt}
+                         AND A.RTN_QTY != 0
+                       GROUP BY A.RTN_DT, A.SALES_CD
+                     ) A
+               GROUP BY CONCAT(LEFT(A.DT,6), RIGHT(#{endDt},2))
+                        , A.SALES_CD
+          UNION ALL
+              SELECT '6' AS SORT 
+                      , #{endDt} AS DT
+                      , A.SALES_CD
+                      , '' AS PRDT_NM
+                      , '' AS PRDT_STD
+                      , '' AS GUBUN
+                      , SUM(A.BAL_AMT) AS BAL_AMT
+                      , SUM(A.PAID_AMT1) AS PAID_AMT1
+                      , SUM(A.PAID_AMT2) AS PAID_AMT2
+                      , SUM(A.PAID_AMT3) AS PAID_AMT3
+                      , SUM(A.PAID_AMT4) AS PAID_AMT4
+                      , 0 AS PRICE
+                      , SUM(A.QTY) AS QTY
+                      , SUM(A.PURE_AMT) AS PURE_AMT
+                      , SUM(A.VAT_AMT) AS VAT_AMT
+                      , SUM(A.TOT_AMT) AS TOT_AMT
+                      , '합계' AS DT_GUBUN
+                FROM  (SELECT SALES_CD
+                              , 0 AS BAL_AMT
+                              , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                              , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                              , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                              , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                              , 0 AS QTY
+                              , 0 AS PURE_AMT
+                              , 0 AS VAT_AMT
+                              , 0 AS TOT_AMT
+                         FROM TSH_SALES_DEP
+                        WHERE DEP_DT BETWEEN #{startDt} AND #{endDt}
+                        GROUP BY SALES_CD
+                   UNION ALL
+                       SELECT A.SALES_CD
+                              , SUM(A.TOT_AMT) AS BAL_AMT
+                              , 0 AS PAID_AMT1
+                              , 0 AS PAID_AMT2
+                              , 0 AS PAID_AMT3
+                              , 0 AS PAID_AMT4
+                              , SUM(A.QTY) AS QTY
+                              , SUM(A.PURE_AMT) AS PURE_AMT
+                              , SUM(A.VAT_AMT) AS VAT_AMT
+                              , SUM(TOT_AMT) AS TOT_AMT
+                         FROM (SELECT SALES_CD
+                                      , SUM(TOT_AMT) AS BAL_AMT
+                                      , SUM(ORD_QTY) AS QTY
+                                      , SUM(PURE_AMT) AS PURE_AMT
+                                      , SUM(VAT_AMT) AS VAT_AMT
+                                      , SUM(TOT_AMT) AS TOT_AMT
+                                 FROM TSH_SALES_DLV
+                                WHERE SALES_DT BETWEEN #{startDt} AND #{endDt}
+                                  AND SALES_QTY != 0
+                                GROUP BY SALES_CD
+                             UNION ALL
+                               SELECT SALES_CD
+                                      , SUM(TOT_AMT)*-1 AS BAL_AMT
+                                      , SUM(RTN_QTY)*-1 AS QTY
+                                      , SUM(PURE_AMT)*-1 AS PURE_AMT
+                                      , SUM(VAT_AMT)*-1 AS VAT_AMT
+                                      , SUM(TOT_AMT)*-1 AS TOT_AMT
+                                 FROM TSH_SALES_RETURN
+                                WHERE RTN_DT BETWEEN #{startDt} AND #{endDt}
+                                  AND RTN_QTY != 0
+                                GROUP BY SALES_CD
+                              ) AS A                              
+                        GROUP BY A.SALES_CD
+                      ) A
+                GROUP BY A.SALES_CD
+              ) A
+              JOIN TFM_SALES_ADD_INFO B
+                  ON A.SALES_CD = B.SALES_CD
+         <where>
+	         <if test='salesCd != null and salesCd != ""'> 
+				AND B.SALES_CD = #{salesCd}
+		    </if>
+	    </where>
+	           
+     GROUP BY A.DT_GUBUN
+              , A.SALES_CD
+              , B.SALES_NM
+              , A.GUBUN
+              , A.PRDT_NM
+              , A.PRICE
+              , A.PRDT_STD
+              , A.DT
+              , A.SORT
+              , B.SETL_CON
+              , A.SORT
+              
+     HAVING SUM(IFNULL(A.QTY,0)) != 0 OR IFNULL(A.PRICE,0) != 0 OR SUM(IFNULL(A.PURE_AMT,0)) != 0 OR SUM(IFNULL(A.VAT_AMT,0)) != 0 
+            OR SUM(IFNULL(A.TOT_AMT,0)) != 0 OR SUM(IFNULL(A.PAID_AMT1,0)) != 0 OR SUM(IFNULL(A.PAID_AMT2,0)) != 0 OR SUM(IFNULL(A.PAID_AMT3,0)) != 0 OR SUM(IFNULL(A.PAID_AMT4,0)) != 0 OR SUM(IFNULL(A.BAL_AMT,0))
+
+     ORDER BY A.SALES_CD, A.DT, A.SORT
+
+	</select>
+
+	<!-- 매출처원장(일별) 액샐 -->
+	<select id="selectAnlSalesLdgrDtListExcelDown" parameterType="com.doppio.workplace.as.service.AnlSalesLdgrDtListVo" resultType="java.util.HashMap">
+	/*AnlSalesCreditListMapper.selectAnlSalesLdgrDtExcelDown*/	
+
+        SELECT A.DT_GUBUN
+             , A.GUBUN 
+             , B.SALES_NM
+             , A.PRDT_NM
+             , A.PRDT_STD
+             , SUM(IFNULL(A.QTY,0)) AS QTY
+             , IFNULL(A.PRICE,0) AS PRICE
+             , SUM(IFNULL(A.PURE_AMT,0)) AS PURE_AMT
+             , SUM(IFNULL(A.VAT_AMT,0)) AS VAT_AMT
+             , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+             , SUM(IFNULL(A.PAID_AMT1,0)) AS PAID_AMT1
+             , SUM(IFNULL(A.PAID_AMT2,0)) AS PAID_AMT2
+             , SUM(IFNULL(A.PAID_AMT3,0)) AS PAID_AMT3
+             , SUM(IFNULL(A.PAID_AMT4,0)) AS PAID_AMT4
+             , SUM(IFNULL(A.BAL_AMT,0)) AS BAL_AMT
+        FROM (SELECT '1' AS SORT
+                     , REPLACE(#{startDt},'-','') AS DT
+                     , SALES_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS GUBUN
+                     , BAL_AMT AS BAL_AMT 
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS PRICE
+                     , 0 AS QTY
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                     , '전월이월' AS DT_GUBUN
+                FROM TMH_MON_SALES_PAYMENT
+               WHERE YEAR_MON =  DATE_FORMAT(DATE_ADD(CONCAT(#{startDt}), INTERVAL -1 month),'%Y%m')
+          UNION ALL
+              SELECT '2' AS SORT
+                     , A.DT AS DT
+                     , A.SALES_CD
+                     , TPM.PRDT_NM
+                     , TPM.PRDT_STD
+                     , '출고' AS GUBUN
+                     , SUM(A.TOT_AMT) AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , A.PRICE
+                     , SUM(A.QTY) AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , CONCAT(SUBSTRING(A.DT,5,2),'-',SUBSTRING(A.DT,7,2)) AS DT_GUBUN
+                FROM (SELECT A.SALES_DT AS DT
+                             , A.SALES_CD
+                             , A.PRDT_CD
+                             , A.PRICE
+                             , SUM(A.ORD_QTY) AS QTY
+                             , SUM(A.PURE_AMT) AS PURE_AMT
+                             , SUM(A.VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TSH_SALES_DLV AS A
+                       WHERE A.SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         AND A.SALES_QTY != 0
+                       GROUP BY A.SALES_DT, A.SALES_CD, A.PRDT_CD, A.PRICE
+                   UNION ALL
+                      SELECT A.RTN_DT AS DT
+                             , A.SALES_CD
+                             , A.PRDT_CD
+                             , A.PRICE
+                             , SUM(A.RTN_QTY)*-1 AS QTY
+                             , SUM(A.PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(A.VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TSH_SALES_RETURN AS A
+                       WHERE A.RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         AND A.RTN_QTY != 0
+                       GROUP BY A.RTN_DT, A.SALES_CD, A.PRDT_CD, A.PRICE
+                     ) AS A
+                     
+                     JOIN TFM_PRDT_MST AS TPM
+                         ON TPM.PRDT_CD = A.PRDT_CD
+	                     
+               GROUP BY A.DT
+                        , A.SALES_CD
+                        , TPM.PRDT_NM
+                        , TPM.PRDT_STD
+                        , A.PRICE
+          UNION ALL
+              SELECT '3' AS SORT
+                     , DEP_DT AS DT
+                     , SALES_CD AS SALES_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '입금' AS GUBUN
+                     , 0 AS BAL_AMT
+                     , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                     , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                     , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                     , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                     , 0 AS PRICE
+                     , 0 AS QTY
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                     , CONCAT(SUBSTRING(DEP_DT,5,2),'-',SUBSTRING(DEP_DT,7,2)) AS DT_GUBUN
+                FROM TSH_SALES_DEP
+               WHERE DEP_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+               GROUP BY DEP_DT, SALES_CD
+          UNION ALL
+              SELECT '4' AS SORT 
+                     , A.DT
+                     , A.SALES_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS GUBUN
+                     , 0 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS PRICE
+                     , 0 AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , '일계' AS DT_GUBUN
+                FROM (SELECT A.SALES_DT AS DT
+                             , A.SALES_CD
+                             , SUM(A.PURE_AMT) AS PURE_AMT
+                             , SUM(A.VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TSH_SALES_DLV A
+                       WHERE A.SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         AND A.SALES_QTY != 0
+                       GROUP BY A.SALES_DT, A.SALES_CD
+                    UNION ALL
+                      SELECT A.RTN_DT AS DT
+                             , A.SALES_CD
+                             , SUM(A.PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(A.VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TSH_SALES_RETURN A
+                       WHERE A.RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         AND A.RTN_QTY != 0
+                       GROUP BY A.RTN_DT, A.SALES_CD
+                     ) A
+               GROUP BY A.DT
+                        , A.SALES_CD
+           UNION ALL
+              SELECT '5' AS SORT 
+                     , CONCAT(LEFT(A.DT,6), RIGHT(#{endDt},2)) AS DT
+                     , A.SALES_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS GUBUN
+                     , 0 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS PRICE
+                     , 0 AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , '월계' AS DT_GUBUN
+                FROM (SELECT A.SALES_DT AS DT
+                             , A.SALES_CD
+                             , SUM(A.PURE_AMT) AS PURE_AMT
+                             , SUM(A.VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TSH_SALES_DLV A
+                       WHERE A.SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         AND A.SALES_QTY != 0
+                       GROUP BY A.SALES_DT, A.SALES_CD
+                   UNION ALL
+                      SELECT A.RTN_DT AS DT
+                             , A.SALES_CD AS SALES_CD
+                             , SUM(A.PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(A.VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TSH_SALES_RETURN A
+                       WHERE A.RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         AND A.RTN_QTY != 0
+                       GROUP BY A.RTN_DT, A.SALES_CD
+                     ) A
+               GROUP BY CONCAT(LEFT(A.DT,6), RIGHT(#{endDt},2))
+                        , A.SALES_CD
+          UNION ALL
+              SELECT '6' AS SORT 
+                      , REPLACE(#{endDt},'-','') AS DT
+                      , A.SALES_CD
+                      , '' AS PRDT_NM
+                      , '' AS PRDT_STD
+                      , '' AS GUBUN
+                      , SUM(A.BAL_AMT) AS BAL_AMT
+                      , SUM(A.PAID_AMT1) AS PAID_AMT1
+                      , SUM(A.PAID_AMT2) AS PAID_AMT2
+                      , SUM(A.PAID_AMT3) AS PAID_AMT3
+                      , SUM(A.PAID_AMT4) AS PAID_AMT4
+                      , 0 AS PRICE
+                      , SUM(A.QTY) AS QTY
+                      , SUM(A.PURE_AMT) AS PURE_AMT
+                      , SUM(A.VAT_AMT) AS VAT_AMT
+                      , SUM(A.TOT_AMT) AS TOT_AMT
+                      , '합계' AS DT_GUBUN
+                FROM  (SELECT SALES_CD
+                              , 0 AS BAL_AMT
+                              , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                              , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                              , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                              , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                              , 0 AS QTY
+                              , 0 AS PURE_AMT
+                              , 0 AS VAT_AMT
+                              , 0 AS TOT_AMT
+                         FROM TSH_SALES_DEP
+                        WHERE DEP_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                        GROUP BY SALES_CD
+                   UNION ALL
+                       SELECT A.SALES_CD
+                              , SUM(A.TOT_AMT) AS BAL_AMT
+                              , 0 AS PAID_AMT1
+                              , 0 AS PAID_AMT2
+                              , 0 AS PAID_AMT3
+                              , 0 AS PAID_AMT4
+                              , SUM(A.QTY) AS QTY
+                              , SUM(A.PURE_AMT) AS PURE_AMT
+                              , SUM(A.VAT_AMT) AS VAT_AMT
+                              , SUM(TOT_AMT) AS TOT_AMT
+                         FROM (SELECT SALES_CD
+                                      , SUM(TOT_AMT) AS BAL_AMT
+                                      , SUM(ORD_QTY) AS QTY
+                                      , SUM(PURE_AMT) AS PURE_AMT
+                                      , SUM(VAT_AMT) AS VAT_AMT
+                                      , SUM(TOT_AMT) AS TOT_AMT
+                                 FROM TSH_SALES_DLV
+                                WHERE SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                                  AND SALES_QTY != 0
+                                GROUP BY SALES_CD
+                             UNION ALL
+                               SELECT SALES_CD
+                                      , SUM(TOT_AMT)*-1 AS BAL_AMT
+                                      , SUM(RTN_QTY)*-1 AS QTY
+                                      , SUM(PURE_AMT)*-1 AS PURE_AMT
+                                      , SUM(VAT_AMT)*-1 AS VAT_AMT
+                                      , SUM(TOT_AMT)*-1 AS TOT_AMT
+                                 FROM TSH_SALES_RETURN
+                                WHERE RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                                  AND RTN_QTY != 0
+                                GROUP BY SALES_CD
+                              ) AS A                              
+                        GROUP BY A.SALES_CD
+                      ) A
+                GROUP BY A.SALES_CD
+              ) A
+              JOIN TFM_SALES_ADD_INFO B
+                  ON A.SALES_CD = B.SALES_CD
+         <where>
+	         <if test='salesCd != null and salesCd != ""'> 
+				AND B.SALES_CD = #{salesCd}
+		    </if>
+	    </where>
+	           
+     GROUP BY A.DT_GUBUN
+              , A.SALES_CD
+              , B.SALES_NM
+              , A.GUBUN
+              , A.PRDT_NM
+              , A.PRICE
+              , A.PRDT_STD
+              , A.DT
+              , A.SORT
+              , B.SETL_CON
+              , A.SORT
+              
+     HAVING SUM(IFNULL(A.QTY,0)) != 0 OR IFNULL(A.PRICE,0) != 0 OR SUM(IFNULL(A.PURE_AMT,0)) != 0 OR SUM(IFNULL(A.VAT_AMT,0)) != 0 
+            OR SUM(IFNULL(A.TOT_AMT,0)) != 0 OR SUM(IFNULL(A.PAID_AMT1,0)) != 0 OR SUM(IFNULL(A.PAID_AMT2,0)) != 0 OR SUM(IFNULL(A.PAID_AMT3,0)) != 0 OR SUM(IFNULL(A.BAL_AMT,0))
+
+     ORDER BY A.SALES_CD, A.DT, A.SORT
+
+	</select>
+	
+	
+	
+	<!-- 매출처원장(일별) 출력 -->
+	<select id="selectAnlSalesLdgrDtPrintList" parameterType="com.doppio.workplace.as.service.AnlSalesLdgrDtListVo" resultType="com.doppio.workplace.as.service.AnlSalesLdgrDtListVo">
+	/*AnlSalesCreditListMapper.selectAnlSalesLdgrDtPrintList*/	
+      SELECT A.DT_GUBUN
+             , A.GUBUN
+             , A.SALES_CD
+             , B.SALES_NM
+             , A.PRDT_NM
+             , A.PRDT_STD
+             , B.SETL_CON
+             , SUM(IFNULL(A.QTY,0)) AS PRT_QTY
+             , IFNULL(A.PRICE,0) AS PRT_PRICE
+             , SUM(IFNULL(A.PURE_AMT,0)) AS PRT_PURE_AMT
+             , SUM(IFNULL(A.VAT_AMT,0)) AS PRT_VAT_AMT
+             , SUM(IFNULL(A.TOT_AMT,0)) AS PRT_TOT_AMT
+             , SUM(IFNULL(A.PAID_AMT1,0)) AS PRT_PAID_AMT1
+             , SUM(IFNULL(A.PAID_AMT2,0)) AS PRT_PAID_AMT2
+             , SUM(IFNULL(A.PAID_AMT3,0)) AS PRT_PAID_AMT3
+             , SUM(IFNULL(A.PAID_AMT4,0)) AS PRT_PAID_AMT4
+             , SUM(IFNULL(A.BAL_AMT,0)) AS PRT_BAL_AMT
+             , A.SORT
+             , #{startDt} AS START_DT
+             , #{endDt} AS END_DT
+             , NOW() AS NOW_DATE
+        FROM (SELECT '1' AS SORT
+                     , #{startDt} AS DT
+                     , SALES_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS GUBUN
+                     , BAL_AMT AS BAL_AMT 
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS PRICE
+                     , 0 AS QTY
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                     , '전월이월' AS DT_GUBUN
+                FROM TMH_MON_SALES_PAYMENT
+               WHERE YEAR_MON =  DATE_FORMAT(DATE_ADD(CONCAT(REPLACE(#{startDt},'-','')), INTERVAL -1 month),'%Y%m')
+          UNION ALL
+              SELECT '2' AS SORT
+                     , A.DT AS DT
+                     , A.SALES_CD
+                     , TPM.PRDT_NM
+                     , TPM.PRDT_STD
+                     , '출고' AS GUBUN
+                     , SUM(A.TOT_AMT) AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , A.PRICE
+                     , SUM(A.QTY) AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , CONCAT(SUBSTRING(A.DT,5,2),'-',SUBSTRING(A.DT,7,2)) AS DT_GUBUN
+                FROM (SELECT A.SALES_DT AS DT
+                             , A.SALES_CD
+                             , A.PRDT_CD
+                             , A.PRICE
+                             , SUM(A.ORD_QTY) AS QTY
+                             , SUM(A.PURE_AMT) AS PURE_AMT
+                             , SUM(A.VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TSH_SALES_DLV AS A
+                       WHERE A.SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         AND A.SALES_QTY != 0
+                       GROUP BY A.SALES_DT, A.SALES_CD, A.PRDT_CD, A.PRICE
+                   UNION ALL
+                      SELECT A.RTN_DT AS DT
+                             , A.SALES_CD
+                             , A.PRDT_CD
+                             , A.PRICE
+                             , SUM(A.RTN_QTY)*-1 AS QTY
+                             , SUM(A.PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(A.VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TSH_SALES_RETURN AS A
+                       WHERE A.RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         AND A.RTN_QTY != 0
+                       GROUP BY A.RTN_DT, A.SALES_CD, A.PRDT_CD, A.PRICE
+                     ) AS A
+                     
+                     JOIN TFM_PRDT_MST AS TPM
+                         ON TPM.PRDT_CD = A.PRDT_CD
+	                     
+               GROUP BY A.DT
+                        , A.SALES_CD
+                        , TPM.PRDT_NM
+                        , TPM.PRDT_STD
+                        , A.PRICE
+          UNION ALL
+              SELECT '3' AS SORT
+                     , DEP_DT AS DT
+                     , SALES_CD AS SALES_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '입금' AS GUBUN
+                     , 0 AS BAL_AMT
+                     , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                     , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                     , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                     , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                     , 0 AS PRICE
+                     , 0 AS QTY
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                     , CONCAT(SUBSTRING(DEP_DT,5,2),'-',SUBSTRING(DEP_DT,7,2)) AS DT_GUBUN
+                FROM TSH_SALES_DEP
+               WHERE DEP_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+               GROUP BY DEP_DT, SALES_CD
+          UNION ALL
+              SELECT '4' AS SORT 
+                     , A.DT
+                     , A.SALES_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS GUBUN
+                     , 0 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS PRICE
+                     , 0 AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , '일계' AS DT_GUBUN
+                FROM (SELECT A.SALES_DT AS DT
+                             , A.SALES_CD
+                             , SUM(A.PURE_AMT) AS PURE_AMT
+                             , SUM(A.VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TSH_SALES_DLV A
+                       WHERE A.SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         AND A.SALES_QTY != 0
+                       GROUP BY A.SALES_DT, A.SALES_CD
+                    UNION ALL
+                      SELECT A.RTN_DT AS DT
+                             , A.SALES_CD
+                             , SUM(A.PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(A.VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TSH_SALES_RETURN A
+                       WHERE A.RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         AND A.RTN_QTY != 0
+                       GROUP BY A.RTN_DT, A.SALES_CD
+                     ) A
+               GROUP BY A.DT
+                        , A.SALES_CD
+           UNION ALL
+              SELECT '5' AS SORT 
+                     , CONCAT(LEFT(A.DT,6), RIGHT(REPLACE(#{endDt},'-',''),2)) AS DT
+                     , A.SALES_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS GUBUN
+                     , 0 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS PRICE
+                     , 0 AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , '월계' AS DT_GUBUN
+                FROM (SELECT A.SALES_DT AS DT
+                             , A.SALES_CD
+                             , SUM(A.PURE_AMT) AS PURE_AMT
+                             , SUM(A.VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TSH_SALES_DLV A
+                       WHERE A.SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         AND A.SALES_QTY != 0
+                       GROUP BY A.SALES_DT, A.SALES_CD
+                   UNION ALL
+                      SELECT A.RTN_DT AS DT
+                             , A.SALES_CD AS SALES_CD
+                             , SUM(A.PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(A.VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TSH_SALES_RETURN A
+                       WHERE A.RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                         AND A.RTN_QTY != 0
+                       GROUP BY A.RTN_DT, A.SALES_CD
+                     ) A
+               GROUP BY CONCAT(LEFT(A.DT,6), RIGHT(REPLACE(#{endDt},'-',''),2))
+                        , A.SALES_CD
+          UNION ALL
+              SELECT '6' AS SORT 
+                      , REPLACE(#{endDt},'-','') AS DT
+                      , A.SALES_CD
+                      , '' AS PRDT_NM
+                      , '' AS PRDT_STD
+                      , '' AS GUBUN
+                      , SUM(A.BAL_AMT) AS BAL_AMT
+                      , SUM(A.PAID_AMT1) AS PAID_AMT1
+                      , SUM(A.PAID_AMT2) AS PAID_AMT2
+                      , SUM(A.PAID_AMT3) AS PAID_AMT3
+                      , SUM(A.PAID_AMT4) AS PAID_AMT4
+                      , 0 AS PRICE
+                      , SUM(A.QTY) AS QTY
+                      , SUM(A.PURE_AMT) AS PURE_AMT
+                      , SUM(A.VAT_AMT) AS VAT_AMT
+                      , SUM(A.TOT_AMT) AS TOT_AMT
+                      , '합계' AS DT_GUBUN
+                FROM  (SELECT SALES_CD
+                              , 0 AS BAL_AMT
+                              , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                              , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                              , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                              , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                              , 0 AS QTY
+                              , 0 AS PURE_AMT
+                              , 0 AS VAT_AMT
+                              , 0 AS TOT_AMT
+                         FROM TSH_SALES_DEP
+                        WHERE DEP_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                        GROUP BY SALES_CD
+                   UNION ALL
+                       SELECT A.SALES_CD
+                              , SUM(A.TOT_AMT) AS BAL_AMT
+                              , 0 AS PAID_AMT1
+                              , 0 AS PAID_AMT2
+                              , 0 AS PAID_AMT3
+                              , 0 AS PAID_AMT4
+                              , SUM(A.QTY) AS QTY
+                              , SUM(A.PURE_AMT) AS PURE_AMT
+                              , SUM(A.VAT_AMT) AS VAT_AMT
+                              , SUM(TOT_AMT) AS TOT_AMT
+                         FROM (SELECT SALES_CD
+                                      , SUM(TOT_AMT) AS BAL_AMT
+                                      , SUM(ORD_QTY) AS QTY
+                                      , SUM(PURE_AMT) AS PURE_AMT
+                                      , SUM(VAT_AMT) AS VAT_AMT
+                                      , SUM(TOT_AMT) AS TOT_AMT
+                                 FROM TSH_SALES_DLV
+                                WHERE SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                                  AND SALES_QTY != 0
+                                GROUP BY SALES_CD
+                             UNION ALL
+                               SELECT SALES_CD
+                                      , SUM(TOT_AMT)*-1 AS BAL_AMT
+                                      , SUM(RTN_QTY)*-1 AS QTY
+                                      , SUM(PURE_AMT)*-1 AS PURE_AMT
+                                      , SUM(VAT_AMT)*-1 AS VAT_AMT
+                                      , SUM(TOT_AMT)*-1 AS TOT_AMT
+                                 FROM TSH_SALES_RETURN
+                                WHERE RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+                                  AND RTN_QTY != 0
+                                GROUP BY SALES_CD
+                              ) AS A                              
+                        GROUP BY A.SALES_CD
+                      ) A
+                GROUP BY A.SALES_CD
+              ) A
+              JOIN TFM_SALES_ADD_INFO B
+                  ON A.SALES_CD = B.SALES_CD
+         <where>
+	         <if test='salesCd != null and salesCd != ""'> 
+				AND B.SALES_CD = #{salesCd}
+		    </if>
+	    </where>
+	           
+     GROUP BY A.DT_GUBUN
+              , A.SALES_CD
+              , B.SALES_NM
+              , A.GUBUN
+              , A.PRDT_NM
+              , A.PRICE
+              , A.PRDT_STD
+              , A.DT
+              , A.SORT
+              , B.SETL_CON
+              , A.SORT
+              
+     HAVING SUM(IFNULL(A.QTY,0)) != 0 OR IFNULL(A.PRICE,0) != 0 OR SUM(IFNULL(A.PURE_AMT,0)) != 0 OR SUM(IFNULL(A.VAT_AMT,0)) != 0 
+            OR SUM(IFNULL(A.TOT_AMT,0)) != 0 OR SUM(IFNULL(A.PAID_AMT1,0)) != 0 OR SUM(IFNULL(A.PAID_AMT2,0)) != 0 OR SUM(IFNULL(A.PAID_AMT3,0)) != 0 OR SUM(IFNULL(A.BAL_AMT,0))
+
+     ORDER BY A.SALES_CD, A.DT, A.SORT
+
+	</select>
+</mapper>

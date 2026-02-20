@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.common.security.service.impl.CustomUserMapper">
+
+
+	<resultMap id="securityMap" type="com.doppio.common.security.service.CustomUser">
+        <result	column="USER_ID" 				property="userId" 			/>	
+        <result	column="USER_NM" 				property="username" 		/>
+    	<result	column="USER_PW" 				property="password"			/>
+    	<result	column="USER_NM" 				property="fullName"			/>
+    	<result	column="EMAIL" 					property="email"			/>
+   		<result	column="MEMBER_CD" 				property="memberCd"			/>
+    	<result	column="MASTER_ID"				property="masterId"			/>
+    	<result	column="COMP_CD" 				property="compCd"			/>
+    	<result	column="COMP_NM" 				property="compNm"			/>
+    	<result	column="TRADE_COMP_CD" 			property="tradeCompCd"		/>	<!--  거래유형(1:매출처, 2:매입처, 9: KRMC본사) -->
+    	<result	column="USER_TYPE" 	 			property="userType"			/>
+    	<result	column="USER_TYPE_NM" 	 		property="userTypeNm"		/>
+    	<result	column="USER_ROLES" 			property="userRoles"		/>
+    	<result	column="PASS_FAIL_CNT"  		property="passFailCnt"		/>
+    	<result	column="LOCK_YN"  				property="lockYn"			/>
+    	<result	column="USE_YN"  				property="useYn"			/>
+    	<result	column="HP_NO"					property="hpNo"				/>
+    	<result	column="TEL_NO"					property="telNo"			/>
+    	<result	column="PASS_CHG_YN"			property="passChgYn"		/>
+    	<result	column="PASS_LAST_DY"			property="passLastDy"		/>
+    	<result	column="BMAN_NO"				property="bmanNo"			/>
+    	<result	column="PW_3M_FLAG"				property="pw3mFlag"			/>
+    	<result	column="FORGOT_PWD_CODE"	 	property="forgotPwdCode"	/>
+    	<result	column="FORGOT_PWD_LST_DY"	 	property="forgotPwdLstDy"	/>
+<!--     	<result	column="ID_TYPE_CD"				property="idTypeCd"			/> -->
+<!--     	<result	column="PASS_CHG_NEED_YN"		property="passChgNeedYn"	/> -->
+<!--     	<result	column="WORKNG_SE_CD"			property="workngSeCd"		/> -->
+    	<result	column="APRV_DIVN_CD"  			property="aprvDivnCd"		/>  
+<!-- 		<result	column="IF_YN" 		 			property="ifYn"				/> -->
+<!-- 		<result	column="DEPT_CD" 		 		property="deptCd"			/> -->
+<!-- 		<result	column="DEPT_NM" 		 		property="deptNm"			/>		 -->
+<!-- 		<result	column="DIVCD"	 		 		property="divcd"			/> -->
+<!-- 		<result	column="POSTN_BRNCH_CD"	 		property="postnBrnchCd"		/> -->
+		<result	column="EMP_NO"	 				property="empNo"			/>
+<!-- 		<result	column="ENTP_MAN_NM"	 		property="entpManNm"		/> -->
+<!-- 		<result	column="ENTP_MAN_TEL"	 		property="entpManTel"		/> -->
+<!-- 		<result	column="ENTP_MAN_EMAIL"	 		property="entpManEmail"		/> -->
+		<result	column="HQ_CLASS"	 				property="hqClass"			/>
+	</resultMap>
+
+	<!-- 로그인 사용자 정보 조회 -->
+	<select id="selectSecurityData"	parameterType="HashMap"	resultMap="securityMap">
+	 	/* Security-Mapper.selectSecurityData */
+		SELECT
+			T1.USER_ID												/* 사용자아이디 */
+			, T1.USER_PW 											/* 사용자비밀번호 */
+			, T1.USER_NM 											/* 사용자명 */
+			, T1.EMAIL 												/* 사용자이메일 */
+			, T1.MEMBER_CD 											/* 사용자 고유번호 */
+			, T1.MASTER_ID 											/* 업체코드 */
+			, T3.MASTER_ID 		AS COMP_CD							/* 회사코드 */
+			, T3.COMP_NM		AS COMP_NM							/* 업체명 */
+			, T3.TRADE_COMP_CD 										/* 거래유형(1:매출처, 2:매입처, 9: KRMC본사) */
+			, T1.USER_TYPE 											/* 사용자유형[9001] */
+			, FN_CODE_RTN('9001',T1.USER_TYPE)	AS USER_TYPE_NM		/* 사용자유형명 */
+			, T1.USER_ROLES											/* Security Roles */
+			, T1.PASS_FAIL_CNT										/* 비밀번호 실패 횟수 */
+			, T1.LOCK_YN											/* 계정잠금여부 */
+			, T1.USE_YN												/* 계정사용여부 */
+			, T1.HP_NO												/* 핸드폰번호 */
+			, T1.TEL_NO												/* 전화번호 */
+			, T1.PASS_CHG_YN										/* 비밀번호필수변경여부 */
+			, T1.PASS_LAST_DY 										/* 비밀번호최종변경일자 */
+			, T1.GEN_DIVN_CD 										/* 생성구분코드[9007] */
+			, T1.EMP_NO												/* 사번(ERP/HR) */
+			, T3.BMAN_NO											/* 사업자등록번호 */
+			, CASE 
+				WHEN (T1.PASS_CHG_YN ='Y' AND DATEDIFF(DATE_FORMAT(NOW(),'%Y%m%d'),T1.PASS_LAST_DY) >= 90) 
+			  	THEN 'Y'ELSE 'N' 
+			  END AS PW_3M_FLAG
+			, T1.FORGOT_PWD_CODE									/* FORGOT_PWD_CODE*/
+			, T1.FORGOT_PWD_LST_DY									/* 비밀번호 최종변경일자*/
+			, IFNULL(TSHC.HQ_CLASS,'') AS HQ_CLASS
+		FROM TCM_MEMBER T1
+		     LEFT OUTER JOIN VCM_COMPINFO T3 ON T1.MASTER_ID = T3.MASTER_ID
+		     LEFT OUTER JOIN TFM_SALES_HQ_CLASS AS TSHC
+		         ON TSHC.SALES_CD = T1.USER_ID
+	   WHERE T1.USER_ID = #{userName}
+		 AND T1.GEN_DIVN_CD = #{genDivnCd}
+ 	</select>
+	
+	<!-- 사용자 패스워드 카운트 및 LOCK 처리  -->
+	<update id="updateSecurityPassFailCntAndLock"	parameterType="com.doppio.common.security.service.CustomUser">
+		/* Security-Mapper.updateSecurityPassFailCntAndLock */
+		UPDATE TCM_MEMBER
+		SET PASS_FAIL_CNT = CASE WHEN CAST(IFNULL(#{maxPassFailCnt},'5') AS INT) > PASS_FAIL_CNT THEN PASS_FAIL_CNT + 1 ELSE 0 END
+			, LOCK_YN = CASE WHEN CAST(IFNULL(#{maxPassFailCnt},'5') AS INT) > PASS_FAIL_CNT + 1 THEN 'N' ELSE 'Y' END
+   			, MOD_ID = #{memberCd}
+   			, MOD_DT = NOW()
+		WHERE MEMBER_CD = #{memberCd}
+   	</update>
+
+
+	<!-- 사용자 패스워드 카운트 및 LOCK 해지  -->
+	<update id="updateSecurityPassFailCntClear">
+		/* Security-Mapper.updateSecurityPassFailCntClear */
+		UPDATE TCM_MEMBER
+		SET PASS_FAIL_CNT = 0
+			, MOD_ID = #{memberCd}
+			, MOD_DT = NOW()
+		WHERE MEMBER_CD = #{memberCd}
+			AND LOCK_YN <![CDATA[<>]]> 'Y'
+	</update>
+
+
+	<!-- 사용자 그룹 확인 -->
+	<select id="selectMemberGroupAuth" parameterType="com.doppio.common.security.service.CustomUser" resultType="HashMap">
+		/* Security-Mapper.selectMemberGroupAuth */
+		SELECT
+			GROUP_ID
+			,MEMBER_CD
+			,(SELECT COUNT(*) AS CNT FROM TCM_MEMBER_AUTH  WHERE MEMBER_CD = #{memberCd} AND GROUP_ID = 'FA') AS FA_CNT
+		FROM TCM_MEMBER_AUTH 
+		WHERE MEMBER_CD = #{memberCd}
+	</select>
+
+
+	<!-- 사용자 디폴트 그룹정보 등록 -->
+	<insert id="insertMemberAuth" parameterType="com.doppio.common.security.service.CustomUser">
+		/* Security-Mapper.insertMemberAuth */
+		INSERT INTO TCM_MEMBER_AUTH
+		(
+			GROUP_ID
+			, MEMBER_CD
+			, REG_DT
+			, REG_ID
+		)
+		VALUES
+		(
+<!-- 			#{userType} -->
+			'guest'
+			, #{memberCd}
+			, NOW()
+			, 'system'
+		)
+	</insert>
+
+
+	<!-- 내부사용자 TCM_MEMBER COUNT -->
+	<select id="selectInternalUserTcmMemberCount" parameterType="String" resultType="Integer">
+		/* Security-Mapper.selectInternalUserTcmMemberCount */
+		SELECT
+			COUNT(*) AS CNT
+		FROM TCM_MEMBER 
+		WHERE USER_ID = #{username}
+			AND USER_TYPE LIKE CONCAT('S','%')
+	</select>
+	
+</mapper>

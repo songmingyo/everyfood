@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.AnlSalesLdgrMonListMapper">
+
+	
+	<!-- 매출처원장(월별) 조회 -->
+	<select id="selectAnlSalesLdgrMonList" parameterType="com.doppio.workplace.as.service.AnlSalesLdgrMonListVo" resultType="com.doppio.workplace.as.service.AnlSalesLdgrMonListVo">
+	/*AnlSalesLdgrMonListMapper.selectAnlSalesLdgrMonList*/	
+      SELECT A.YEAR_MON
+             , B.SALES_CD
+             , B.SALES_NM
+             , A.GUBUN 
+             , SUM(IFNULL(A.PURE_AMT,0)) AS PURE_AMT
+             , SUM(IFNULL(A.VAT_AMT,0)) AS VAT_AMT
+             , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+             , SUM(IFNULL(A.PAID_AMT1,0)) AS PAID_AMT1
+             , SUM(IFNULL(A.PAID_AMT2,0)) AS PAID_AMT2
+             , SUM(IFNULL(A.PAID_AMT3,0)) AS PAID_AMT3
+             , SUM(IFNULL(A.PAID_AMT4,0)) AS PAID_AMT4
+             , SUM(IFNULL(A.BAL_AMT,0)) AS BAL_AMT
+             , A.SORT
+        FROM (SELECT '1' AS SORT
+                     , YEAR_MON
+                     , SALES_CD
+                     , '이월' AS GUBUN
+                     , BAL_AMT AS BAL_AMT 
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                FROM TMH_MON_SALES_PAYMENT
+               WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(CONCAT(#{searchYearMnSt},'01'), INTERVAL -1 month),'%Y%m')
+          UNION ALL
+              SELECT '2' AS SORT
+                     , A.YEAR_MON
+                     , A.SALES_CD
+                     , '출고' AS GUBUN
+                     , SUM(A.TOT_AMT) AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(TOT_AMT) AS TOT_AMT
+                FROM (SELECT LEFT(SALES_DT,6) AS YEAR_MON
+                             , SALES_CD
+                             , SUM(PURE_AMT) AS PURE_AMT
+                             , SUM(VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TSH_SALES_DLV
+                       WHERE SALES_DT BETWEEN CONCAT(#{searchYearMnSt},'01') AND DATE_FORMAT(LAST_DAY(CONCAT(#{searchYearMnEt},'01')),'%Y%m%d')
+                       GROUP BY LEFT(SALES_DT,6), SALES_CD
+                   UNION ALL
+                      SELECT LEFT(RTN_DT,6) AS YEAR_MON
+                             , SALES_CD
+                             , SUM(PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TSH_SALES_RETURN
+                       WHERE RTN_DT BETWEEN CONCAT(#{searchYearMnSt},'01') AND DATE_FORMAT(LAST_DAY(CONCAT(#{searchYearMnEt},'01')),'%Y%m%d')
+                       GROUP BY LEFT(RTN_DT,6), SALES_CD
+                     ) AS A
+               GROUP BY A.YEAR_MON
+                        , A.SALES_CD
+          UNION ALL
+              SELECT '3' AS SORT
+                     , LEFT(DEP_DT,6) AS YEAR_MON
+                     , SALES_CD AS SALES_CD
+                     , '입금' AS GUBUN
+                     , 0 AS BAL_AMT
+                     , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                     , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                     , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                     , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                FROM TSH_SALES_DEP
+               WHERE DEP_DT BETWEEN CONCAT(#{searchYearMnSt},'01') AND DATE_FORMAT(LAST_DAY(CONCAT(#{searchYearMnEt},'01')),'%Y%m%d')
+               GROUP BY LEFT(DEP_DT,6), SALES_CD
+          UNION ALL
+              SELECT '4' AS SORT 
+                      , A.YEAR_MON
+                      , A.SALES_CD
+                      , '합계' AS GUBUN
+                      , SUM(A.BAL_AMT) AS BAL_AMT
+                      , SUM(A.PAID_AMT1) AS PAID_AMT1
+                      , SUM(A.PAID_AMT2) AS PAID_AMT2
+                      , SUM(A.PAID_AMT3) AS PAID_AMT3
+                      , SUM(A.PAID_AMT4) AS PAID_AMT4
+                      , SUM(A.PURE_AMT) AS PURE_AMT
+                      , SUM(A.VAT_AMT) AS VAT_AMT
+                      , SUM(TOT_AMT) AS TOT_AMT
+                FROM  (SELECT LEFT(DEP_DT,6) AS YEAR_MON
+                              , SALES_CD
+                              , 0 AS BAL_AMT
+                              , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                              , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                              , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                              , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                              , 0 AS PURE_AMT
+                              , 0 AS VAT_AMT
+                              , 0 AS TOT_AMT
+                         FROM TSH_SALES_DEP
+                        WHERE DEP_DT BETWEEN CONCAT(#{searchYearMnSt},'01') AND DATE_FORMAT(LAST_DAY(CONCAT(#{searchYearMnEt},'01')),'%Y%m%d')
+                        GROUP BY LEFT(DEP_DT,6), SALES_CD
+                   UNION ALL
+                       SELECT A.YEAR_MON
+                              , A.SALES_CD
+                              , SUM(A.TOT_AMT) AS BAL_AMT
+                              , 0 AS PAID_AMT1
+                              , 0 AS PAID_AMT2
+                              , 0 AS PAID_AMT3
+                              , 0 AS PAID_AMT4
+                              , SUM(A.PURE_AMT) AS PURE_AMT
+                              , SUM(A.VAT_AMT) AS VAT_AMT
+                              , SUM(TOT_AMT) AS TOT_AMT
+                         FROM (SELECT LEFT(SALES_DT,6) AS YEAR_MON
+                                      , SALES_CD AS SALES_CD
+                                      , SUM(TOT_AMT) AS BAL_AMT
+                                      , SUM(PURE_AMT) AS PURE_AMT
+                                      , SUM(VAT_AMT) AS VAT_AMT
+                                      , SUM(TOT_AMT) AS TOT_AMT
+                                 FROM TSH_SALES_DLV
+                                WHERE SALES_DT BETWEEN CONCAT(#{searchYearMnSt},'01') AND DATE_FORMAT(LAST_DAY(CONCAT(#{searchYearMnEt},'01')),'%Y%m%d')
+                                GROUP BY LEFT(SALES_DT,6), SALES_CD
+                             UNION ALL
+                               SELECT LEFT(RTN_DT,6) AS YEAR_MON
+                                      , SALES_CD AS SALES_CD
+                                      , SUM(TOT_AMT)*-1 AS BAL_AMT
+                                      , SUM(PURE_AMT)*-1 AS PURE_AMT
+                                      , SUM(VAT_AMT)*-1 AS VAT_AMT
+                                      , SUM(TOT_AMT)*-1 AS TOT_AMT
+                                 FROM TSH_SALES_RETURN
+                                WHERE RTN_DT BETWEEN CONCAT(#{searchYearMnSt},'01') AND DATE_FORMAT(LAST_DAY(CONCAT(#{searchYearMnEt},'01')),'%Y%m%d')
+                                GROUP BY LEFT(RTN_DT,6), SALES_CD
+                              ) A
+                        GROUP BY A.YEAR_MON, A.SALES_CD
+                      ) A
+                GROUP BY A.YEAR_MON, A.SALES_CD
+              ) A
+              JOIN TFM_SALES_ADD_INFO B
+                  ON A.SALES_CD = B.SALES_CD
+         <where>
+	         <if test='searchSalesCd != null and searchSalesCd != ""'> 
+				AND B.SALES_CD = #{searchSalesCd}
+		    </if>
+	    </where>
+	           
+     GROUP BY B.SALES_CD
+              , B.SALES_NM
+              , A.GUBUN
+              , A.YEAR_MON
+              , A.SORT
+              
+     HAVING SUM(IFNULL(A.PURE_AMT,0)) != 0 OR SUM(IFNULL(A.VAT_AMT,0)) != 0 OR SUM(IFNULL(A.TOT_AMT,0)) != 0 OR SUM(IFNULL(A.PAID_AMT1,0)) != 0 OR SUM(IFNULL(A.PAID_AMT2,0)) != 0 OR SUM(IFNULL(A.PAID_AMT3,0)) != 0 OR SUM(IFNULL(A.PAID_AMT4,0)) != 0 OR SUM(IFNULL(A.BAL_AMT,0))
+              
+     ORDER BY A.SALES_CD, A.YEAR_MON, A.SORT
+
+	</select>
+
+	<!-- 매출처원장(월별) 엑셀 다운로드 -->
+	<select id="selectAnlSalesLdgrMonListExcelDown" parameterType="com.doppio.workplace.as.service.AnlSalesLdgrMonListVo" resultType="java.util.HashMap">
+	/*AnlSalesCreditListMapper.selectAnlSalesLdgrMonExcelDown*/	
+
+
+	</select>
+</mapper>

@@ -1,0 +1,770 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.community.service.impl.CmtBoardMapper">
+	
+
+	<!-- BOARDMANAGER MAP -->
+	<resultMap id="CmtBoardManagerMap"   type="com.doppio.community.service.CmtManagerVo">
+		<result column="BOARD_CD"			property="boardCd" 				/>	<!--	게시판코드				-->
+		<result column="BOARD_KIND_CD"		property="boardKindCd" 			/>	<!--	게시판유형코드			-->
+		<result column="MEMBER_CD"			property="memberCd" 			/>	<!--	게시판관리자코드			-->
+		<result column="FILE_COUNT"			property="fileCount" 			/>	<!--	업로드 가능한파일 수		-->				
+		<result column="FILE_UPLOAD_SIZE"	property="fileUploadSize" 		/>	<!--	업로드 가능한 파일 크기	-->
+		<result column="WRITE_YN"			property="writeYn" 				/>	<!--	글쓰기유무				-->
+		<result column="REPLY_YN"			property="replyYn" 				/>	<!--	답글유무				-->
+		<result column="COMMENT_YN"			property="commentYn" 			/>	<!--	한줄답글 유무 			-->
+		<result column="USE_YN"				property="useYn" 				/>	<!--	게시판사용 유무			-->
+	</resultMap>
+	
+	<!-- BOARDLIST MAP -->
+	<resultMap id="CmtBoardListMap"   type="com.doppio.community.service.CmtBoardVo">
+	    <result column="BOARD_IDX"			property="boardIdx" 			/>	<!--	게시인덱스				-->				
+		<result column="BOARD_CD"			property="boardCd" 				/>	<!--	게시판코드				-->
+		<result column="THREAD"				property="thread" 				/>	<!--	게시물출력순번			-->
+		<result column="DEPTH"				property="depth" 				/>	<!--	답변글깊이				-->
+		<result column="BOARD_TITLE"		property="boardTitle" 			/>	<!--	게시제목				-->
+		<result column="BOARD_CONTENT"		property="boardContent" 		/>	<!--	게시물내용				-->
+		<result column="BOARD_COUNT"		property="boardCount" 			/>	<!--	조회카운트				-->
+		<result column="IS_URGENCY_YN"		property="isUrgencyYn" 			/>	<!--	border여부			-->
+		<result column="BOARD_NOTICE_YN"	property="boardNoticeYn" 		/>	<!--	공지글여부				-->
+		<result column="DEL_YN"				property="delYn" 				/>	<!--	삭제글 여부				-->
+		<result column="ATCH_FILE_ID"		property="atchFileId" 			/>	<!--	첨부파일ID				-->
+		<result column="ATCH_FILE_CNT"		property="atchFileCnt"			/>	<!-- 	첨부파일개수			-->
+		<result column="USER_NM"			property="userNm" 				/>	<!--	등록자명				-->
+		<result column="REG_DT"				property="regDt" 				/>	<!--	등록일시				-->
+		<result column="MOD_DT"				property="modDt" 				/>	<!--	수정일시				-->
+		<result column="RNUM"				property="rnum" 				/>	<!--	글번호				-->
+		<result column="COMMENT_NUM"		property="commentNum" 			/>	<!--	한줄댓글 수				-->
+		<result column="NOTICE_YN"			property="noticeYn" 			/>	<!--	공지/일반 구분			-->
+		<result column="RNUM3"				property="rnumSub"				/>	<!-- 	210826 요청순번(최신것부터 1시작) -->
+		<result column="BOARD_EXPOSURE_CD"	property="boardExposureCd" 		/>	<!--	게시 노출 유형코드		-->
+		<result column="BOARD_EXPOSURE_NM"	property="boardExposureNm" 		/>	<!--	게시 노출 유형명칭 		-->
+		<result column="ALERT_TYPE_CD"		property="alertTypeCd"			/>	<!-- 	게시업무구분코드(9022) -->
+		<result column="ALERT_TYPE_NM"		property="alertTypeNm"			/>	<!-- 	게시업무구분명칭(9022) -->
+	</resultMap>
+	
+	<!-- BOARD이전글/다음글 MAP -->
+	<resultMap id="CmtBoardPreNextMap"   type="com.doppio.community.service.CmtBoardVo">
+	    <result column="BOARD_IDX"			property="boardIdx" 			/>	<!--	게시인덱스				-->				
+		<result column="BOARD_CD"			property="boardCd" 				/>	<!--	게시판코드				-->
+		<result column="THREAD"				property="thread" 				/>	<!--	게시물출력순번			-->
+		<result column="BOARD_TITLE"		property="boardTitle" 			/>	<!--	게시제목				-->
+		<result column="BOARD_COUNT"		property="boardCount" 			/>	<!--	조회카운트				-->
+		<result column="USER_NM"			property="userNm" 				/>	<!--	등록자명				-->
+		<result column="REG_DT"				property="regDt" 				/>	<!--	등록일시				-->
+		<result column="RNUM"				property="rnum" 				/>	<!--	최초글/최신글 구분		-->
+		<result column="PRE_NEXT"			property="preNext" 				/>	<!--	다음글/이전글 구분		-->
+	</resultMap>
+	
+	<!-- BOARD 상세보기 MAP -->
+	<resultMap id="CmtBoardDetailMap"   type="com.doppio.community.service.CmtBoardVo">
+	    <result column="BOARD_IDX"			property="boardIdx" 			/>	<!--	게시인덱스				-->				
+		<result column="BOARD_CD"			property="boardCd" 				/>	<!--	게시판코드				-->
+		<result column="BOARD_TITLE"		property="boardTitle" 			/>	<!--	게시제목				-->
+		<result column="BOARD_CONTENT"		property="boardContent" 		/>	<!--	게시물내용				-->
+		<result column="BOARD_COUNT"		property="boardCount" 			/>	<!--	조회카운트				-->
+		<result column="THREAD"				property="thread" 				/>	<!--	출력순번				-->
+		<result column="ATCH_FILE_ID"		property="atchFileId" 			/>	<!--	첨부파일ID				-->
+		<result column="USER_NM"			property="userNm" 				/>	<!--	등록자명				-->
+		<result column="MEMBER_CD"			property="memberCd" 			/>	<!--	등록자 코드				-->
+		<result column="EMAIL"				property="email" 				/>	<!--	EMAIL				-->
+		<result column="REG_DT"				property="regDt" 				/>	<!--	등록일시				-->
+		<result column="REG_ID"				property="regId" 				/>	<!--	등록자				-->
+		<result column="MOD_ID"				property="modId" 				/>	<!--	수정자				-->
+		<result column="MOD_DT"				property="modDt" 				/>	<!--	수정일시				-->
+		<result column="ALERT_FR_DT"		property="alertFrDt"			/>	<!--	팝업공지 시작일시		-->
+		<result column="ALERT_TO_DT"		property="alertToDt" 			/>	<!--	팝업공지 종료일시		-->
+		<result column="BOARD_NOTICE_YN"	property="boardNoticeYn" 		/>	<!--	상단공지여부			-->
+		<result column="IS_URGENCY_YN"		property="isUrgencyYn" 			/>	<!--	게시BORDER처리유무		-->
+		<result column="DEL_YN"				property="delYn" 				/>	<!--	삭제여부				-->
+		<result column="BOARD_EXPOSURE_CD"	property="boardExposureCd" 		/>	<!--	게시 노출 유형코드		-->
+		<result column="BOARD_EXPOSURE_NM"	property="boardExposureNm" 		/>	<!--	게시 노출 유형명칭 		-->
+		<result column="ALERT_TYPE_CD"		property="alertTypeCd"			/>	<!-- 	게시업무구분코드(9022) -->
+		<result column="ALERT_TYPE_NM"		property="alertTypeNm"			/>	<!-- 	게시업무구분명칭(9022) -->
+	</resultMap>
+	
+	<!-- BOARD COMMENT MAP -->
+	<resultMap id="CmtBoardCommentMap"   type="com.doppio.community.service.CmtCommentVo">
+	    <result column="COMMENT_IDX"		property="commentIdx" 			/>	<!--	한줄댓글인덱스			-->				
+		<result column="COMMENTS_CONTENT"	property="commentsContent"		/>	<!--	한줄댓글내용			-->
+		<result column="MEMBER_CD"			property="memberCd" 			/>	<!--	한줄댓글작성자 코드		-->
+		<result column="REG_DT"				property="regDt" 				/>	<!--	등록일시				-->
+	</resultMap>
+	
+	<!-- BOARD ThreadDepth MAP -->
+	<resultMap id="CmtBoardThreadDepthMap"   type="com.doppio.community.service.CmtBoardVo">
+	    <result column="BOARD_IDX"			property="boardIdx" 			/>	<!--	게시인덱스				-->				
+		<result column="THREAD"				property="thread" 				/>	<!--	게시물출력순번			-->
+		<result column="DEPTH"				property="depth" 				/>	<!--	답변글깊이				-->
+	</resultMap>
+	
+	<!-- 게시판별 제한 조건 -->
+	<select id="selectBoardManager" resultMap="CmtBoardManagerMap" parameterType="com.doppio.community.service.CmtBoardVo">
+		/* CmtBoardMapper.selectBoardManager*/
+		SELECT	BOARD_CD
+				,BOARD_KIND_CD
+				,MEMBER_CD
+				,FILE_COUNT
+				,FILE_UPLOAD_SIZE
+				,WRITE_YN
+				,REPLY_YN
+				,COMMENT_YN
+				,USE_YN
+		FROM	TCM_BOARD_MANAGER
+		WHERE 	BOARD_CD=#{boardCd}
+	</select>
+	
+	<!-- 게시판 글 조회  -->
+	<select id="selectBoardList" resultMap="CmtBoardListMap" parameterType="com.doppio.community.service.CmtBoardVo">
+		/* CmtBoardMapper.selectBoardList*/
+		SELECT D.*
+		FROM (
+				SELECT C.*,  TCD1.DTL_NM  AS BOARD_EXPOSURE_NM, TCD2.DTL_NM AS ALERT_TYPE_NM
+				FROM(SELECT 0 AS RNUM
+							,A.BOARD_IDX
+						    ,A.BOARD_CD
+						    ,'0' AS NOTICE_YN
+						    ,B.NOTICE_CNT
+							,A.THREAD
+						    ,A.DEPTH
+						    ,A.BOARD_TITLE
+						    ,A.BOARD_CONTENT
+						    ,A.BOARD_COUNT
+						    ,A.IS_URGENCY_YN
+						    ,A.BOARD_NOTICE_YN
+						    ,(SELECT COUNT(*) FROM TCM_ATTACH_FILE B WHERE B.ATCH_FILE_ID=A.ATCH_FILE_ID) AS ATCH_FILE_CNT
+						    ,A.ATCH_FILE_ID
+						    ,A.USER_NM
+						    ,A.DEL_YN
+						    ,A.PARENT_BOARD_IDX 
+						    ,DATE_FORMAT(A.REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT
+				            ,A.MOD_DT
+				            ,(SELECT COUNT(*) FROM TCM_BOARD_COMMENT B WHERE A.BOARD_IDX=B.BOARD_IDX)COMMENT_NUM
+				            ,A.BOARD_EXPOSURE_CD
+				            ,A.ALERT_TYPE_CD
+				           
+					FROM 		TCM_BOARD_MST A
+					LEFT OUTER JOIN (SELECT COUNT(*) NOTICE_CNT, BOARD_CD FROM TCM_BOARD_MST WHERE BOARD_CD = #{boardCd} AND BOARD_NOTICE_YN = 'Y' GROUP BY BOARD_CD) B ON A.BOARD_CD =B.BOARD_CD 
+					WHERE		A.BOARD_CD = #{boardCd}
+					AND 		A.BOARD_NOTICE_YN = 'Y'
+					<if test='boardExposureCd != null and boardExposureCd != ""'>
+		            	AND (BOARD_EXPOSURE_CD is null OR BOARD_EXPOSURE_CD IN(#{boardExposureCd},'A'))
+		            </if>
+		            <if test='boardMemberCd != memberCd'>
+		                AND DEL_YN = 'N'
+		            </if>
+					UNION ALL
+					SELECT ROW_NUMBER() OVER(ORDER BY A.THREAD DESC, A.REG_DT DESC) AS RNUM
+								,A.BOARD_IDX
+							    ,A.BOARD_CD
+							    ,'1' AS NOTICE_YN
+							    ,B.NOTICE_CNT
+								,A.THREAD
+							    ,A.DEPTH
+							    ,A.BOARD_TITLE
+							    ,A.BOARD_CONTENT
+							    ,A.BOARD_COUNT
+							    ,A.IS_URGENCY_YN
+							    ,A.BOARD_NOTICE_YN
+							    ,(SELECT COUNT(*) FROM TCM_ATTACH_FILE B WHERE B.ATCH_FILE_ID=A.ATCH_FILE_ID) AS ATCH_FILE_CNT
+						    	,A.ATCH_FILE_ID
+							    ,A.USER_NM
+							    ,A.DEL_YN
+							    ,A.PARENT_BOARD_IDX 
+							    ,DATE_FORMAT(A.REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT
+					            ,A.MOD_DT
+					            ,(SELECT COUNT(*) FROM TCM_BOARD_COMMENT B WHERE A.BOARD_IDX=B.BOARD_IDX)COMMENT_NUM
+					            ,A.BOARD_EXPOSURE_CD
+				            	,A.ALERT_TYPE_CD
+					FROM 		TCM_BOARD_MST A
+					LEFT OUTER JOIN (SELECT COUNT(*) NOTICE_CNT, BOARD_CD FROM TCM_BOARD_MST WHERE BOARD_CD = #{boardCd} AND BOARD_NOTICE_YN = 'Y' GROUP BY BOARD_CD) B ON A.BOARD_CD =B.BOARD_CD 
+					WHERE		A.BOARD_CD = #{boardCd}
+					<if test='boardExposureCd != null and boardExposureCd != ""'>
+		            	AND (BOARD_EXPOSURE_CD is null OR BOARD_EXPOSURE_CD IN(#{boardExposureCd},'A'))
+		            </if>
+		            <if test='boardMemberCd != memberCd'>
+		                AND DEL_YN = 'N'
+		            </if>
+		            <if test='search != null and search != ""'>
+		                <if test='titleYn == "Y"'>	
+		    		        AND BOARD_TITLE LIKE LOWER(CONCAT('%',#{search},'%'))
+					        AND BOARD_TITLE LIKE UPPER(CONCAT('%',#{search},'%'))
+		    			</if>
+		    			<if test='contentYn == "Y"'>
+		    		        AND BOARD_CONTENT LIKE LOWER(CONCAT('%',#{search},'%'))
+					        AND BOARD_CONTENT LIKE UPPER(CONCAT('%',#{search},'%'))
+		    			</if>
+		    			<if test='userNmYn == "Y"'>
+		    		        AND USER_NM LIKE LOWER(CONCAT('%',#{search},'%'))
+					        AND USER_NM LIKE UPPER(CONCAT('%',#{search},'%'))
+		    			</if>
+		            </if>
+					)C 
+					LEFT OUTER JOIN TCM_CODE_DTL TCD1 ON TCD1.COM_CD ='9021' AND TCD1.DTL_CD = C.BOARD_EXPOSURE_CD
+					LEFT OUTER JOIN TCM_CODE_DTL TCD2 ON TCD2.COM_CD ='9022' AND TCD2.DTL_CD = C.ALERT_TYPE_CD
+			)D
+		WHERE RNUM = '0'
+		OR	  RNUM BETWEEN #{startRowNo} AND #{endRowNo}
+		ORDER BY RNUM 
+	</select>
+	
+	
+	<!-- 게시판 글 메인 화면 조회  -->
+	<select id="selectBoardMainList" resultMap="CmtBoardListMap" parameterType="com.doppio.community.service.CmtBoardVo">
+		/* CmtBoardMapper.selectBoardMainList*/
+		SELECT D.*
+		FROM (
+				SELECT C.*,  TCD1.DTL_NM  AS BOARD_EXPOSURE_NM, TCD2.DTL_NM AS ALERT_TYPE_NM
+				FROM(SELECT 0 AS RNUM
+							,A.BOARD_IDX
+						    ,A.BOARD_CD
+						    ,'0' AS NOTICE_YN
+						    ,B.NOTICE_CNT
+							,A.THREAD
+						    ,A.DEPTH
+						    ,A.BOARD_TITLE
+						    ,A.BOARD_CONTENT
+						    ,A.BOARD_COUNT
+						    ,A.IS_URGENCY_YN
+						    ,A.BOARD_NOTICE_YN
+						    ,(SELECT COUNT(*) FROM TCM_ATTACH_FILE B WHERE B.ATCH_FILE_ID=A.ATCH_FILE_ID) AS ATCH_FILE_CNT
+						    ,A.ATCH_FILE_ID
+						    ,A.USER_NM
+						    ,A.DEL_YN
+						    ,A.PARENT_BOARD_IDX 
+						    ,DATE_FORMAT(A.REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT
+				            ,A.MOD_DT
+				            ,(SELECT COUNT(*) FROM TCM_BOARD_COMMENT B WHERE A.BOARD_IDX=B.BOARD_IDX)COMMENT_NUM
+				            ,A.BOARD_EXPOSURE_CD
+				            ,A.ALERT_TYPE_CD
+				           
+					FROM 		TCM_BOARD_MST A
+					LEFT OUTER JOIN (SELECT COUNT(*) NOTICE_CNT, BOARD_CD FROM TCM_BOARD_MST WHERE BOARD_CD = #{boardCd} AND BOARD_NOTICE_YN = 'Y' GROUP BY BOARD_CD) B ON A.BOARD_CD =B.BOARD_CD 
+					WHERE		A.BOARD_CD = #{boardCd}
+					AND 		A.BOARD_NOTICE_YN = 'Y'
+					<if test='boardExposureCd != null and boardExposureCd != ""'>
+		            	AND (BOARD_EXPOSURE_CD is null OR BOARD_EXPOSURE_CD IN(#{boardExposureCd},'A'))
+		            </if>
+		            <if test='boardMemberCd != memberCd'>
+		                AND DEL_YN = 'N'
+		            </if>
+					UNION ALL
+					SELECT ROW_NUMBER() OVER(ORDER BY A.THREAD DESC, A.REG_DT DESC) AS RNUM
+								,A.BOARD_IDX
+							    ,A.BOARD_CD
+							    ,'1' AS NOTICE_YN
+							    ,B.NOTICE_CNT
+								,A.THREAD
+							    ,A.DEPTH
+							    ,A.BOARD_TITLE
+							    ,A.BOARD_CONTENT
+							    ,A.BOARD_COUNT
+							    ,A.IS_URGENCY_YN
+							    ,A.BOARD_NOTICE_YN
+							    ,(SELECT COUNT(*) FROM TCM_ATTACH_FILE B WHERE B.ATCH_FILE_ID=A.ATCH_FILE_ID) AS ATCH_FILE_CNT
+						    	,A.ATCH_FILE_ID
+							    ,A.USER_NM
+							    ,A.DEL_YN
+							    ,A.PARENT_BOARD_IDX 
+							    ,DATE_FORMAT(A.REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT
+					            ,A.MOD_DT
+					            ,(SELECT COUNT(*) FROM TCM_BOARD_COMMENT B WHERE A.BOARD_IDX=B.BOARD_IDX)COMMENT_NUM
+					            ,A.BOARD_EXPOSURE_CD
+				            	,A.ALERT_TYPE_CD
+					FROM 		TCM_BOARD_MST A
+					LEFT OUTER JOIN (SELECT COUNT(*) NOTICE_CNT, BOARD_CD FROM TCM_BOARD_MST WHERE BOARD_CD = #{boardCd} AND BOARD_NOTICE_YN = 'Y' GROUP BY BOARD_CD) B ON A.BOARD_CD =B.BOARD_CD 
+					WHERE		A.BOARD_CD = #{boardCd}
+					<if test='boardExposureCd != null and boardExposureCd != ""'>
+		            	AND (BOARD_EXPOSURE_CD is null OR BOARD_EXPOSURE_CD IN(#{boardExposureCd},'A'))
+		            </if>
+		            <if test='boardMemberCd != memberCd'>
+		                AND DEL_YN = 'N'
+		            </if>
+		            <if test='search != null and search != ""'>
+		                <if test='titleYn == "Y"'>	
+		    		        AND BOARD_TITLE LIKE LOWER(CONCAT('%',#{search},'%'))
+					        AND BOARD_TITLE LIKE UPPER(CONCAT('%',#{search},'%'))
+		    			</if>
+		    			<if test='contentYn == "Y"'>
+		    		        AND BOARD_CONTENT LIKE LOWER(CONCAT('%',#{search},'%'))
+					        AND BOARD_CONTENT LIKE UPPER(CONCAT('%',#{search},'%'))
+		    			</if>
+		    			<if test='userNmYn == "Y"'>
+		    		        AND USER_NM LIKE LOWER(CONCAT('%',#{search},'%'))
+					        AND USER_NM LIKE UPPER(CONCAT('%',#{search},'%'))
+		    			</if>
+		            </if>
+					)C 
+					LEFT OUTER JOIN TCM_CODE_DTL TCD1 ON TCD1.COM_CD ='9021' AND TCD1.DTL_CD = C.BOARD_EXPOSURE_CD
+					LEFT OUTER JOIN TCM_CODE_DTL TCD2 ON TCD2.COM_CD ='9022' AND TCD2.DTL_CD = C.ALERT_TYPE_CD
+			)D
+		WHERE RNUM = '0'
+		OR	  RNUM BETWEEN 1 AND 7
+		ORDER BY RNUM 
+	</select>
+	
+	
+	
+	<!-- 게시판 글 총 카운트 -->
+	<select id="selectListTotCnt" parameterType="com.doppio.community.service.CmtBoardVo" resultType="int">
+	/* CmtBoardMapper.selectListTotCnt */
+	SELECT 
+		COUNT(*) AS CNT
+		FROM (
+				SELECT C.*
+				FROM(
+					SELECT ROW_NUMBER() OVER(ORDER BY A.THREAD DESC, A.REG_DT DESC) AS RNUM
+								,A.BOARD_IDX
+							    ,A.BOARD_CD
+							    ,'1' AS NOTICE_YN
+							    ,B.NOTICE_CNT
+								,A.THREAD
+							    ,A.DEPTH
+							    ,A.BOARD_TITLE
+							    ,A.BOARD_CONTENT
+							    ,A.BOARD_COUNT
+							    ,A.IS_URGENCY_YN
+							    ,A.BOARD_NOTICE_YN
+							    ,(SELECT COUNT(*) FROM TCM_ATTACH_FILE B WHERE B.ATCH_FILE_ID=A.ATCH_FILE_ID) AS ATCH_FILE_CNT
+						    	,A.ATCH_FILE_ID
+							    ,A.USER_NM
+							    ,A.DEL_YN
+							    ,A.PARENT_BOARD_IDX 
+							    ,DATE_FORMAT(A.REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT
+					            ,A.MOD_DT
+					            ,(SELECT COUNT(*) FROM TCM_BOARD_COMMENT B WHERE A.BOARD_IDX=B.BOARD_IDX)COMMENT_NUM
+					FROM 		TCM_BOARD_MST A
+					LEFT OUTER JOIN (SELECT COUNT(*) NOTICE_CNT, BOARD_CD FROM TCM_BOARD_MST WHERE BOARD_CD=#{boardCd} AND BOARD_NOTICE_YN = 'Y' GROUP BY BOARD_CD) B ON A.BOARD_CD = B.BOARD_CD 
+					WHERE		A.BOARD_CD =#{boardCd}
+					<if test='boardExposureCd != null and boardExposureCd != ""'>
+		            	AND (BOARD_EXPOSURE_CD is null OR BOARD_EXPOSURE_CD IN(#{boardExposureCd},'A'))
+		            </if>
+		            <if test='boardMemberCd != memberCd'>
+		                AND DEL_YN = 'N'
+		            </if>
+		            <if test='search != null and search != ""'>
+		                <if test='titleYn == "Y"'>	
+		    		        AND BOARD_TITLE LIKE LOWER(CONCAT('%',#{search},'%'))
+					        AND BOARD_TITLE LIKE UPPER(CONCAT('%',#{search},'%'))
+		    			</if>
+		    			<if test='contentYn == "Y"'>
+		    		        AND BOARD_CONTENT LIKE LOWER(CONCAT('%',#{search},'%'))
+					        AND BOARD_CONTENT LIKE UPPER(CONCAT('%',#{search},'%'))
+		    			</if>
+		    			<if test='userNmYn == "Y"'>
+		    		        AND USER_NM LIKE LOWER(CONCAT('%',#{search},'%'))
+					        AND USER_NM LIKE UPPER(CONCAT('%',#{search},'%'))
+		    			</if>
+		            </if>
+					)C
+			) D
+	</select>
+	
+	<!-- 게시판 상단공지 개수 count -->
+	<select id="selectListTopTotCnt" parameterType="com.doppio.community.service.CmtBoardVo" resultType="int">
+	/* CmtBoardMapper.selectListTopTotCnt */
+	SELECT COUNT(*) AS CNT
+		FROM (
+				SELECT C.*
+				FROM(SELECT 0 AS RNUM
+							,A.BOARD_IDX
+						    ,A.BOARD_CD
+						    ,'0' AS NOTICE_YN
+						    ,B.NOTICE_CNT
+							,A.THREAD
+						    ,A.DEPTH
+						    ,A.BOARD_TITLE
+						    ,A.BOARD_CONTENT
+						    ,A.BOARD_COUNT
+						    ,A.IS_URGENCY_YN
+						    ,A.BOARD_NOTICE_YN
+						    ,(SELECT COUNT(*) FROM TCM_ATTACH_FILE B WHERE B.ATCH_FILE_ID=A.ATCH_FILE_ID) AS ATCH_FILE_CNT
+						    ,A.ATCH_FILE_ID
+						    ,A.USER_NM
+						    ,A.DEL_YN
+						    ,A.PARENT_BOARD_IDX 
+						    ,CONVERT(VARCHAR, A.REG_DT, 120) AS REG_DT
+				            ,A.MOD_DT
+				            ,(SELECT COUNT(*) FROM TCM_BOARD_COMMENT B WHERE A.BOARD_IDX=B.BOARD_IDX)COMMENT_NUM
+					FROM 		TCM_BOARD_MST A
+					LEFT OUTER JOIN (SELECT COUNT(*) NOTICE_CNT, BOARD_CD FROM TCM_BOARD_MST WHERE BOARD_CD = #{boardCd} AND BOARD_NOTICE_YN = 'Y' GROUP BY BOARD_CD) B ON A.BOARD_CD =B.BOARD_CD 
+					WHERE		A.BOARD_CD =#{boardCd}
+					AND 		A.BOARD_NOTICE_YN = 'Y'
+					<if test='boardExposureCd != null and boardExposureCd != ""'>
+		            	AND (BOARD_EXPOSURE_CD is null OR BOARD_EXPOSURE_CD IN(#{boardExposureCd},'A'))
+		            </if>
+		            <if test='boardMemberCd != memberCd'>
+		                AND DEL_YN = 'N'
+		            </if>
+					)C
+					order by THREAD DESC, REG_DT DESC
+			) D
+		</select>
+	
+	<!-- 게시판 이전글/다음글 -->
+	<select id="selectListPreNext" resultMap="CmtBoardPreNextMap" parameterType="com.doppio.community.service.CmtBoardVo">
+		/* CmtBoardMapper.selectListPreNext */
+		SELECT	RNUM2 AS RNUM
+				,RNUM3 AS PRE_NEXT
+				,A.BOARD_IDX
+              	,A.BOARD_CD
+              	,A.THREAD
+              	,A.BOARD_TITLE
+              	,A.BOARD_COUNT
+             	,A.USER_NM
+              	,DATE_FORMAT(A.REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT
+        FROM    (SELECT ROW_NUMBER() OVER(ORDER BY THREAD DESC, REG_DT DESC) AS RNUM3, A.*
+                FROM    (SELECT	ROW_NUMBER() OVER(ORDER BY THREAD DESC, REG_DT DESC) AS RNUM2, A.*
+                        FROM    (SELECT	ROW_NUMBER() OVER(ORDER BY THREAD DESC, REG_DT DESC) AS RNUM, A.*
+                                FROM	(SELECT	*
+                                        FROM    TCM_BOARD_MST A
+                                        WHERE   1=1
+                                        <if test='boardMemberCd != memberCd'>
+                                            AND DEL_YN = 'N'
+                                        </if>
+                                        <if test='boardExposureCd != null and boardExposureCd != ""'>
+		                                	AND (BOARD_EXPOSURE_CD is null OR BOARD_EXPOSURE_CD IN(#{boardExposureCd},'A'))
+		                                </if>
+                                        )A
+                                WHERE	BOARD_CD=#{boardCd}
+                                )A
+                                WHERE   1=1
+						<if test='search != null and search != ""'>
+							<if test='titleYn == "Y"'>
+								OR BOARD_TITLE LIKE LOWER(CONCAT('%',#{search},'%'))
+						        OR BOARD_TITLE LIKE UPPER(CONCAT('%',#{search},'%'))
+                      		</if>
+                      		<if test='contentYn == "Y"'>
+								OR BOARD_CONTENT LIKE LOWER(CONCAT('%',#{search},'%'))
+								OR BOARD_CONTENT LIKE UPPER(CONCAT('%',#{search},'%'))
+							</if>
+							<if test='userNmYn == "Y"'>
+								OR USER_NM LIKE LOWER(CONCAT('%',#{search},'%'))
+								OR USER_NM LIKE UPPER(CONCAT('%',#{search},'%'))
+							</if>
+						</if>
+                          )A 
+                WHERE RNUM2 IN(	SELECT	RNUM2+1
+                                FROM    (SELECT ROW_NUMBER() OVER(ORDER BY THREAD DESC, REG_DT DESC) AS RNUM3, A.*
+                                        FROM    (SELECT	ROW_NUMBER() OVER(ORDER BY THREAD DESC, REG_DT DESC) AS RNUM2, A.*
+                                        		FROM    (SELECT	ROW_NUMBER() OVER(ORDER BY THREAD DESC, REG_DT DESC) AS RNUM, A.*
+                                                		FROM	(SELECT	*
+                                                        		FROM	TCM_BOARD_MST A
+                                                                WHERE   1=1
+                                                                <if test='boardMemberCd != memberCd'>
+						                                            AND DEL_YN = 'N'
+						                                        </if>
+						                                        <if test='boardExposureCd != null and boardExposureCd != ""'>
+								                                	AND (BOARD_EXPOSURE_CD is null OR BOARD_EXPOSURE_CD IN(#{boardExposureCd},'A'))
+								                                </if>
+                                                                )A
+                                                        WHERE	BOARD_CD=#{boardCd}
+                                                        )A
+                                                        WHERE   1=1
+												<if test='search != null and search != ""'>
+													<if test='titleYn == "Y"'>
+														OR BOARD_TITLE LIKE LOWER(CONCAT('%',#{search},'%'))
+												        OR BOARD_TITLE LIKE UPPER(CONCAT('%',#{search},'%'))
+						                      		</if>
+						                      		<if test='contentYn == "Y"'>
+														OR BOARD_CONTENT LIKE LOWER(CONCAT('%',#{search},'%'))
+														OR BOARD_CONTENT LIKE UPPER(CONCAT('%',#{search},'%'))
+													</if>
+													<if test='userNmYn == "Y"'>
+														OR USER_NM LIKE LOWER(CONCAT('%',#{search},'%'))
+														OR USER_NM LIKE UPPER(CONCAT('%',#{search},'%'))
+													</if>
+												</if>
+												)A 
+										WHERE BOARD_IDX=#{boardIdx}
+                                        )A 
+								UNION ALL
+                                SELECT	RNUM2-1
+								FROM	(SELECT	ROW_NUMBER() OVER(ORDER BY THREAD DESC, REG_DT DESC) AS RNUM3, A.*
+                                        FROM	(SELECT	ROW_NUMBER() OVER(ORDER BY THREAD DESC, REG_DT DESC) AS RNUM2, A.*
+												FROM	(SELECT ROW_NUMBER() OVER(ORDER BY THREAD DESC, REG_DT DESC) AS RNUM, A.*
+                                                        FROM	(SELECT	*
+                                                        		FROM	TCM_BOARD_MST A
+                                                        		WHERE 	1=1
+                                                                <if test='boardMemberCd != memberCd'>
+						                                            AND DEL_YN = 'N'
+						                                        </if>
+						                                        <if test='boardExposureCd != null and boardExposureCd != ""'>
+								                                	AND (BOARD_EXPOSURE_CD is null OR BOARD_EXPOSURE_CD IN(#{boardExposureCd},'A'))
+								                                </if>
+                                                                )A
+                                                        WHERE     BOARD_CD=#{boardCd}
+                                                        )A
+                                                        WHERE   1=1
+												<if test='search != null and search != ""'>
+													<if test='titleYn == "Y"'>
+														OR BOARD_TITLE LIKE LOWER(CONCAT('%',#{search},'%'))
+												        OR BOARD_TITLE LIKE UPPER(CONCAT('%',#{search},'%'))
+						                      		</if>
+						                      		<if test='contentYn == "Y"'>
+														OR BOARD_CONTENT LIKE LOWER(CONCAT('%',#{search},'%'))
+														OR BOARD_CONTENT LIKE UPPER(CONCAT('%',#{search},'%'))
+													</if>
+													<if test='userNmYn == "Y"'>
+														OR USER_NM LIKE LOWER(CONCAT('%',#{search},'%'))
+														OR USER_NM LIKE UPPER(CONCAT('%',#{search},'%'))
+													</if>
+												</if>
+												)A
+										WHERE BOARD_IDX=#{boardIdx}
+										)A 
+							)
+                 )A 
+	</select>
+	
+	<!-- 게시판 상세보기 -->
+	<select id="selectListDetail" resultMap="CmtBoardDetailMap" parameterType="com.doppio.community.service.CmtBoardVo">
+	/* CmtBoardMapper.selectListDetail */
+       SELECT    TBM.BOARD_IDX
+                ,TBM.BOARD_CD
+                ,TBM.BOARD_TITLE
+                ,TBM.BOARD_CONTENT
+                ,TBM.BOARD_COUNT
+                ,TBM.THREAD
+                ,TBM.ATCH_FILE_ID
+                ,TBM.USER_NM
+                ,TBM.MEMBER_CD
+                ,TBM.EMAIL
+                ,DATE_FORMAT(TBM.REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT 
+                ,TBM.MOD_DT
+                ,TBM.ALERT_FR_DT
+                ,TBM.ALERT_TO_DT
+                ,IFNULL(TBM.BOARD_NOTICE_YN,'N') AS BOARD_NOTICE_YN
+                ,IFNULL(TBM.IS_URGENCY_YN,'N') AS IS_URGENCY_YN
+                ,IFNULL(TBM.DEL_YN,'N') AS DEL_YN
+                ,TBM.BOARD_EXPOSURE_CD
+                ,TBM.ALERT_TYPE_CD
+                ,TCD1.DTL_NM  AS BOARD_EXPOSURE_NM
+                ,TCD2.DTL_NM  AS ALERT_TYPE_NM
+        FROM    TCM_BOARD_MST TBM
+        		LEFT OUTER JOIN TCM_CODE_DTL TCD1 ON TCD1.COM_CD ='9021' AND TCD1.DTL_CD = TBM.BOARD_EXPOSURE_CD
+				LEFT OUTER JOIN TCM_CODE_DTL TCD2 ON TCD2.COM_CD ='9022' AND TCD2.DTL_CD = TBM.ALERT_TYPE_CD
+	   WHERE   BOARD_IDX = #{boardIdx}
+	</select>
+	
+	<!-- 게시물 Comment -->
+	<select id="selectListComment" resultMap="CmtBoardCommentMap" parameterType="com.doppio.community.service.CmtCommentVo">
+	/* CmtBoardMapper.selectListComment */
+       SELECT    BOARD_IDX
+                ,COMMENT_IDX
+                ,COMMENTS_CONTENT
+                ,MEMBER_CD
+                ,DATE_FORMAT(REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT 
+        FROM    TCM_BOARD_COMMENT
+        WHERE   BOARD_IDX = #{boardIdx}
+        ORDER BY MOD_DT 
+
+	</select>
+	
+	<!-- 게시물 index 조회-->
+	<select id="selectListIndex" resultType="String">
+	/* CmtBoardMapper.selectListIndex */
+		SELECT	IFNULL(MAX(BOARD_IDX), 0) + 1 AS boardIdx
+	    FROM    TCM_BOARD_MST
+	</select>
+	
+	<!-- 부모Thread/Depth 조회-->
+	<select id="selectListThreadDepth" resultMap="CmtBoardThreadDepthMap" parameterType="com.doppio.community.service.CmtBoardVo">
+	/* CmtBoardMapper.selectListThreadDepth */
+		SELECT	BOARD_IDX
+				,THREAD
+				,DEPTH 
+		FROM	TCM_BOARD_MST
+		WHERE	BOARD_IDX = #{boardIdx}
+	</select>
+	
+	<!-- 수정시 파일 조회-->
+	<select id="selectListFile" resultType="com.doppio.common.model.AttachFileVo" parameterType="com.doppio.community.service.CmtBoardVo">
+	/* CmtBoardMapper.selectListFile */
+		SELECT	ORG_FILE_NM AS ORGFILENM
+				,ATCH_FILE_ID AS ATCHFILEID
+                ,SEQ
+		FROM	TCM_ATTACH_FILE
+		WHERE	ATCH_FILE_ID = (SELECT	ATCH_FILE_ID 
+								FROM	TCM_BOARD_MST
+								WHERE	BOARD_IDX=#{boardIdx})
+	</select>
+	
+	<!-- 게시글 등록 -->
+    <insert id="insertBoardList" parameterType="com.doppio.community.service.CmtBoardVo">
+    	/*CmtBoardMapper.insertBoardList*/
+		INSERT INTO TCM_BOARD_MST ( 
+					BOARD_IDX
+					,BOARD_CD
+					,PARENT_BOARD_IDX
+					,THREAD
+					,DEPTH
+					,BOARD_KIND_CD
+					,BOARD_TITLE
+					,BOARD_CONTENT
+					,BOARD_COUNT
+					,BOARD_NOTICE_YN
+					,IS_PORTAL_YN
+					,ALERT_FR_DT
+					,ALERT_TO_DT
+					,IS_URGENCY_YN
+					,ATCH_FILE_ID
+					,MEMBER_CD
+					,USER_NM
+					,EMAIL
+					,BOARD_EXPOSURE_CD
+                	,ALERT_TYPE_CD
+					,REG_DT
+					,REG_ID
+					,MOD_DT
+					,MOD_ID
+					 )
+		VALUES(  	#{boardIdx}
+                 	,#{boardCd}
+					,#{parentBoardIdx, jdbcType=VARCHAR}
+					<if test='depth == "0"'>
+					    ,(SELECT IFNULL(MAX(X.THREAD),0)+1000 AS THREAD FROM TCM_BOARD_MST AS X WHERE X.BOARD_CD = #{boardCd})
+					</if>
+					<if test='depth != "0"'>
+					    ,#{thread}
+					</if>
+					,#{depth}
+					,#{boardKindCd}
+					,#{boardTitle}
+					,#{boardContent}
+					,0
+					,CASE WHEN #{boardNoticeYn} ='' OR '' IS NULL THEN 'N' ELSE #{boardNoticeYn} END  
+					,'N'
+					,#{alertFrDtLocale, jdbcType=VARCHAR}
+					,#{alertToDtLocale, jdbcType=VARCHAR}
+					,CASE WHEN #{isUrgencyYn} ='' OR '' IS NULL THEN 'N' ELSE #{isUrgencyYn} END  
+					,#{atchFileId}
+					,#{memberCd}
+					,#{userNm}
+					,#{email}
+					<choose>
+						<when test='boardExposureCd != null and boardExposureCd != ""'>,#{boardExposureCd}</when>
+						<otherwise>,'A'</otherwise>
+					</choose>
+					<choose>
+						<when test='alertTypeCd != null and alertTypeCd != ""'>,#{alertTypeCd}</when>
+						<otherwise>,'PUB'</otherwise>
+					</choose>
+                	,NOW()
+					,#{regId}
+					,NOW()
+					,#{regId}) 
+										
+    </insert>
+    
+    <!-- 게시물 수정 -->
+    <update id="updateBoardList" parameterType="com.doppio.community.service.CmtBoardVo">
+    /* CmtBoardMapper.updateBoardList */
+		UPDATE	TCM_BOARD_MST
+		SET		BOARD_TITLE = #{boardTitle}
+				,BOARD_CONTENT = #{boardContent}
+				<if test='boardNoticeYn != null and boardNoticeYn != ""'>
+				,BOARD_NOTICE_YN = #{boardNoticeYn}
+				</if>
+				,ALERT_FR_DT = #{alertFrDtLocale, jdbcType=VARCHAR}
+				,ALERT_TO_DT = #{alertToDtLocale, jdbcType=VARCHAR}
+				<if test='isUrgencyYn != null and isUrgencyYn != ""'>
+				,IS_URGENCY_YN = #{isUrgencyYn}
+				</if>
+				,ATCH_FILE_ID = #{atchFileId}
+				,EMAIL = #{email}
+				,BOARD_EXPOSURE_CD  = 
+				<choose>
+					<when test='boardExposureCd != null and boardExposureCd != ""'>#{boardExposureCd}</when>
+					<otherwise>'A'</otherwise>
+				</choose>
+                ,ALERT_TYPE_CD		= 
+                <choose>
+                	<when test='alertTypeCd != null and alertTypeCd != ""'>#{alertTypeCd}</when>
+                	<otherwise>'PUB'</otherwise>
+                </choose>
+				,DEL_YN = #{delYn}
+				,MOD_DT = NOW()
+				,MOD_ID = #{regId}
+		WHERE BOARD_IDX=#{boardIdx}
+	</update>
+	
+	<!-- 한줄답글 등록 -->
+    <insert id="insertBoardComment" parameterType="com.doppio.community.service.CmtCommentVo">
+    	/*CmtBoardMapper.insertBoardComment*/
+		INSERT INTO TCM_BOARD_COMMENT ( 
+					COMMENT_IDX
+					,BOARD_IDX    
+					,COMMENTS_CONTENT
+					,MEMBER_CD
+					,USER_NM
+					,REG_DT
+					,REG_ID
+					,MOD_DT
+					,MOD_ID
+					,BOARD_CD )
+			(SELECT	 IFNULL(MAX(COMMENT_IDX),0)+1 
+                 	,#{boardIdx}     
+                 	,#{commentsContent}          
+                 	,#{memberCd} 
+                 	,#{userNm}        
+                 	,NOW()        
+                 	,#{regId}  
+                 	,NOW()          
+                 	,#{regId}  
+                 	,#{boardCd}
+                 	FROM TCM_BOARD_COMMENT  	
+               ) 
+    </insert>
+    
+    <!-- 한줄답글 삭제 -->
+    <delete id="deleteBoardComment" parameterType="com.doppio.community.service.CmtBoardVo">
+    	/*CmtBoardMapper.deleteBoardComment*/
+    	DELETE	FROM TCM_BOARD_COMMENT
+		WHERE	COMMENT_IDX = #{commentIdx}
+    </delete>
+
+	<!-- 조회수 수정 -->
+    <update id="updateBoardCount" parameterType="com.doppio.community.service.CmtBoardVo">
+    /* CmtBoardMapper.updateBoardCount */
+		UPDATE	TCM_BOARD_MST
+		SET		BOARD_COUNT = BOARD_COUNT +1
+		WHERE	BOARD_IDX = #{boardIdx}
+	</update>
+	
+	<!-- 게시판 글 삭제 -->
+    <delete id="deleteBoardList" parameterType="com.doppio.community.service.CmtBoardVo">
+    /* CmtBoardMapper.deleteBoardList */
+		DELETE FROM TCM_BOARD_MST
+		WHERE BOARD_IDX = #{boardIdx}
+	</delete>
+	
+	
+	<!-- 게시판 및 게시판 글 여부 체크-->
+	<select id="selectBoardDataCheck" parameterType="com.doppio.community.service.CmtBoardVo" resultType="int">
+	/* CmtBoardMapper.selectBoardDataCheck */
+ 		 SELECT
+ 		 	COUNT(*) CNT
+         FROM   TCM_BOARD_MANAGER A
+     	   	LEFT OUTER JOIN TCM_BOARD_MST B ON A.BOARD_CD = B.BOARD_CD
+         WHERE A.BOARD_CD = #{boardCd}
+      	<if test='boardIdx != null and boardIdx != ""'>
+      	    AND B.BOARD_IDX = #{boardIdx}
+      	</if>
+		LIMIT 1
+    </select>
+    
+	
+	<!-- 사용권한여부 체크 DATA-->
+	<select id="selectBoardManagerData" parameterType="string" resultType="java.util.HashMap">
+	/* CmtBoardMapper.selectBoardManagerData */
+	    SELECT T1.BOARD_IDX
+              ,T1.BOARD_CD
+              ,T1.MEMBER_CD AS WRI_MEMBER
+              ,T2.MEMBER_CD AS MGR_MEMBER
+         FROM TCM_BOARD_MST T1 INNER JOIN TCM_BOARD_MANAGER T2 ON T1.BOARD_CD = T2.BOARD_CD
+        WHERE T1.BOARD_IDX = #{boardIdx}
+	</select>
+
+
+</mapper>	

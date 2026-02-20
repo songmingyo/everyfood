@@ -1,0 +1,977 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.cs.service.impl.ClsDayStkRegMapper">
+
+	
+	<!-- 일재고 조회 -->
+	<select id="selectClsDayStkRegList" parameterType="com.doppio.workplace.cs.service.ClsDayStkRegVo" resultType="com.doppio.workplace.cs.service.ClsDayStkRegVo">
+	/*ClsDayStkRegMapper.selectClsDayStkRegList*/
+	
+	    WITH DAY_STOCK AS (
+
+   			SELECT A.PRDT_CD
+   		       	   , A.WH_CD
+                   , 0 AS COST
+                   , 0 AS B_STK_QTY
+                   , B.STK_DT
+		           , A.AREA_1_QTY + A.AREA_2_QTY AS STK_QTY
+	          FROM TMH_DAY_STOCK AS A
+			       JOIN 
+				       (SELECT WH_CD, PRDT_CD, MAX(STK_DT) STK_DT
+	    			      FROM TMH_DAY_STOCK
+		       			 WHERE STK_DT BETWEEN CONCAT(DATE_FORMAT(#{searchStkDt},'%Y%m'),'01') AND DATE_FORMAT(DATE_ADD(#{searchStkDt}, INTERVAL -1 DAY),'%Y%m%d')
+		       			   <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+			                 AND PRDT_CD = #{searchPrdtCd}
+			               </if> 
+                           AND WH_CD LIKE CONCAT(#{searchWhCd},'%')
+		       			 GROUP BY WH_CD, PRDT_CD 
+			   		   ) AS B
+				 WHERE A.STK_DT = B.STK_DT
+				   AND A.WH_CD = B.WH_CD
+				   AND A.PRDT_CD = B.PRDT_CD
+             
+	    )
+	
+		SELECT #{searchStkDt} AS STK_DT
+		       , #{searchWhCd} AS WH_CD
+		       , TPM.LACK_NO_1
+			   , TPM.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TPM.QTY_BOX
+			   
+               , IFNULL(A.PREV_STK_QTY, 0) AS PREV_STK_QTY
+               
+               , IFNULL(A.BUY_QTY, 0) + IFNULL(A.IN_WH_CD, 0) AS BUY_QTY
+               , IFNULL(A.BUY_RTN_QTY, 0) AS BUY_RTN_QTY
+               , IFNULL(A.BUY_QTY, 0) + IFNULL(A.IN_WH_CD, 0) - IFNULL(A.BUY_RTN_QTY, 0) AS BUY_TOT_QTY
+               
+               , IFNULL(A.SALES_QTY, 0) + IFNULL(A.OUT_WH_CD, 0) + IFNULL(A.DSPL_QTY, 0) AS DLV_QTY
+               , IFNULL(A.SALES_RTN_QTY, 0) AS SALES_RTN_QTY
+               , IFNULL(A.SALES_QTY, 0) - IFNULL(A.SALES_RTN_QTY, 0) + IFNULL(A.OUT_WH_CD, 0) + IFNULL(A.DSPL_QTY, 0) AS DLV_TOT_QTY
+               
+               , IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_CD,0) - IFNULL(A.OUT_WH_CD,0) AS L_STK_QTY
+               , (IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_CD,0) - IFNULL(A.OUT_WH_CD,0)) * CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END AS L_STK_AMT
+   		       
+   		       , IFNULL(TDS.AREA_1_QTY,0) AS AREA_1_QTY
+   		       , IFNULL(TDS.AREA_2_QTY,0) AS AREA_2_QTY
+   		       , IFNULL(TDS.AREA_1_QTY,0) + IFNULL(TDS.AREA_2_QTY,0) AS R_STK_QTY
+   		       , (IFNULL(TDS.AREA_1_QTY,0) + IFNULL(TDS.AREA_2_QTY,0)) * CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END AS R_STK_AMT
+   		       
+   		       , (IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_CD,0) - IFNULL(A.OUT_WH_CD,0)) - (IFNULL(TDS.AREA_1_QTY,0) + IFNULL(TDS.AREA_2_QTY,0)) AS STK_DIFF_QTY
+   		       , ((IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_CD,0) - IFNULL(A.OUT_WH_CD,0)) - (IFNULL(TDS.AREA_1_QTY,0) + IFNULL(TDS.AREA_2_QTY,0))) * CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END AS STK_DIFF_AMT
+   		       
+   		       , CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END AS COST 
+   		          		       
+   		       , CASE WHEN TDS.PRDT_CD IS NULL THEN 'I' ELSE 'U' END AS GRID_FLAG
+   		       
+		  FROM TFM_PRDT_MST AS TPM
+		  
+			   LEFT OUTER JOIN 
+			       (SELECT WH_CD
+			               , PRDT_CD
+			               , AREA_1_QTY + AREA_2_QTY AS STK_QTY
+			               , AREA_1_QTY AS AREA_1_QTY
+			               , AREA_2_QTY AS AREA_2_QTY
+			          FROM TMH_DAY_STOCK
+			         WHERE STK_DT = #{searchStkDt}
+                       AND WH_CD = #{searchWhCd}
+			         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                       AND PRDT_CD = #{searchPrdtCd}
+                     </if>
+			         GROUP BY WH_CD, PRDT_CD
+			       ) AS TDS
+			           ON TDS.PRDT_CD = TPM.PRDT_CD
+                   
+		       LEFT OUTER JOIN
+                   (SELECT A.PRDT_CD
+                           , MAX(A.COST) AS COST
+                           , SUM(IFNULL(A.PREV_STK_QTY, 0)) AS PREV_STK_QTY
+                           , SUM(IFNULL(A.BUY_QTY, 0)) AS BUY_QTY
+                           , SUM(IFNULL(A.BUY_RTN_QTY, 0)) AS BUY_RTN_QTY
+                           , SUM(IFNULL(A.SALES_QTY, 0)) AS SALES_QTY
+                           , SUM(IFNULL(A.SALES_RTN_QTY, 0)) AS SALES_RTN_QTY
+                           , SUM(IFNULL(A.DSPL_QTY, 0)) AS DSPL_QTY
+                           , SUM(IFNULL(A.IN_WH_CD, 0)) AS IN_WH_CD
+                           , SUM(IFNULL(A.OUT_WH_CD, 0)) AS OUT_WH_CD
+                      FROM (SELECT TMC.PRDT_CD
+                                   , TMC.COST
+                                   , IFNULL(DS.STK_QTY,TMC.STK_QTY) AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_CD
+                                   , 0 AS OUT_WH_CD
+                              FROM TMH_MON_CLOSING AS TMC
+                                   LEFT OUTER JOIN DAY_STOCK AS DS
+                                       ON DS.WH_CD = TMC.WH_CD
+                                      AND DS.PRDT_CD = TMC.PRDT_CD
+                             WHERE TMC.YEAR_MON = DATE_FORMAT(DATE_ADD(#{searchStkDt}, INTERVAL -1 MONTH),'%Y%m')
+                             <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TMC.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                               AND TMC.WH_CD = #{searchWhCd}
+                             GROUP BY PRDT_CD, TMC.COST
+                         UNION ALL
+                           SELECT TPR.PRDT_CD
+                                  , 0 AS COST
+                                  , 0 AS PREV_STK_QTY
+                                  , SUM(IFNULL(TPR.BUY_QTY,0)) AS BUY_QTY
+                                  , 0 AS BUY_RTN_QTY
+                                  , 0 AS SALES_QTY
+                                  , 0 AS SALES_RTN_QTY
+                                  , 0 AS DSPL_QTY
+                                  , 0 AS IN_WH_CD
+                                  , 0 AS OUT_WH_CD
+                             FROM TBH_PRDT_RCPT AS TPR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPR.PRDT_CD
+		                              AND DS.WH_CD = TPR.WH_CD
+                            WHERE TPR.BUY_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                             <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                 AND TPR.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                              AND TPR.WH_CD = #{searchWhCd}
+                              AND TPR.BUY_CONF_YN = 'Y'
+                              GROUP BY TPR.PRDT_CD
+                           UNION ALL
+                           SELECT TPR.PRDT_CD
+                                  , 0 AS COST
+                                  , 0 AS PREV_STK_QTY
+                                  , 0 AS BUY_QTY
+                                  , SUM(IFNULL(TPR.RTN_QTY,0)) AS BUY_RTN_QTY
+                                  , 0 AS SALES_QTY
+                                  , 0 AS SALES_RTN_QTY
+                                  , 0 AS DSPL_QTY
+                                  , 0 AS IN_WH_CD
+                                  , 0 AS OUT_WH_CD
+                             FROM TBH_PRDT_RETURN AS TPR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPR.PRDT_CD
+		                              AND DS.WH_CD = TPR.WH_CD
+                            WHERE TPR.RTN_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                             <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                 AND TPR.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                              AND TPR.WH_CD = #{searchWhCd}
+                            GROUP BY TPR.PRDT_CD
+                         UNION ALL
+                           SELECT TPD.PRDT_CD
+                                  , 0 AS COST
+                                  , 0 AS PREV_STK_QTY
+                                  , 0 AS BUY_QTY
+                                  , 0 AS BUY_RTN_QTY
+                                  , 0 AS SALES_QTY
+                                  , 0 AS SALES_RTN_QTY
+                                  , SUM(TPD.DSP_QTY) AS DSPL_QTY
+                                  , 0 AS IN_WH_CD
+                                  , 0 AS OUT_WH_CD
+                             FROM TBH_PRDT_DSPL AS TPD
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPD.PRDT_CD
+		                              AND DS.WH_CD = TPD.WH_CD
+                            WHERE TPD.DSP_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TPD.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TPD.WH_CD = #{searchWhCd}
+                              GROUP BY TPD.PRDT_CD
+                           UNION ALL
+                             SELECT TSD.PRDT_CD
+                                    , 0 AS COST
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , SUM(IFNULL(TSD.SALES_QTY,0)) AS SALES_QTY
+                                    , 0 AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , 0 AS IN_WH_CD
+                                    , 0 AS OUT_WH_CD
+                               FROM TSH_SALES_DLV AS TSD
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSD.PRDT_CD
+		                              AND DS.WH_CD = TSD.WH_CD
+                              WHERE TSD.SALES_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TSD.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TSD.WH_CD = #{searchWhCd}
+                              GROUP BY TSD.PRDT_CD
+                           UNION ALL
+                             SELECT TSR.PRDT_CD
+                                    , 0 AS COST
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , 0 AS SALES_QTY
+                                    , SUM(IFNULL(TSR.RTN_QTY,0)) AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , 0 AS IN_WH_CD
+                                    , 0 AS OUT_WH_CD
+                               FROM TSH_SALES_RETURN AS TSR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSR.PRDT_CD
+		                              AND DS.WH_CD = TSR.WH_CD
+                              WHERE TSR.RTN_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TSR.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TSR.WH_CD = #{searchWhCd}
+                              GROUP BY TSR.PRDT_CD
+                           UNION ALL
+                             SELECT TSF.PRDT_CD
+                                    , 0 AS COST 
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , SUM(IFNULL(TSF.FREE_QTY,0)) AS SALES_QTY
+                                    , 0 AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , 0 AS IN_WH_CD
+                                    , 0 AS OUT_WH_CD
+                               FROM TSH_SALES_FREE AS TSF
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSF.PRDT_CD
+		                              AND DS.WH_CD = TSF.WH_CD
+                              WHERE TSF.FREE_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TSF.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TSF.WH_CD = #{searchWhCd}
+                              GROUP BY TSF.PRDT_CD
+                           UNION ALL
+                             SELECT TWMP.PRDT_CD
+                                    , 0 AS COST
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , 0 AS SALES_QTY
+                                    , 0 AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , SUM(IFNULL(TWMP.MV_QTY,0)) AS IN_WH_CD
+                                    , 0 AS OUT_WH_CD
+                               FROM TBH_WH_MV_PRDT AS TWMP
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TWMP.PRDT_CD
+		                              AND DS.WH_CD = TWMP.IN_WH_CD
+                              WHERE TWMP.MV_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TWMP.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TWMP.IN_WH_CD = #{searchWhCd}
+                                AND TWMP.MV_CONF_YN = 'Y'
+                              GROUP BY TWMP.PRDT_CD
+                           UNION ALL
+                             SELECT TWMP.PRDT_CD
+                                    , 0 AS COST
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , 0 AS SALES_QTY
+                                    , 0 AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , 0 AS IN_WH_CD
+                                    , SUM(IFNULL(TWMP.MV_QTY,0)) AS OUT_WH_CD
+                               FROM TBH_WH_MV_PRDT AS TWMP
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TWMP.PRDT_CD
+		                              AND DS.WH_CD = TWMP.OUT_WH_CD
+                              WHERE TWMP.MV_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TWMP.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TWMP.OUT_WH_CD = #{searchWhCd}
+                                AND TWMP.MV_CONF_YN = 'Y'
+                              GROUP BY TWMP.PRDT_CD
+                            ) AS A
+                      GROUP BY A.PRDT_CD
+                    ) AS A
+			       ON A.PRDT_CD = TPM.PRDT_CD
+			 
+		 WHERE TPM.USE_YN = 'Y'
+			<if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                AND TPM.PRDT_CD = #{searchPrdtCd}
+            </if>
+            <if test='searchLCd != null and searchLCd != ""'> 
+                AND TPM.L_CD = #{searchLCd}
+            </if>
+            <if test='searchStrgType != null and searchStrgType != ""'> 
+                AND TPM.STRG_TYPE = #{searchStrgType}
+            </if>
+        ORDER BY TPM.LACK_NO_1, TPM.PRDT_NM
+	</select>
+	
+	
+	<!-- 일재고 footer 조회 -->
+	<select id="selectDayStkRegFooter" parameterType="com.doppio.workplace.cs.service.ClsDayStkRegVo" resultType="com.doppio.workplace.cs.service.ClsDayStkRegVo">
+	/*ClsDayStkRegMapper.selectDayStkRegFooter*/
+	
+	    WITH DAY_STOCK AS (
+   			SELECT A.PRDT_CD
+   		       	   , A.WH_CD
+                   , 0 AS COST
+                   , 0 AS B_STK_QTY
+                   , B.STK_DT
+		           , A.AREA_1_QTY + A.AREA_2_QTY AS STK_QTY
+	          FROM TMH_DAY_STOCK AS A
+			       JOIN 
+				       (SELECT WH_CD, PRDT_CD, MAX(STK_DT) STK_DT
+	    			      FROM TMH_DAY_STOCK
+		       			 WHERE STK_DT BETWEEN CONCAT(DATE_FORMAT(#{searchStkDt},'%Y%m'),'01') AND DATE_FORMAT(DATE_ADD(#{searchStkDt}, INTERVAL -1 DAY),'%Y%m%d')
+		       			   <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+			                 AND PRDT_CD = #{searchPrdtCd}
+			               </if> 
+                           AND WH_CD LIKE CONCAT(#{searchWhCd},'%')
+		       			 GROUP BY WH_CD, PRDT_CD 
+			   		   ) AS B
+				 WHERE A.STK_DT = B.STK_DT
+				   AND A.WH_CD = B.WH_CD
+				   AND A.PRDT_CD = B.PRDT_CD
+	    )
+	    
+		SELECT SUM(A.PREV_STK_QTY) AS PREV_STK_QTY
+               
+               , SUM(IFNULL(A.BUY_QTY, 0) + IFNULL(A.IN_WH_CD, 0)) AS BUY_QTY
+               , SUM(IFNULL(A.BUY_RTN_QTY, 0)) AS BUY_RTN_QTY
+               , SUM(IFNULL(A.BUY_QTY, 0) + IFNULL(A.IN_WH_CD, 0) - IFNULL(A.BUY_RTN_QTY, 0)) AS BUY_TOT_QTY
+               
+               , SUM(IFNULL(A.SALES_QTY, 0) + IFNULL(A.OUT_WH_CD, 0) + IFNULL(A.DSPL_QTY, 0)) AS DLV_QTY
+               , SUM(IFNULL(A.SALES_RTN_QTY, 0)) AS SALES_RTN_QTY
+               , SUM(IFNULL(A.SALES_QTY, 0) + IFNULL(A.OUT_WH_CD, 0) - IFNULL(A.SALES_RTN_QTY, 0) + IFNULL(A.DSPL_QTY, 0)) AS DLV_TOT_QTY
+               
+               , SUM(IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_CD,0) - IFNULL(A.OUT_WH_CD,0)) AS L_STK_QTY
+               , SUM((IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_CD,0) - IFNULL(A.OUT_WH_CD,0)) * CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END) AS L_STK_AMT
+   		       
+   		       , SUM(IFNULL(TDS.AREA_1_QTY,0)) AS AREA_1_QTY
+   		       , SUM(IFNULL(TDS.AREA_2_QTY,0)) AS AREA_2_QTY
+   		       , SUM(IFNULL(TDS.AREA_1_QTY,0) + IFNULL(TDS.AREA_2_QTY,0)) AS R_STK_QTY
+   		       , SUM((IFNULL(TDS.AREA_1_QTY,0) + IFNULL(TDS.AREA_2_QTY,0)) * CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END) AS R_STK_AMT
+   		       
+   		       , SUM((IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_CD,0) - IFNULL(A.OUT_WH_CD,0)) - (IFNULL(TDS.AREA_1_QTY,0) + IFNULL(TDS.AREA_2_QTY,0))) AS STK_DIFF_QTY
+   		       , SUM(((IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_CD,0) - IFNULL(A.OUT_WH_CD,0)) - (IFNULL(TDS.AREA_1_QTY,0) + IFNULL(TDS.AREA_2_QTY,0))) * CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END) AS STK_DIFF_AMT
+   		       
+		  FROM TFM_PRDT_MST AS TPM
+		  
+		  	   LEFT OUTER JOIN 
+			       (SELECT WH_CD
+			               , PRDT_CD
+			               , AREA_1_QTY + AREA_2_QTY AS STK_QTY
+			               , AREA_1_QTY AS AREA_1_QTY
+			               , AREA_2_QTY AS AREA_2_QTY
+			          FROM TMH_DAY_STOCK
+			         WHERE STK_DT = #{searchStkDt}
+                       AND WH_CD = #{searchWhCd}
+			         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                       AND PRDT_CD = #{searchPrdtCd}
+                     </if>
+			         GROUP BY WH_CD, PRDT_CD
+			       ) AS TDS
+			           ON TDS.PRDT_CD = TPM.PRDT_CD
+                   
+		       LEFT OUTER JOIN
+                   (SELECT A.PRDT_CD
+                           , MAX(A.COST) AS COST
+                           , SUM(IFNULL(A.PREV_STK_QTY, 0)) AS PREV_STK_QTY
+                           , SUM(IFNULL(A.BUY_QTY, 0)) AS BUY_QTY
+                           , SUM(IFNULL(A.BUY_RTN_QTY, 0)) AS BUY_RTN_QTY
+                           , SUM(IFNULL(A.SALES_QTY, 0)) AS SALES_QTY
+                           , SUM(IFNULL(A.SALES_RTN_QTY, 0)) AS SALES_RTN_QTY
+                           , SUM(IFNULL(A.DSPL_QTY, 0)) AS DSPL_QTY
+                           , SUM(IFNULL(A.IN_WH_CD, 0)) AS IN_WH_CD
+                           , SUM(IFNULL(A.OUT_WH_CD, 0)) AS OUT_WH_CD
+                      FROM (SELECT TMC.PRDT_CD
+                                   , TMC.COST
+                                   , IFNULL(DS.STK_QTY,TMC.STK_QTY) AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_CD
+                                   , 0 AS OUT_WH_CD
+                              FROM TMH_MON_CLOSING AS TMC
+                                   LEFT OUTER JOIN DAY_STOCK AS DS
+                                       ON DS.WH_CD = TMC.WH_CD
+                                      AND DS.PRDT_CD = TMC.PRDT_CD
+                             WHERE TMC.YEAR_MON = DATE_FORMAT(DATE_ADD(#{searchStkDt}, INTERVAL -1 MONTH),'%Y%m')
+                             <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TMC.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                               AND TMC.WH_CD = #{searchWhCd}
+                             GROUP BY PRDT_CD, TMC.COST
+                         UNION ALL
+                           SELECT TPR.PRDT_CD
+                                  , 0 AS COST
+                                  , 0 AS PREV_STK_QTY
+                                  , SUM(IFNULL(TPR.BUY_QTY,0)) AS BUY_QTY
+                                  , 0 AS BUY_RTN_QTY
+                                  , 0 AS SALES_QTY
+                                  , 0 AS SALES_RTN_QTY
+                                  , 0 AS DSPL_QTY
+                                  , 0 AS IN_WH_CD
+                                  , 0 AS OUT_WH_CD
+                             FROM TBH_PRDT_RCPT AS TPR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPR.PRDT_CD
+		                              AND DS.WH_CD = TPR.WH_CD
+                            WHERE TPR.BUY_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                             <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                 AND TPR.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                              AND TPR.WH_CD = #{searchWhCd}
+                              AND TPR.BUY_CONF_YN = 'Y'
+                              GROUP BY TPR.PRDT_CD
+                           UNION ALL
+                           SELECT TPR.PRDT_CD
+                                  , 0 AS COST
+                                  , 0 AS PREV_STK_QTY
+                                  , 0 AS BUY_QTY
+                                  , SUM(IFNULL(TPR.RTN_QTY,0)) AS BUY_RTN_QTY
+                                  , 0 AS SALES_QTY
+                                  , 0 AS SALES_RTN_QTY
+                                  , 0 AS DSPL_QTY
+                                  , 0 AS IN_WH_CD
+                                  , 0 AS OUT_WH_CD
+                             FROM TBH_PRDT_RETURN AS TPR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPR.PRDT_CD
+		                              AND DS.WH_CD = TPR.WH_CD
+                            WHERE TPR.RTN_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                             <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                 AND TPR.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                              AND TPR.WH_CD = #{searchWhCd}
+                            GROUP BY TPR.PRDT_CD
+                         UNION ALL
+                           SELECT TPD.PRDT_CD
+                                  , 0 AS COST
+                                  , 0 AS PREV_STK_QTY
+                                  , 0 AS BUY_QTY
+                                  , 0 AS BUY_RTN_QTY
+                                  , 0 AS SALES_QTY
+                                  , 0 AS SALES_RTN_QTY
+                                  , SUM(TPD.DSP_QTY) AS DSPL_QTY
+                                  , 0 AS IN_WH_CD
+                                  , 0 AS OUT_WH_CD
+                             FROM TBH_PRDT_DSPL AS TPD
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPD.PRDT_CD
+		                              AND DS.WH_CD = TPD.WH_CD
+                            WHERE TPD.DSP_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TPD.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TPD.WH_CD = #{searchWhCd}
+                              GROUP BY TPD.PRDT_CD
+                           UNION ALL
+                             SELECT TSD.PRDT_CD
+                                    , 0 AS COST
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , SUM(IFNULL(TSD.SALES_QTY,0)) AS SALES_QTY
+                                    , 0 AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , 0 AS IN_WH_CD
+                                    , 0 AS OUT_WH_CD
+                               FROM TSH_SALES_DLV AS TSD
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSD.PRDT_CD
+		                              AND DS.WH_CD = TSD.WH_CD
+                              WHERE TSD.SALES_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TSD.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TSD.WH_CD = #{searchWhCd}
+                              GROUP BY TSD.PRDT_CD
+                           UNION ALL
+                             SELECT TSR.PRDT_CD
+                                    , 0 AS COST
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , 0 AS SALES_QTY
+                                    , SUM(IFNULL(TSR.RTN_QTY,0)) AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , 0 AS IN_WH_CD
+                                    , 0 AS OUT_WH_CD
+                               FROM TSH_SALES_RETURN AS TSR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSR.PRDT_CD
+		                              AND DS.WH_CD = TSR.WH_CD
+                              WHERE TSR.RTN_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TSR.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TSR.WH_CD = #{searchWhCd}
+                              GROUP BY TSR.PRDT_CD
+                           UNION ALL
+                             SELECT TSF.PRDT_CD
+                                    , 0 AS COST 
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , SUM(IFNULL(TSF.FREE_QTY,0)) AS SALES_QTY
+                                    , 0 AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , 0 AS IN_WH_CD
+                                    , 0 AS OUT_WH_CD
+                               FROM TSH_SALES_FREE AS TSF
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSF.PRDT_CD
+		                              AND DS.WH_CD = TSF.WH_CD
+                              WHERE TSF.FREE_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TSF.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TSF.WH_CD = #{searchWhCd}
+                              GROUP BY TSF.PRDT_CD
+                           UNION ALL
+                             SELECT TWMP.PRDT_CD
+                                    , 0 AS COST
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , 0 AS SALES_QTY
+                                    , 0 AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , SUM(IFNULL(TWMP.MV_QTY,0)) AS IN_WH_CD
+                                    , 0 AS OUT_WH_CD
+                               FROM TBH_WH_MV_PRDT AS TWMP
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TWMP.PRDT_CD
+		                              AND DS.WH_CD = TWMP.IN_WH_CD
+                              WHERE TWMP.MV_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TWMP.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TWMP.IN_WH_CD = #{searchWhCd}
+                                AND TWMP.MV_CONF_YN = 'Y'
+                              GROUP BY TWMP.PRDT_CD
+                           UNION ALL
+                             SELECT TWMP.PRDT_CD
+                                    , 0 AS COST
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , 0 AS SALES_QTY
+                                    , 0 AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , 0 AS IN_WH_CD
+                                    , SUM(IFNULL(TWMP.MV_QTY,0)) AS OUT_WH_CD
+                               FROM TBH_WH_MV_PRDT AS TWMP
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TWMP.PRDT_CD
+		                              AND DS.WH_CD = TWMP.OUT_WH_CD
+                              WHERE TWMP.MV_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TWMP.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TWMP.OUT_WH_CD = #{searchWhCd}
+                                AND TWMP.MV_CONF_YN = 'Y'
+                              GROUP BY TWMP.PRDT_CD
+                            ) AS A
+                      GROUP BY A.PRDT_CD
+                    ) AS A
+			       ON A.PRDT_CD = TPM.PRDT_CD
+			       
+		WHERE TPM.USE_YN = 'Y'
+			<if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                AND TPM.PRDT_CD = #{searchPrdtCd}
+            </if>
+            <if test='searchLCd != null and searchLCd != ""'> 
+                AND TPM.L_CD = #{searchLCd}
+            </if>
+            <if test='searchStrgType != null and searchStrgType != ""'> 
+                AND TPM.STRG_TYPE = #{searchStrgType}
+            </if>
+	</select>
+	
+	
+	<!-- 일재고 엑셀 다운로드 -->
+	<select id="selectClsDayStkRegListExcel" parameterType="com.doppio.workplace.cs.service.ClsDayStkRegVo" resultType="java.util.HashMap">
+	/*ClsDayStkRegMapper.selectClsDayStkRegListExcel*/
+	
+	    WITH DAY_STOCK AS (
+   			SELECT A.PRDT_CD
+   		       	   , A.WH_CD
+                   , 0 AS COST
+                   , 0 AS B_STK_QTY
+                   , B.STK_DT
+		           , A.AREA_1_QTY + A.AREA_2_QTY AS STK_QTY
+	          FROM TMH_DAY_STOCK AS A
+			       JOIN 
+				       (SELECT WH_CD, PRDT_CD, MAX(STK_DT) STK_DT
+	    			      FROM TMH_DAY_STOCK
+		       			 WHERE STK_DT BETWEEN CONCAT(DATE_FORMAT(#{searchStkDt},'%Y%m'),'01') AND DATE_FORMAT(DATE_ADD(#{searchStkDt}, INTERVAL -1 DAY),'%Y%m%d')
+		       			   <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+			                 AND PRDT_CD = #{searchPrdtCd}
+			               </if> 
+                           AND WH_CD LIKE CONCAT(#{searchWhCd},'%')
+		       			 GROUP BY WH_CD, PRDT_CD 
+			   		   ) AS B
+				 WHERE A.STK_DT = B.STK_DT
+				   AND A.WH_CD = B.WH_CD
+				   AND A.PRDT_CD = B.PRDT_CD
+	    )
+	
+		SELECT TPM.PRDT_CD
+			   , TPM.LACK_NO_1
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TPM.QTY_BOX
+			   
+               , IFNULL(A.PREV_STK_QTY, 0) AS PREV_STK_QTY
+               
+               , IFNULL(A.BUY_QTY, 0) + IFNULL(A.IN_WH_CD, 0) AS BUY_QTY
+               , IFNULL(A.BUY_RTN_QTY, 0) AS BUY_RTN_QTY
+               , IFNULL(A.BUY_QTY, 0) + IFNULL(A.IN_WH_CD, 0) - IFNULL(A.BUY_RTN_QTY, 0) AS BUY_TOT_QTY
+               
+               , IFNULL(A.SALES_QTY, 0) + IFNULL(A.OUT_WH_CD, 0) + IFNULL(A.DSPL_QTY, 0) AS DLV_QTY
+               , IFNULL(A.SALES_RTN_QTY, 0) AS SALES_RTN_QTY
+               , IFNULL(A.SALES_QTY, 0) + IFNULL(A.OUT_WH_CD, 0) - IFNULL(A.SALES_RTN_QTY, 0) + IFNULL(A.DSPL_QTY, 0) AS DLV_TOT_QTY
+               
+               , IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_CD,0) - IFNULL(A.OUT_WH_CD,0) AS L_STK_QTY
+               , (IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_CD,0) - IFNULL(A.OUT_WH_CD,0)) * CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END AS L_STK_AMT
+   		       
+   		       , IFNULL(TDS.AREA_1_QTY,0) AS AREA_1_QTY
+   		       , IFNULL(TDS.AREA_2_QTY,0) AS AREA_2_QTY
+   		       , IFNULL(TDS.AREA_1_QTY,0) + IFNULL(TDS.AREA_2_QTY,0) AS R_STK_QTY
+   		       , (IFNULL(TDS.AREA_1_QTY,0) + IFNULL(TDS.AREA_2_QTY,0)) * CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END AS R_STK_AMT
+   		       
+   		       , (IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_CD,0) - IFNULL(A.OUT_WH_CD,0)) - (IFNULL(TDS.AREA_1_QTY,0) + IFNULL(TDS.AREA_2_QTY,0)) AS STK_DIFF_QTY
+   		       , ((IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_CD,0) - IFNULL(A.OUT_WH_CD,0)) - (IFNULL(TDS.AREA_1_QTY,0) + IFNULL(TDS.AREA_2_QTY,0))) * CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END AS STK_DIFF_AMT
+   		       
+   		       , CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END AS COST 
+   		       
+		  FROM TFM_PRDT_MST AS TPM
+		  
+		       LEFT OUTER JOIN 
+			       (SELECT WH_CD
+			               , PRDT_CD
+			               , AREA_1_QTY + AREA_2_QTY AS STK_QTY
+			               , AREA_1_QTY AS AREA_1_QTY
+			               , AREA_2_QTY AS AREA_2_QTY
+			          FROM TMH_DAY_STOCK
+			         WHERE STK_DT = REPLACE(#{searchStkDt},'-','')
+                       AND WH_CD = #{searchWhCd}
+			         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                       AND PRDT_CD = #{searchPrdtCd}
+                     </if>
+			         GROUP BY WH_CD, PRDT_CD
+			       ) AS TDS
+			           ON TDS.PRDT_CD = TPM.PRDT_CD
+                   
+		       LEFT OUTER JOIN
+                   (SELECT A.PRDT_CD
+                           , MAX(A.COST) AS COST
+                           , SUM(IFNULL(A.PREV_STK_QTY, 0)) AS PREV_STK_QTY
+                           , SUM(IFNULL(A.BUY_QTY, 0)) AS BUY_QTY
+                           , SUM(IFNULL(A.BUY_RTN_QTY, 0)) AS BUY_RTN_QTY
+                           , SUM(IFNULL(A.SALES_QTY, 0)) AS SALES_QTY
+                           , SUM(IFNULL(A.SALES_RTN_QTY, 0)) AS SALES_RTN_QTY
+                           , SUM(IFNULL(A.DSPL_QTY, 0)) AS DSPL_QTY
+                           , SUM(IFNULL(A.IN_WH_CD, 0)) AS IN_WH_CD
+                           , SUM(IFNULL(A.OUT_WH_CD, 0)) AS OUT_WH_CD
+                      FROM (SELECT TMC.PRDT_CD
+                                   , TMC.COST
+                                   , IFNULL(DS.STK_QTY,TMC.STK_QTY) AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_CD
+                                   , 0 AS OUT_WH_CD
+                              FROM TMH_MON_CLOSING AS TMC
+                                   LEFT OUTER JOIN DAY_STOCK AS DS
+                                       ON DS.WH_CD = TMC.WH_CD
+                                      AND DS.PRDT_CD = TMC.PRDT_CD
+                             WHERE TMC.YEAR_MON = DATE_FORMAT(DATE_ADD(#{searchStkDt}, INTERVAL -1 MONTH),'%Y%m')
+                             <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TMC.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                               AND TMC.WH_CD = #{searchWhCd}
+                             GROUP BY PRDT_CD, TMC.COST
+                         UNION ALL
+                           SELECT TPR.PRDT_CD
+                                  , 0 AS COST
+                                  , 0 AS PREV_STK_QTY
+                                  , SUM(IFNULL(TPR.BUY_QTY,0)) AS BUY_QTY
+                                  , 0 AS BUY_RTN_QTY
+                                  , 0 AS SALES_QTY
+                                  , 0 AS SALES_RTN_QTY
+                                  , 0 AS DSPL_QTY
+                                  , 0 AS IN_WH_CD
+                                  , 0 AS OUT_WH_CD
+                             FROM TBH_PRDT_RCPT AS TPR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPR.PRDT_CD
+		                              AND DS.WH_CD = TPR.WH_CD
+                            WHERE TPR.BUY_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND REPLACE(#{searchStkDt},'-','')
+                             <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                 AND TPR.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                              AND TPR.WH_CD = #{searchWhCd}
+                              AND TPR.BUY_CONF_YN = 'Y'
+                              GROUP BY TPR.PRDT_CD
+                           UNION ALL
+                           SELECT TPR.PRDT_CD
+                                  , 0 AS COST
+                                  , 0 AS PREV_STK_QTY
+                                  , 0 AS BUY_QTY
+                                  , SUM(IFNULL(TPR.RTN_QTY,0)) AS BUY_RTN_QTY
+                                  , 0 AS SALES_QTY
+                                  , 0 AS SALES_RTN_QTY
+                                  , 0 AS DSPL_QTY
+                                  , 0 AS IN_WH_CD
+                                  , 0 AS OUT_WH_CD
+                             FROM TBH_PRDT_RETURN AS TPR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPR.PRDT_CD
+		                              AND DS.WH_CD = TPR.WH_CD
+                            WHERE TPR.RTN_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND REPLACE(#{searchStkDt},'-','')
+                             <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                 AND TPR.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                              AND TPR.WH_CD = #{searchWhCd}
+                            GROUP BY TPR.PRDT_CD
+                         UNION ALL
+                           SELECT TPD.PRDT_CD
+                                  , 0 AS COST
+                                  , 0 AS PREV_STK_QTY
+                                  , 0 AS BUY_QTY
+                                  , 0 AS BUY_RTN_QTY
+                                  , 0 AS SALES_QTY
+                                  , 0 AS SALES_RTN_QTY
+                                  , SUM(TPD.DSP_QTY) AS DSPL_QTY
+                                  , 0 AS IN_WH_CD
+                                  , 0 AS OUT_WH_CD
+                             FROM TBH_PRDT_DSPL AS TPD
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPD.PRDT_CD
+		                              AND DS.WH_CD = TPD.WH_CD
+                            WHERE TPD.DSP_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND REPLACE(#{searchStkDt},'-','')
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TPD.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TPD.WH_CD = #{searchWhCd}
+                              GROUP BY TPD.PRDT_CD
+                           UNION ALL
+                             SELECT TSD.PRDT_CD
+                                    , 0 AS COST
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , SUM(IFNULL(TSD.SALES_QTY,0)) AS SALES_QTY
+                                    , 0 AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , 0 AS IN_WH_CD
+                                    , 0 AS OUT_WH_CD
+                               FROM TSH_SALES_DLV AS TSD
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSD.PRDT_CD
+		                              AND DS.WH_CD = TSD.WH_CD
+                              WHERE TSD.SALES_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND REPLACE(#{searchStkDt},'-','')
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TSD.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TSD.WH_CD = #{searchWhCd}
+                              GROUP BY TSD.PRDT_CD
+                           UNION ALL
+                             SELECT TSR.PRDT_CD
+                                    , 0 AS COST
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , 0 AS SALES_QTY
+                                    , SUM(IFNULL(TSR.RTN_QTY,0)) AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , 0 AS IN_WH_CD
+                                    , 0 AS OUT_WH_CD
+                               FROM TSH_SALES_RETURN AS TSR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSR.PRDT_CD
+		                              AND DS.WH_CD = TSR.WH_CD
+                              WHERE TSR.RTN_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND REPLACE(#{searchStkDt},'-','')
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TSR.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TSR.WH_CD = #{searchWhCd}
+                              GROUP BY TSR.PRDT_CD
+                           UNION ALL
+                             SELECT TSF.PRDT_CD
+                                    , 0 AS COST 
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , SUM(IFNULL(TSF.FREE_QTY,0)) AS SALES_QTY
+                                    , 0 AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , 0 AS IN_WH_CD
+                                    , 0 AS OUT_WH_CD
+                               FROM TSH_SALES_FREE AS TSF
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSF.PRDT_CD
+		                              AND DS.WH_CD = TSF.WH_CD
+                              WHERE TSF.FREE_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND REPLACE(#{searchStkDt},'-','')
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TSF.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TSF.WH_CD = #{searchWhCd}
+                              GROUP BY TSF.PRDT_CD
+                           UNION ALL
+                             SELECT TWMP.PRDT_CD
+                                    , 0 AS COST
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , 0 AS SALES_QTY
+                                    , 0 AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , SUM(IFNULL(TWMP.MV_QTY,0)) AS IN_WH_CD
+                                    , 0 AS OUT_WH_CD
+                               FROM TBH_WH_MV_PRDT AS TWMP
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TWMP.PRDT_CD
+		                              AND DS.WH_CD = TWMP.IN_WH_CD
+                              WHERE TWMP.MV_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND REPLACE(#{searchStkDt},'-','')
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TWMP.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TWMP.IN_WH_CD = #{searchWhCd}
+                                AND TWMP.MV_CONF_YN = 'Y'
+                              GROUP BY TWMP.PRDT_CD
+                           UNION ALL
+                             SELECT TWMP.PRDT_CD
+                                    , 0 AS COST
+                                    , 0 AS PREV_STK_QTY
+                                    , 0 AS BUY_QTY
+                                    , 0 AS BUY_RTN_QTY
+                                    , 0 AS SALES_QTY
+                                    , 0 AS SALES_RTN_QTY
+                                    , 0 AS DSPL_QTY
+                                    , 0 AS IN_WH_CD
+                                    , SUM(IFNULL(TWMP.MV_QTY,0)) AS OUT_WH_CD
+                               FROM TBH_WH_MV_PRDT AS TWMP
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TWMP.PRDT_CD
+		                              AND DS.WH_CD = TWMP.OUT_WH_CD
+                              WHERE TWMP.MV_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND REPLACE(#{searchStkDt},'-','')
+                               <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                                   AND TWMP.PRDT_CD = #{searchPrdtCd}
+                               </if>
+                                AND TWMP.OUT_WH_CD = #{searchWhCd}
+                                AND TWMP.MV_CONF_YN = 'Y'
+                              GROUP BY TWMP.PRDT_CD
+                            ) AS A
+                      GROUP BY A.PRDT_CD
+                    ) AS A
+			       ON A.PRDT_CD = TPM.PRDT_CD
+			   
+		WHERE TPM.USE_YN = 'Y'
+			<if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                AND TPM.PRDT_CD = #{searchPrdtCd}
+            </if>
+            <if test='searchLCd != null and searchLCd != ""'> 
+                AND TPM.L_CD = #{searchLCd}
+            </if>
+            <if test='searchStrgType != null and searchStrgType != ""'> 
+                AND TPM.STRG_TYPE = #{searchStrgType}
+            </if>
+	</select>
+	
+	
+	<!-- 일재고 재고조사표 출력  -->
+	<select id="selectStkInspPrintList" parameterType="com.doppio.workplace.cs.service.ClsDayStkRegVo" resultType="com.doppio.workplace.cs.service.ClsDayStkRegVo">
+	/*ClsDayStkRegMapper.selectStkInspPrintList*/	
+	SELECT 	A.LACK_NO_1
+	   ,	A.PRDT_NM
+	   , 	A.PRDT_STD
+	   , 	A.ORD_UNIT_NM
+	   , 	A.QTY_BOX	
+	   , 	A.QTY_BOX_2
+	   , 	A.PRT_STK_QTY
+	   , 	A.ROW_NUM
+	   , 	A.STRG_TYPE_NM
+	   , 	A.NTM
+	   , 	A.QTY_BOX_3
+	   , 	A.QTY_UNIT
+	   ,	CONCAT(A.QTY_BOX_3, 'BOX/', FLOOR(A.QTY_UNIT), A.ORD_UNIT_NM)	AS QTY_BOX_4
+	FROM
+	(   
+		SELECT TPM.LACK_NO_1
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD_1.DTL_NM AS ORD_UNIT_NM
+		       , TPM.QTY_BOX	
+		       , CONCAT(TPM.QTY_BOX, TCD_1.DTL_NM) 	AS QTY_BOX_2
+		       , STK.STK_QTY AS PRT_STK_QTY
+		       , ROW_NUMBER() OVER (ORDER BY TPM.LACK_NO_1, TPM.PRDT_NM) 		AS ROW_NUM
+		       , TCD_2.DTL_NM 													AS STRG_TYPE_NM
+		       , DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i' ) 							AS NTM
+		       , FLOOR(STK.STK_QTY / TPM.QTY_BOX) 								AS QTY_BOX_3
+		       , STK.STK_QTY - TPM.QTY_BOX * FLOOR(STK.STK_QTY / TPM.QTY_BOX) 	AS QTY_UNIT
+		  FROM TFM_PRDT_MST AS TPM
+		  
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD_1
+		           ON TCD_1.DTL_CD = TPM.ORD_UNIT
+		          AND TCD_1.COM_CD = 'M006'
+		          
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD_2
+		           ON TCD_2.DTL_CD = #{searchStrgType}
+		          AND TCD_2.COM_CD = 'M001'
+		          
+		       LEFT OUTER JOIN V_WH_PRDT_STK_NEW AS STK
+		           ON STK.PRDT_CD = TPM.PRDT_CD
+		          AND STK.WH_CD = #{searchWhCd}
+		          
+		 WHERE TPM.USE_YN = 'Y'
+			<if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                AND TPM.PRDT_CD = #{searchPrdtCd}
+            </if>
+            <if test='searchLCd != null and searchLCd != ""'> 
+                AND TPM.L_CD = #{searchLCd}
+            </if>
+            <if test='searchStrgType != null and searchStrgType != ""'> 
+                AND TPM.STRG_TYPE = #{searchStrgType}
+            </if>
+         ORDER BY TPM.LACK_NO_1, TPM.PRDT_NM
+    )A     
+	</select>
+	
+
+	
+	
+	<!-- 일재고 신규 저장 -->
+	<insert id="insertClsDayStkRegData" parameterType="com.doppio.workplace.cs.service.ClsDayStkRegVo">
+	/*ClsDayStkRegMapper.insertClsDayStkRegData*/
+	    INSERT INTO KRMC.TMH_DAY_STOCK
+            (STK_DT, PRDT_CD, WH_CD, AREA_1_QTY, AREA_2_QTY
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT)
+        VALUES
+            (#{stkDt}, #{prdtCd}, #{whCd}, #{area1Qty}, #{area2Qty}
+			 , #{useYn}, #{workId}, NOW(), #{workId}, NOW()
+            )
+	</insert>
+	
+
+	<!-- 일재고 수정 -->
+	<update id="updateClsDayStkRegData" parameterType="com.doppio.workplace.cs.service.ClsDayStkRegVo">
+	/*ClsDayStkRegMapper.updateClsDayStkRegData*/
+        UPDATE KRMC.TMH_DAY_STOCK
+           SET AREA_1_QTY		= #{area1Qty}
+               , AREA_2_QTY		= #{area2Qty}
+               , MOD_ID     	= #{workId}
+               , MOD_DT     	= NOW()
+         WHERE STK_DT = #{stkDt}
+           AND PRDT_CD = #{prdtCd}
+           AND WH_CD = #{whCd}
+	</update>
+	
+	
+	
+</mapper>
+

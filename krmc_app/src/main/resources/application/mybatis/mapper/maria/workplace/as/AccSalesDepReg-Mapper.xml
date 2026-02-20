@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.AccSalesDepRegMapper">
+
+
+	<!-- 매출처별입금현황 건수 -->
+	<select id="selectAccSalesDepRegCount" parameterType="com.doppio.workplace.as.service.AccSalesDepRegVo" resultType="Integer">
+	/*AccSalesDepRegMapper.selectAccSalesDepRegCount*/	
+		SELECT COUNT(*) AS CNT
+	      FROM TSH_SALES_DEP AS TSD
+         WHERE TSD.DEP_DT = replace(#{depDt},'-','')
+   		   AND TSD.SALES_CD = #{salesCd}
+	   	   AND TSD.SETL_CLASS = #{setlClass}
+	</select>
+	
+	<!-- 매출처별입금현황 조회 -->
+	<select id="selectAccSalesDepReg" parameterType="com.doppio.workplace.as.service.AccSalesDepRegVo" resultType="com.doppio.workplace.as.service.AccSalesDepRegVo">
+	/*AccSalesDepRegMapper.selectAccSalesDepReg*/	
+		SELECT DATE_FORMAT(TSD.DEP_DT, '%Y-%m-%d') AS DEP_DT
+			   , TSD.SALES_CD
+			   , TSAI.SALES_NM
+			   , TSD.SETL_CLASS
+			   , TCD.DTL_NM AS SETL_CLASS_NM
+			   , TSD.SETL_AMT
+	      FROM TSH_SALES_DEP AS TSD
+	           JOIN TFM_SALES_ADD_INFO AS TSAI
+	               ON TSAI.SALES_CD = TSD.SALES_CD
+	           JOIN TCM_CODE_DTL AS TCD
+	               ON TCD.COM_CD = 'M014'
+	              AND TCD.DTL_CD = TSD.SETL_CLASS
+         WHERE TSD.DEP_DT = replace(#{depDt},'-','')
+   		   <if test='salesCd != null and salesCd != ""'> 
+		       AND TSD.SALES_CD = #{salesCd}
+	   	   </if>
+	   	   <if test='setlClass != null and setlClass != ""'> 
+		       AND TSD.SETL_CLASS = #{setlClass}
+	   	   </if>
+	     ORDER BY TSD.DEP_DT, TSAI.SALES_CD
+
+	</select>
+
+
+	<!-- 매출처별입금현황 조회 -->
+	<select id="selectAccSalesDepRegDetail" parameterType="com.doppio.workplace.as.service.AccSalesDepRegVo" resultType="com.doppio.workplace.as.service.AccSalesDepRegVo">
+	/*AccSalesDepRegMapper.selectAccSalesDepRegDetail*/	
+		SELECT DATE_FORMAT(TSD.DEP_DT, '%Y-%m-%d') AS DEP_DT
+			   , TSD.SALES_CD
+			   , TSAI.SALES_NM
+			   , TSD.SETL_CLASS
+			   , TCD.DTL_NM AS SETL_CLASS_NM
+			   , TSD.SETL_AMT
+			   , DATE_FORMAT(TSD.PROM_DT, '%Y-%m-%d') AS PROM_DT
+			   , DATE_FORMAT(TSD.PROM_EXP_DT, '%Y-%m-%d') AS PROM_EXP_DT
+			   , TSD.REMARKS
+			   , TM_1.USER_NM AS REG_NM
+			   , TSD.REG_DT
+			   , TM_2.USER_NM AS MOD_NM
+			   , TSD.MOD_DT
+			   , 'U' AS GRID_FLAG
+	      FROM TSH_SALES_DEP AS TSD
+	           JOIN TFM_SALES_ADD_INFO AS TSAI
+	               ON TSAI.SALES_CD = TSD.SALES_CD
+	           JOIN TCM_CODE_DTL AS TCD
+	               ON TCD.COM_CD = 'M014'
+	              AND TCD.DTL_CD = TSD.SETL_CLASS
+	           LEFT OUTER JOIN TCM_MEMBER AS TM_1
+	               ON TM_1.USER_ID = TSD.REG_ID
+	           LEFT OUTER JOIN TCM_MEMBER AS TM_2
+	               ON TM_2.USER_ID = TSD.MOD_ID
+         WHERE TSD.SALES_CD = TSAI.SALES_CD
+   	       AND TSD.DEP_DT = replace(#{depDt},'-','')
+           <if test='salesCd != null and salesCd != ""'> 
+		       AND TSD.SALES_CD = #{salesCd}
+	       </if>
+  		   <if test='setlClass != null and setlClass != ""'> 
+		       AND TSD.SETL_CLASS = #{setlClass}
+	   	   </if>
+	     ORDER BY TSD.DEP_DT, TSD.SALES_CD
+
+	</select>
+
+
+	<!-- 매출처별입금현황 엑셀 -->
+	<select id="selectAccSalesDepRegExcelDown" parameterType="com.doppio.workplace.as.service.AccSalesDepRegVo" resultType="java.util.HashMap">
+	/*AccSalesDepRegMapper.selectAccSalesDepRegExcelDown*/	
+		SELECT DATE_FORMAT(TSD.DEP_DT, '%Y-%m-%d') AS DEP_DT
+			   , TSD.SALES_CD
+			   , TSAI.SALES_NM
+			   , TSD.SETL_CLASS
+			   , TCD.DTL_NM AS SETL_CLASS_NM
+			   , TSD.SETL_AMT
+			   , DATE_FORMAT(TSD.PROM_DT, '%Y-%m-%d') AS PROM_DT
+			   , DATE_FORMAT(TSD.PROM_EXP_DT, '%Y-%m-%d') AS PROM_EXP_DT
+			   , TSD.REMARKS
+			   , TM_1.USER_NM AS REG_NM
+			   , TSD.REG_DT
+			   , TM_2.USER_NM AS MOD_NM
+			   , TSD.MOD_DT
+	      FROM TSH_SALES_DEP AS TSD
+	           JOIN TFM_SALES_ADD_INFO AS TSAI
+	               ON TSAI.SALES_CD = TSD.SALES_CD
+	           JOIN TCM_CODE_DTL AS TCD
+	               ON TCD.COM_CD = 'M014'
+	              AND TCD.DTL_CD = TSD.SETL_CLASS
+	           LEFT OUTER JOIN TCM_MEMBER AS TM_1
+	               ON TM_1.USER_ID = TSD.REG_ID
+	           LEFT OUTER JOIN TCM_MEMBER AS TM_2
+	               ON TM_2.USER_ID = TSD.MOD_ID
+         WHERE TSD.SALES_CD = TSAI.SALES_CD
+   	       AND TSD.DEP_DT = replace(#{depDt},'-','')
+           <if test='salesCd != null and salesCd != ""'> 
+		       AND TSD.SALES_CD = #{salesCd}
+	       </if>
+  		   <if test='setlClass != null and setlClass != ""'> 
+		       AND TSD.SETL_CLASS = #{setlClass}
+	   	   </if>
+	     ORDER BY TSD.DEP_DT, TSD.SALES_CD
+
+	</select>
+	
+	<!-- 매출처별입금현황 입력 -->
+	<insert id="insertAccSalesDepReg" parameterType="com.doppio.workplace.as.service.AccSalesDepRegVo">
+	/*AccSalesDepRegMapper.insertAccSalesDepRegInfo*/
+		INSERT INTO TSH_SALES_DEP
+	    	(DEP_DT, SALES_CD, SETL_CLASS, SETL_AMT, PROM_DT, PROM_EXP_DT, REMARKS
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT
+			)
+		VALUES
+			(replace(#{depDt},'-',''), #{salesCd}, #{setlClass}, #{setlAmt}, replace(#{promDt},'-',''), replace(#{promExpDt},'-',''), #{remarks}
+			 , #{useYn}, #{workId}, NOW(), #{workId}, NOW()
+			)
+	</insert>
+	
+
+	<!-- 매출처별입금현황 수정 -->
+	<update id="updateAccSalesDepReg" parameterType="com.doppio.workplace.as.service.AccSalesDepRegVo">
+	/*AccSalesDepRegMapper.updateAccSalesDepReg*/	
+        UPDATE TSH_SALES_DEP
+           SET 	SETL_AMT        = #{setlAmt}
+               , PROM_DT      	= replace(#{promDt},'-','')
+               , PROM_EXP_DT   	= replace(#{promExpDt},'-','')
+               , REMARKS        = #{remarks}
+               , MOD_ID         = #{workId}
+               , MOD_DT         = NOW()
+         WHERE DEP_DT = replace(#{depDt},'-','')
+           AND SALES_CD = #{salesCd}
+           AND SETl_CLASS = #{setlClass}
+	</update>
+
+	</mapper>

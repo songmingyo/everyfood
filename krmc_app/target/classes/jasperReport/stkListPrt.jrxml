@@ -1,0 +1,709 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report3" pageWidth="595" pageHeight="842" whenNoDataType="BlankPage" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isSummaryWithPageHeaderAndFooter="true" uuid="208349bb-feb3-4ecc-8dee-d7cb76c3b028">
+	<property name="net.sf.jasperreports.awt.ignore.missing.font" value="true"/>
+	<property name="ireport.zoom" value="1.6528925619834736"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<field name="prdtNm" class="java.lang.String"/>
+	<field name="prevStkQty" class="java.lang.String"/>
+	<field name="buyQty" class="java.lang.String"/>
+	<field name="inWhQty" class="java.lang.String"/>
+	<field name="buyRtnQty" class="java.lang.String"/>
+	<field name="buyTotQty" class="java.lang.String"/>
+	<field name="dlvTotQty" class="java.lang.String"/>
+	<field name="stkQty" class="java.lang.String"/>
+	<field name="stkAmt" class="java.lang.String"/>
+	<field name="searchStrgType" class="java.lang.String"/>
+	<field name="searchPrdtNm" class="java.lang.String"/>
+	<field name="searchStkDt" class="java.lang.String"/>
+	<field name="searchLCd" class="java.lang.String"/>
+	<variable name="pureAmt" class="java.lang.Double" calculation="Sum"/>
+	<background>
+		<band/>
+	</background>
+	<title>
+		<band height="30">
+			<frame>
+				<reportElement mode="Opaque" x="-20" y="-20" width="595" height="50" backcolor="#FFFFFF" uuid="73f897c6-f250-4c04-a9f9-07c7063c2463"/>
+				<staticText>
+					<reportElement x="20" y="15" width="555" height="27" forecolor="#000000" uuid="ccb62c62-6579-4189-99cc-0102b682d9f7"/>
+					<textElement textAlignment="Center">
+						<font fontName="돋움체" size="18" isBold="true" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H" isPdfEmbedded="false"/>
+					</textElement>
+					<text><![CDATA[<재고수불부>]]></text>
+				</staticText>
+			</frame>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="24">
+			<textField>
+				<reportElement x="492" y="1" width="23" height="20" uuid="aeee19e1-4c71-42b6-96f1-6315cafb68a8"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="515" y="1" width="12" height="20" uuid="3833fb05-234c-4a57-8465-5124a3af74a3"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[/]]></text>
+			</staticText>
+			<textField evaluationTime="Report">
+				<reportElement x="527" y="0" width="28" height="20" uuid="9d365634-cca5-4d2c-a172-773d854bb639"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="10" y="4" width="43" height="16" uuid="541dc498-a62f-4ffc-94e8-b7fe5a090c7e"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[재고월 :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="112" y="4" width="36" height="16" uuid="f27f64cd-26cf-4dc0-895a-93d169c4826b"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[품목 :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="221" y="4" width="36" height="16" uuid="8beaf4e1-fdeb-4f1e-8406-07d2343bca7e"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[분류 :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="336" y="4" width="54" height="16" uuid="f39097d4-c84c-446a-afa6-dccd32e53b30"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[저장형태 :]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="390" y="4" width="60" height="16" uuid="4ff148be-3fbe-4ad4-bc68-51ac3c0fb6ed"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{searchStrgType}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="148" y="4" width="60" height="16" uuid="4541d75c-fb7d-4b1d-83e5-c4f8ac9eb74a"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{searchPrdtNm}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="53" y="4" width="49" height="16" uuid="22b5ea91-c6a4-4567-8f6e-93eab6a2706f"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{searchStkDt}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="257" y="4" width="79" height="16" uuid="f79c4d65-05be-41d6-87ef-a9ec6e584e4b"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{searchLCd}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="36">
+			<staticText>
+				<reportElement x="0" y="0" width="91" height="36" uuid="6baa2207-61f0-4cf9-a62f-9e973120e5c9"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[품명/규격]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="91" y="0" width="43" height="36" uuid="6d4a6a16-5ecb-44c7-b203-c5245e581a96"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[전입재고]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="134" y="0" width="74" height="16" uuid="9628c45d-3130-49b4-a40b-df57f7a6b74e"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[입고현황]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="134" y="16" width="14" height="20" uuid="d7d62818-1c58-4155-bc4b-88604798c3e9"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[구매]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="148" y="16" width="17" height="20" uuid="2569c7e6-32fd-4fe2-8d50-b9e6e987a6a4"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[직송]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="165" y="16" width="18" height="20" uuid="84d84d74-aa8d-40d6-b384-0027e9d16468"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[반품]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="183" y="16" width="25" height="20" uuid="f7d1f33c-cc98-4de4-9993-3f71831dd907"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[입고계]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="257" y="16" width="15" height="20" uuid="5521a17d-1c1e-4f57-93ac-24e10e1ba436"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[샘플]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="239" y="16" width="18" height="20" uuid="765ad84e-1e5b-4325-a873-4970ee8f9c87"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[증정]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="208" y="0" width="64" height="16" uuid="ec55bbd2-c198-4d76-9153-a2f0853a41ed"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[출고현황]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="222" y="16" width="17" height="20" uuid="f23e2dfb-d250-40c4-9a70-474e99fdf641"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[반품]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="208" y="16" width="14" height="20" uuid="dc347aa8-6bb2-4f05-97ea-9016d6dcdfbc"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[판매]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="272" y="16" width="14" height="20" uuid="7405715c-dbff-43ea-b439-ded57feb9261"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[로스	]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="286" y="16" width="14" height="20" uuid="6835320d-8e53-4b90-870e-440c416419cf"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[폐기]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="300" y="16" width="14" height="20" uuid="c04f6e91-9f07-4438-b3ec-136f6c251224"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[기타]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="314" y="0" width="42" height="36" uuid="1d6a503e-2b5a-47e9-b563-f0e19e8a7af9"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[출고계]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="356" y="0" width="64" height="17" uuid="ab179dc2-c933-47b2-9438-808488f47185"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[수불현황(전산)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="420" y="0" width="64" height="17" uuid="9b86ef8e-fae9-46a8-b7fd-62d0481e23d9"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[실재고]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="484" y="0" width="31" height="36" uuid="e46c0bd0-59bf-4caf-9846-9df6fe01a9a9"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[재고차]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="515" y="0" width="40" height="36" uuid="85fed608-20c5-44fe-adaf-1c56a27aa144"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[차액]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="356" y="17" width="20" height="19" uuid="db3da1ae-9c96-4d3e-943e-7c3c8998ec38"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[수량	]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="376" y="17" width="44" height="19" uuid="e3b37da9-93cd-4921-baa3-bc82c5df002c"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[금액]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="420" y="17" width="20" height="19" uuid="57587d67-88c0-44e2-a3ca-9918aced2f0c"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[수량	]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="440" y="17" width="44" height="19" uuid="928ac26a-fd75-4bd0-a63c-b80b4096d70c"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[금액]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="272" y="0" width="42" height="16" uuid="a15aa71c-8153-43a2-98a6-f2d7964744b3"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isBold="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[손실]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="22">
+			<textField>
+				<reportElement x="0" y="0" width="91" height="22" uuid="5ff87719-d088-420b-834b-45f5f24f6743"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{prdtNm}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="91" y="0" width="43" height="22" uuid="b796ac4e-ffd4-4a66-90ff-4d342bc19ba7"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" isStrikeThrough="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{prevStkQty}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="272" y="0" width="14" height="22" uuid="8c15e53d-7e72-4759-aaf8-7bf6bfa6af29"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="돋움체" size="6" isStrikeThrough="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="286" y="0" width="14" height="22" uuid="6e190180-3d4b-4e13-9709-a0cb1783298a"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="돋움체" size="6" isStrikeThrough="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="300" y="0" width="14" height="22" uuid="e9dabb84-77cd-4d4f-abfc-5ffb8111f8aa"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="돋움체" size="6" isStrikeThrough="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="356" y="0" width="20" height="22" uuid="1d75aa6a-1cd4-4a25-8122-3f7f7b659622"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="돋움체" size="6" isStrikeThrough="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="376" y="0" width="44" height="22" uuid="185e6aff-853b-41bc-9611-2a92a51ee98a"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="돋움체" size="6" isStrikeThrough="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="134" y="0" width="14" height="22" uuid="7a3f63d9-65f7-4b5f-a272-f6b570b3ac25"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{buyQty}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="148" y="0" width="17" height="22" uuid="c46a25e1-6625-407b-94ff-f46644c7a910"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{inWhQty}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="165" y="0" width="18" height="22" uuid="7af2c9aa-ed5d-4c17-897e-c344a5708851"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{buyRtnQty}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="183" y="0" width="25" height="22" uuid="6ad2fb5d-d9f5-4598-b140-41ae409eb6d1"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{buyTotQty}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="208" y="0" width="14" height="22" uuid="2fd4b8f9-d3e3-48a0-8407-c5b4430cf408"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="돋움체" size="6" isStrikeThrough="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="222" y="0" width="17" height="22" uuid="cecb36f9-f857-461c-8be5-7a527d9230ce"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="돋움체" size="6" isStrikeThrough="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="239" y="0" width="18" height="22" uuid="c3cb70dd-e842-40b8-9ae5-d1a5865b1c1b"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="돋움체" size="6" isStrikeThrough="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="257" y="0" width="15" height="22" uuid="33a5e2cd-b6d8-4970-916d-b29a71ab10ad"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="돋움체" size="6" isStrikeThrough="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="314" y="0" width="42" height="22" uuid="48279887-84cf-47be-a4d4-83f86ab231c8"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{dlvTotQty}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="420" y="0" width="20" height="22" uuid="c862f6d8-01dd-4c97-b00f-5e024247d447"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{stkQty}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="440" y="0" width="44" height="22" uuid="c4f5d4bc-d109-4626-9b91-b8ae1e147d91"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="돋움체" size="6" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{stkAmt}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="484" y="0" width="31" height="22" uuid="dc4b7243-1d36-4ede-bbe7-6cbbf778c3a0"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="돋움체" size="6" isStrikeThrough="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="515" y="0" width="40" height="22" uuid="a1784435-db69-4caf-b241-b00ceae44bda"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="돋움체" size="6" isStrikeThrough="false" pdfFontName="HYGoThic-Medium" pdfEncoding="UniKS-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+		</band>
+	</detail>
+	<summary>
+		<band height="161"/>
+	</summary>
+</jasperReport>

@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.management.service.impl.MgrMenuMapper">
+	
+	<!-- 메뉴조회 MAP -->
+	<resultMap id="menuInfoMap"   type="com.doppio.management.service.MgrMenuVo">
+			<result column="MENU_ID"				property="menuId" />			<!-- 프로그램 아이디 						-->
+			<result column="PARENT_ID"      		property="parentId" />			<!-- 프로그램 부모 아이디	 				-->
+			<result column="TITLE"        			property="title" />				<!-- 프로그램명칭 						-->
+			<result column="TITLE_SUB"        		property="titleSub" />			<!-- 프로그램추가명칭 					-->
+			<result column="TITLE_EXTEND"        	property="titleExtend" />		<!-- 프로그램추가명칭 (VN)				-->
+			<result column="MENU_FG"        		property="menuFg" />			<!-- 메뉴타입(Y:기본메뉴(빌트인), N:추가메뉴	-->
+			<result column="COMMAND_FG"     		property="commandFg" />			<!-- 실행구분(CODE : 9010  0:폴더, 1:실행, 2:새창, 3:모달창) -->
+			<result column="COMMAND_FG_NAME"    	property="commandFgNm" />		<!-- 실행구분명칭			-->
+			<result column="COMMAND_FG_SUB_NAME"  	property="commandFgSubNm" />	<!-- 실행구분추가속성명칭		-->
+			<result column="HIDE_YN"        		property="hideYn" />			<!-- 숨김구분(Y/N)			-->   
+			<result column="USE_YN"         		property="useYn" />				<!-- 사용여부구분(Y/N) 		--> 
+
+			<result column="WEB_PAGE"       		property="webPage" />			<!-- 페이지경로 			-->
+			<result column="EXTRA_INFO"     		property="extraInfo" />			<!-- 메뉴경로 확장 			-->
+			<result column="SORT_IN_LEVEL"  		property="sortInLevel" />		<!-- 메뉴소트레벨 			-->
+			<result column="MENU_LEVEL"     		property="menuLevel" />			<!-- 메뉴레벨 				-->
+			<result column="DTL_LOG_YN" 			property="dtlLogYn"/>			<!-- 상세로그생성여부[Y,N] 	-->
+			<result column="EXC_TYPE_FG" 			property="excTypeFg"/>			<!-- DEVICE[W/M/R] 		-->
+			<result column="MENU_ICON" 				property="menuIcon"/>			<!-- 메뉴아이콘 			-->
+	 		<result column="VDI_CD" 				property="vdiCd"/>				<!-- 아이피접근제어정책(9050) -->		
+	 		<result column="BUILDIN_YN" 			property="buildinYn"/>			<!-- 시스템 기본메뉴 구분 (Y/N)	 -->		
+	</resultMap>
+   	 
+   	<!-- 메뉴 정보 조회 -->
+	<select id="selectMenuList" resultMap="menuInfoMap" parameterType="com.doppio.management.service.MgrMenuVo">
+			/*MgrMenuMapper.selectMenuList*/
+			SELECT   MENU_ID
+			        ,PARENT_ID
+			        ,TITLE
+			        ,TITLE_SUB
+			        ,TITLE_EXTEND
+			        ,MENU_FG
+			        ,COMMAND_FG
+			        ,FN_CODE_RTN('9010',COMMAND_FG) COMMAND_FG_NAME
+			        ,FN_CODE_SUB_RTN('9010',COMMAND_FG) COMMAND_FG_SUB_NAME
+			        ,HIDE_YN
+			        ,USE_YN
+			        ,IFNULL(WEB_PAGE,'')   AS WEB_PAGE
+			        ,IFNULL(EXTRA_INFO,'') AS EXTRA_INFO
+			        ,SORT_IN_LEVEL
+			        ,MENU_LEVEL
+			        ,DTL_LOG_YN
+			        ,EXC_TYPE_FG
+			        ,IFNULL(MENU_ICON,'') AS MENU_ICON
+			        ,VDI_CD
+			        ,BUILDIN_YN
+			        ,REG_DT
+			        ,REG_ID
+			        ,MOD_DT
+			        ,MOD_ID
+			  FROM TCM_MENU
+			 WHERE PARENT_ID = #{parentId}
+			 ORDER BY SORT_IN_LEVEL, TITLE
+	</select>		    
+   	 
+   <!-- 대분류 메뉴저장 -->
+   <insert  id="updateMergeMenuLagData_back" parameterType="com.doppio.management.service.MgrMenuVo">
+    	/*MgrMenuMapper.updateMenuLagData*/
+    	INSERT INTO TCM_MENU 
+    	  (
+	    	 MENU_ID
+			,PARENT_ID
+			,TITLE
+			,TITLE_SUB
+			,TITLE_EXTEND
+			,MENU_FG
+			,COMMAND_FG
+			,HIDE_YN
+			,USE_YN
+			,SORT_IN_LEVEL
+			,MENU_LEVEL
+			,DTL_LOG_YN
+			,EXC_TYPE_FG
+			,MENU_ICON
+			,VDI_CD
+			,BUILDIN_YN
+			,REG_DT
+			,REG_ID
+			,MOD_DT
+			,MOD_ID     
+    	   )VALUES
+    	   (
+			 IFNULL(CASE WHEN #{menuId} = '' THEN NULL ELSE #{menuId} END, IFNULL((SELECT MAX(X.MENU_ID) FROM TCM_MENU AS X),0)+1)
+			,#{parentId}
+			,#{title} 		
+			,#{titleSub}
+			,#{titleExtend} 	
+			,#{menuFg} 		
+			,#{commandFg} 	
+			,#{hideYn} 		
+			,#{useYn} 		
+			,#{sortInLevel} 	
+			,#{menuLevel} 	
+			,#{dtlLogYn} 
+			,#{excTypeFg}
+			,#{menuIcon}
+			,#{vdiCd}
+			,'N'
+			,NOW()	
+			,#{workId} 		
+			,NOW()	
+			,#{workId} 	
+    	   )
+   		ON DUPLICATE KEY UPDATE
+			 TITLE	    	= #{title}
+			,TITLE_SUB	    = #{titleSub}
+			,TITLE_EXTEND	= #{titleExtend}
+			,MENU_FG		= #{menuFg}
+			,HIDE_YN		= #{hideYn}
+			,USE_YN			= #{useYn}
+			,SORT_IN_LEVEL 	= #{sortInLevel}
+			,DTL_LOG_YN		= #{dtlLogYn}
+			,EXC_TYPE_FG    = #{excTypeFg}
+			,MENU_ICON		= #{menuIcon}
+			,VDI_CD			= #{vdiCd}
+			,MOD_DT			= NOW()
+			,MOD_ID    		= #{workId}
+			   		
+   </insert>
+ 
+   <!-- 대분류 메뉴저장 -->
+   <insert  id="updateMergeMenuLagData" parameterType="com.doppio.management.service.MgrMenuVo">
+    	/*MgrMenuMapper.updateMenuLagData*/
+		INSERT INTO TCM_MENU 
+         (
+           MENU_ID
+         ,PARENT_ID
+         ,TITLE
+         ,TITLE_SUB
+         ,TITLE_EXTEND
+         ,MENU_FG
+         ,COMMAND_FG
+         ,HIDE_YN
+         ,USE_YN
+         ,SORT_IN_LEVEL
+         ,MENU_LEVEL
+         ,DTL_LOG_YN
+         ,EXC_TYPE_FG
+         ,VDI_CD
+         ,BUILDIN_YN
+         ,REG_DT
+         ,REG_ID
+         ,MOD_DT
+         ,MOD_ID     
+          )
+          VALUES(
+          IFNULL(CASE WHEN #{menuId} = '' THEN NULL ELSE #{menuId} END, IFNULL((SELECT MAX(X.MENU_ID) FROM TCM_MENU AS X),0)+1)
+         ,#{parentId}
+         ,#{title}       
+         ,#{titleSub}
+         ,#{titleExtend}    
+         ,#{menuFg}       
+         ,#{commandFg}    
+         ,#{hideYn}       
+         ,#{useYn}       
+         ,#{sortInLevel}    
+         ,#{menuLevel}    
+         ,#{dtlLogYn} 
+         ,#{excTypeFg}
+         ,#{vdiCd}
+         ,'N'
+         ,SYSDATE()   
+         ,#{workId}       
+         ,SYSDATE()   
+         ,#{workId}    
+          )
+         ON DUPLICATE KEY UPDATE
+          TITLE				= #{title}
+         ,TITLE_SUB			= #{titleSub}
+         ,TITLE_EXTEND		= #{titleExtend}
+         ,MENU_FG			= #{menuFg}
+         ,HIDE_YN			= #{hideYn}
+         ,USE_YN			= #{useYn}
+         ,SORT_IN_LEVEL		= #{sortInLevel}
+         ,DTL_LOG_YN		= #{dtlLogYn}
+         ,EXC_TYPE_FG		= #{excTypeFg}
+         ,VDI_CD			= #{vdiCd}
+         ,MOD_DT			= SYSDATE()
+         ,MOD_ID			= #{workId}
+
+   </insert> 
+   
+   
+   <!-- 중,소분류 메뉴저장 -->
+   <insert  id="updateMergeMenuMidData" parameterType="com.doppio.management.service.MgrMenuVo">
+	/*MgrMenuMapper.updateMenuMidData*/
+		INSERT INTO TCM_MENU 
+	    	  (
+		    	 MENU_ID
+				,PARENT_ID
+				,TITLE
+				,TITLE_SUB
+				,TITLE_EXTEND
+				,MENU_FG
+				,COMMAND_FG
+				,HIDE_YN
+				,USE_YN
+				,VDI_CD 
+	            ,WEB_PAGE
+	            ,EXTRA_INFO
+				,SORT_IN_LEVEL
+				,MENU_LEVEL
+				,DTL_LOG_YN
+				,EXC_TYPE_FG
+				,MENU_ICON
+				,BUILDIN_YN
+				,REG_DT
+				,REG_ID
+				,MOD_DT
+				,MOD_ID     
+	    	   )VALUES
+	    	   (
+				 IFNULL(CASE WHEN #{menuId} = '' THEN NULL ELSE #{menuId} END, IFNULL((SELECT MAX(X.MENU_ID) FROM TCM_MENU AS X),0)+1)
+				,#{parentId}
+				,#{title} 		
+				,#{titleSub}
+				,#{titleExtend} 	
+				,#{menuFg} 		
+				,#{commandFg} 	
+				,#{hideYn} 		
+				,#{useYn} 		
+				,#{vdiCd}
+			    ,#{webPage}  
+	            ,#{extraInfo}
+				,#{sortInLevel} 	
+				,#{menuLevel} 	
+				,#{dtlLogYn} 
+				,#{excTypeFg}
+				,#{menuIcon}
+				,'N'
+				,NOW()
+				,#{workId} 		
+				,NOW()
+				,#{workId} 	
+	    	   )
+	   		ON DUPLICATE KEY UPDATE
+				 TITLE	    	= #{title}
+				,TITLE_SUB	    = #{titleSub}
+				,TITLE_EXTEND	= #{titleExtend}
+				,MENU_FG		= #{menuFg}
+				,HIDE_YN		= #{hideYn}
+				,USE_YN			= #{useYn}
+		        ,VDI_CD			= #{vdiCd}
+	            ,WEB_PAGE		= #{webPage} 
+	            ,EXTRA_INFO     = #{extraInfo}
+				,SORT_IN_LEVEL 	= #{sortInLevel}
+				,DTL_LOG_YN		= #{dtlLogYn}
+				,EXC_TYPE_FG	= #{excTypeFg}
+				,MENU_ICON		= #{menuIcon}
+				,MOD_DT			= NOW()
+				,MOD_ID    		= #{workId}
+			   			 
+   </insert> 
+
+
+   <!-- 중,소분류 메뉴저장 -->
+   <insert  id="updateMergeMenuMidData_BAK" parameterType="com.doppio.management.service.MgrMenuVo">
+	/*MgrMenuMapper.updateMenuMidData*/
+		MERGE INTO TCM_MENU F
+			USING (
+				SELECT 
+					IFNULL(CASE WHEN #{menuId} = '' THEN NULL ELSE #{menuId} END, IFNULL(MAX(MENU_ID),0) + 1) AS MENU_ID
+					,#{parentId}	AS PARENT_ID
+					,#{title}		AS TITLE
+					,#{titleSub}	AS TITLE_SUB
+					,#{titleExtend}	AS TITLE_EXTEND	
+					,#{menuFg}		AS MENU_FG
+					,#{commandFg}	AS COMMAND_FG 	
+					,#{hideYn}		AS HIDE_YN       		
+					,#{useYn} 		AS USE_YN
+					,#{vdiCd}		AS VDI_CD
+				    ,#{webPage}     AS WEB_PAGE     
+		            ,#{extraInfo}   AS EXTRA_INFO   
+					,#{sortInLevel} AS SORT_IN_LEVEL
+					,#{menuLevel} 	AS MENU_LEVEL   
+					,#{dtlLogYn}    AS DTL_LOG_YN   
+					,#{excTypeFg}   AS EXC_TYPE_FG
+					,#{menuIcon}	AS MENU_ICON   
+					,#{workId} 		AS REG_ID
+					,#{workId}      AS MOD_ID
+				FROM TCM_MENU S) C                                                                                                                 
+					ON (C.MENU_ID = F.MENU_ID)                                                                                               
+			WHEN MATCHED THEN                                                                                                               
+				UPDATE SET 
+						 F.TITLE = C.TITLE
+						,F.TITLE_SUB = C.TITLE_SUB
+						,F.TITLE_EXTEND = C.TITLE_EXTEND
+						,F.MENU_FG = C.MENU_FG
+						,F.HIDE_YN = C.HIDE_YN
+						,F.USE_YN = C.USE_YN
+						,F.VDI_CD = C.VDI_CD
+			            ,F.WEB_PAGE = C.WEB_PAGE
+			            ,F.EXTRA_INFO = C.EXTRA_INFO
+						,F.SORT_IN_LEVEL = C.SORT_IN_LEVEL
+						,F.DTL_LOG_YN = C.DTL_LOG_YN
+						,F.EXC_TYPE_FG = C.EXC_TYPE_FG
+						,F.MENU_ICON = C.MENU_ICON
+						,F.MOD_DT = NOW()
+						,F.MOD_ID = C.MOD_ID
+             WHEN NOT MATCHED THEN                                                                  
+				INSERT 
+					( 
+						MENU_ID
+						,PARENT_ID
+						,TITLE
+						,TITLE_SUB
+						,TITLE_EXTEND
+						,MENU_FG
+						,COMMAND_FG
+						,HIDE_YN
+						,USE_YN
+						,VDI_CD
+			            ,WEB_PAGE
+			            ,EXTRA_INFO
+						,SORT_IN_LEVEL
+						,MENU_LEVEL
+						,DTL_LOG_YN
+						,EXC_TYPE_FG
+						,MENU_ICON
+						,REG_DT
+						,REG_ID
+						,MOD_DT
+						,MOD_ID
+					)               
+               VALUES(   
+						C.MENU_ID
+						,C.PARENT_ID
+						,C.TITLE
+						,C.TITLE_SUB
+						,C.TITLE_EXTEND
+						,C.MENU_FG
+						,C.COMMAND_FG
+						,C.HIDE_YN
+						,C.USE_YN
+						,C.VDI_CD
+			            ,C.WEB_PAGE
+			            ,C.EXTRA_INFO
+						,C.SORT_IN_LEVEL
+						,C.MENU_LEVEL
+						,C.DTL_LOG_YN
+						,C.EXC_TYPE_FG
+						,C.MENU_ICON
+						,NOW()
+						,C.REG_ID
+						,NOW()
+						,C.MOD_ID
+                    );				   			 
+   </insert> 
+
+  
+   <!-- 메뉴삭제 -->
+   <delete  id="deleteMenuData" parameterType="com.doppio.management.service.MgrMenuVo">
+		/*MgrMenuMapper.deleteMenuData*/
+       DELETE FROM TCM_MENU WHERE (MENU_ID = #{menuId} OR PARENT_ID = #{menuId} )
+   </delete>
+   
+   <!-- 메뉴권한삭제 -->
+   <delete  id="deleteMenuAuthData" parameterType="com.doppio.management.service.MgrMenuVo">
+   		/*MgrMenuMapper.deleteMenuAuthData*/
+		DELETE FROM TCM_GROUP_AUTH 
+		     WHERE MENU_ID IN (
+		           SELECT MENU_ID FROM TCM_MENU
+		           WHERE (MENU_ID = #{menuId} OR PARENT_ID =#{menuId} )
+		               AND COMMAND_FG  = '1'
+		          UNION ALL
+		          SELECT MENU_ID
+		              FROM TCM_MENU   
+		             WHERE PARENT_ID IN(
+		                SELECT MENU_ID FROM TCM_MENU
+		                 WHERE (MENU_ID = #{menuId} OR PARENT_ID = #{menuId} )
+		                 )
+		               AND COMMAND_FG  = '1' 
+		    	  )
+   </delete>
+   	 
+</mapper>

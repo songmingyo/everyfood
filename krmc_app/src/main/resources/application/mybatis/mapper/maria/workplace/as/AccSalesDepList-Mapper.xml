@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.AccSalesDepListMapper">
+
+	
+	<!-- 매출처별입금현황 조회 -->
+	<select id="selectAccSalesDepList" parameterType="com.doppio.workplace.as.service.AccSalesDepListVo" resultType="com.doppio.workplace.as.service.AccSalesDepListVo">
+		/*AccSalesDepListMapper.selectAccSalesDepList*/	
+		SELECT TSD.DEP_DT
+			   , TSAI.SALES_NM
+			   , SUM(CASE WHEN TSD.SETL_CLASS='01' THEN TSD.SETL_AMT END) AS ACCOUNT_AMT
+			   , SUM(CASE WHEN TSD.SETL_CLASS='02' THEN TSD.SETL_AMT END) AS CASH_AMT
+			   , SUM(CASE WHEN TSD.SETL_CLASS='05' THEN TSD.SETL_AMT END) AS CARD_AMT
+			   , SUM(CASE WHEN TSD.SETL_CLASS='03' THEN TSD.SETL_AMT END) AS NOTE_AMT
+			   , SUM(CASE WHEN TSD.SETL_CLASS='04' THEN TSD.SETL_AMT END) AS SUBSIDY_AMT
+			   , SUM(CASE WHEN TSD.SETL_CLASS='06' THEN TSD.SETL_AMT END) AS VAT_AMT
+			   , SUM(CASE WHEN TSD.SETL_CLASS='07' THEN TSD.SETL_AMT END) AS INCOME_AMT
+			   , SUM(CASE WHEN TSD.SETL_CLASS='08' THEN TSD.SETL_AMT END) AS ETC_AMT
+			   , SUM(TSD.SETL_AMT) AS TOT_AMT
+			   , TSAI.SETL_CON
+			   , TSD.REMARKS
+		  FROM TSH_SALES_DEP AS TSD
+		       
+		       JOIN
+                   (SELECT DISTINCT CASE WHEN #{hqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                           , SALES_CD
+                      FROM V_SALES_HQ_CD
+                     <where>
+                     <if test='hqClass != null and hqClass != ""'> 
+                       AND HQ_CLASS = #{hqClass}
+                     </if>
+                     <if test='salesCd != null and salesCd != ""'> 
+                       AND (HQ_CD = #{salesCd} OR SALES_CD = #{salesCd})
+                     </if>
+                     </where>
+                   ) AS VSHD
+                   ON VSHD.SALES_CD = TSD.SALES_CD
+               
+               JOIN TFM_SALES_ADD_INFO AS TSAI
+                   ON TSAI.SALES_CD = VSHD.HQ_CD
+                   
+	 	 WHERE TSD.DEP_DT BETWEEN #{startDt} AND #{endDt}
+		 GROUP BY TSD.DEP_DT, TSAI.SALES_NM, TSAI.SETL_CON, TSD.REMARKS
+		 ORDER BY TSD.DEP_DT, TSAI.SALES_NM
+
+	</select>
+
+	<!-- 매출처별입금현황 다운  -->
+	<select id="selectAccSalesDepListExcelDown" parameterType="com.doppio.workplace.as.service.AccSalesDepListVo" resultType="java.util.HashMap">
+	/*AccSalesDepListMapper.selectAccSalesDepListExcelDown*/	
+		SELECT TSD.DEP_DT
+			   , TSAI.SALES_NM
+			   , IFNULL(SUM(CASE WHEN TSD.SETL_CLASS='01' THEN TSD.SETL_AMT END),0) AS ACCOUNT_AMT
+			   , IFNULL(SUM(CASE WHEN TSD.SETL_CLASS='02' THEN TSD.SETL_AMT END),0) AS CASH_AMT
+			   , IFNULL(SUM(CASE WHEN TSD.SETL_CLASS='05' THEN TSD.SETL_AMT END),0) AS CARD_AMT
+			   , IFNULL(SUM(CASE WHEN TSD.SETL_CLASS='03' THEN TSD.SETL_AMT END),0) AS NOTE_AMT
+			   , IFNULL(SUM(CASE WHEN TSD.SETL_CLASS='04' THEN TSD.SETL_AMT END),0) AS SUBSIDY_AMT
+			   , IFNULL(SUM(CASE WHEN TSD.SETL_CLASS='06' THEN TSD.SETL_AMT END),0) AS VAT_AMT
+			   , IFNULL(SUM(CASE WHEN TSD.SETL_CLASS='07' THEN TSD.SETL_AMT END),0) AS INCOME_AMT
+			   , IFNULL(SUM(CASE WHEN TSD.SETL_CLASS='08' THEN TSD.SETL_AMT END),0) AS ETC_AMT
+			   , IFNULL(SUM(TSD.SETL_AMT),0) AS TOT_AMT
+			   , TSAI.SETL_CON
+			   , TSD.REMARKS
+		  FROM TSH_SALES_DEP AS TSD
+		       
+		       JOIN
+                   (SELECT DISTINCT CASE WHEN #{hqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                           , SALES_CD
+                      FROM V_SALES_HQ_CD
+                     <where>
+                     <if test='hqClass != null and hqClass != ""'> 
+                       AND HQ_CLASS = #{hqClass}
+                     </if>
+                     <if test='salesCd != null and salesCd != ""'> 
+                       AND (HQ_CD = #{salesCd} OR SALES_CD = #{salesCd})
+                     </if>
+                     </where>
+                   ) AS VSHD
+                   ON VSHD.SALES_CD = TSD.SALES_CD
+               
+               JOIN TFM_SALES_ADD_INFO AS TSAI
+                   ON TSAI.SALES_CD = VSHD.HQ_CD
+                   
+	 	 WHERE TSD.DEP_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+		 GROUP BY TSD.DEP_DT, TSAI.SALES_NM, TSAI.SETL_CON, TSD.REMARKS
+		 ORDER BY TSD.DEP_DT, TSAI.SALES_NM
+	</select>
+	
+</mapper>

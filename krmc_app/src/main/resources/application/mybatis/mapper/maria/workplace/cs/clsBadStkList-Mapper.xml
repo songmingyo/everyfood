@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.cs.service.impl.ClsBadStkListMapper">
+
+	
+	<!-- 악성재고 조회 -->
+	<select id="selectClsBadStkList" parameterType="com.doppio.workplace.cs.service.ClsBadStkListVo" resultType="com.doppio.workplace.cs.service.ClsBadStkListVo">
+	/*ClsBadStkListMapper.selectClsBadStkListList*/	
+		SELECT TBM.BUY_NM
+		       , TPM.LACK_NO_1
+		       , TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD.DTL_NM AS ORD_UNIT_NM
+		       , A.STK_QTY
+		       , ROUND(E.PREV_SALES_QTY/25,0) AS SALES_QTY_AVG
+		       , ROUND(CASE WHEN ROUND(IFNULL(E.PREV_SALES_QTY,0)/25,0)=0 THEN 0 ELSE IFNULL(A.STK_QTY,0)/ROUND(IFNULL(E.PREV_SALES_QTY,0)/25,0) END,1) AS STK_DAY
+		       , TPM.COST AS BUY_COST
+		       , TPM.COST * A.STK_QTY AS STK_AMT
+		       , TPM.EXPRT_DT
+		       , D.BUY_DT_LAST
+		       , C.SALES_DT_LAST
+		       , D.TERM_VAL_LAST
+		       , C.SALES_NM_LAST
+		       , (SELECT IFNULL(SALES_PR_NM, '') FROM TFM_SALES_PR_MST WHERE SALES_PR_CD = TPM.SALES_PR_CD)	AS SALES_PR_NM
+		       , (SELECT IFNULL(SALES_NM, '') FROM TFM_SALES_ADD_INFO WHERE SALES_CD = TPM.SALES_CD)		AS SALES_NM
+		  FROM (SELECT PRDT_CD, SUM(STK_QTY) AS STK_QTY
+		          FROM V_WH_PRDT_STK_NEW
+		         WHERE STK_QTY != 0
+		         GROUP BY PRDT_CD
+		       ) AS A
+		       
+		       LEFT OUTER JOIN
+			       (SELECT PRDT_CD
+			          FROM TSH_SALES_DLV
+			         WHERE SALES_DT BETWEEN CASE WHEN #{searchNotDlvDay}='10' THEN DATE_FORMAT(#{searchDt} - INTERVAL 15 DAY,'%Y%m%d')
+			                                     WHEN #{searchNotDlvDay}='20' THEN DATE_FORMAT(#{searchDt} - INTERVAL 30 DAY,'%Y%m%d')
+			                                     WHEN #{searchNotDlvDay}='30' THEN DATE_FORMAT(#{searchDt} - INTERVAL 60 DAY,'%Y%m%d')
+			                                     WHEN #{searchNotDlvDay}='40' THEN DATE_FORMAT(#{searchDt} - INTERVAL 90 DAY,'%Y%m%d')
+			                                END
+			                        AND #{searchDt}
+			         GROUP BY PRDT_CD
+			       ) AS B
+			       ON B.PRDT_CD = A.PRDT_CD
+			       
+			   LEFT OUTER JOIN
+			       (SELECT A.PRDT_CD, MAX(A.SALES_DT) AS SALES_DT_LAST, B.SALES_NM AS SALES_NM_LAST
+			          FROM TSH_SALES_DLV AS A
+			               JOIN TFM_SALES_ADD_INFO AS B
+			                   ON B.SALES_CD = A.SALES_CD
+			         WHERE A.SALES_DT BETWEEN DATE_FORMAT(LAST_DAY(#{searchDt} - INTERVAL 6 MONTH),'%Y%m%d') AND #{searchDt}
+			         GROUP BY A.PRDT_CD
+			       ) AS C
+			       ON C.PRDT_CD = A.PRDT_CD
+			       
+			   LEFT OUTER JOIN
+			       (SELECT PRDT_CD, MAX(BUY_DT) AS BUY_DT_LAST, MAX(TERM_VAL) AS TERM_VAL_LAST
+			          FROM TBH_PRDT_RCPT
+			         GROUP BY PRDT_CD
+			       ) AS D
+			       ON D.PRDT_CD = A.PRDT_CD
+			       
+			   JOIN TFM_PRDT_MST AS TPM
+			       ON TPM.PRDT_CD = A.PRDT_CD
+			       
+			   LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.COM_CD = 'M006'
+		          AND TCD.DTL_CD = TPM.ORD_UNIT
+		          
+			   JOIN TFM_BUY_MST AS TBM
+			       ON TBM.BUY_CD = TPM.BUY_CD
+			       
+			   LEFT OUTER JOIN 
+			       (SELECT PRDT_CD, SUM(SALES_QTY) AS PREV_SALES_QTY
+			          FROM TMH_MON_SALES_TOT 
+			         WHERE YEAR_MON = DATE_FORMAT(LAST_DAY(#{searchDt} - INTERVAL 1 MONTH),'%Y%m')
+			         GROUP BY PRDT_CD
+			       ) AS E
+			       ON E.PRDT_CD = A.PRDT_CD
+			       
+	     WHERE IFNULL(B.PRDT_CD,'') = ''
+	     <if test='searchLCd != null and searchLCd != ""'> 
+           AND TPM.L_CD = #{searchLCd}
+         </if>
+         <if test='searchMCd != null and searchMCd != ""'> 
+           AND TPM.M_CD = #{searchMCd}
+         </if>
+         <if test='searchStrgType != null and searchStrgType != ""'> 
+           AND TPM.STRG_TYPE = #{searchStrgType}
+         </if>
+		 <if test='srchSalesPrCd != null and srchSalesPrCd != ""'> 
+           AND TPM.SALES_PR_CD = #{srchSalesPrCd}
+         </if>
+	</select>
+	
+	
+	<!-- 악성재고관리 엑셀 다운로드 -->
+	<select id="selectClsBadStkListExcel" parameterType="com.doppio.workplace.cs.service.ClsBadStkListVo" resultType="java.util.HashMap">
+	/*ClsBadStkListMapper.selectClsBadStkListExcel*/	
+		SELECT TBM.BUY_NM
+		       , TPM.LACK_NO_1
+		       , TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD.DTL_NM AS ORD_UNIT_NM
+		       , FORMAT(A.STK_QTY,0) AS STK_QTY
+		       , IFNULL(ROUND(E.PREV_SALES_QTY/25,0),0) AS SALES_QTY_AVG
+		       , IFNULL(ROUND(CASE WHEN ROUND(IFNULL(E.PREV_SALES_QTY,0)/25,0)=0 THEN 0 ELSE IFNULL(A.STK_QTY,0)/ROUND(IFNULL(E.PREV_SALES_QTY,0)/25,0) END,1),0) AS STK_DAY
+		       , FORMAT(TPM.COST,0) AS BUY_COST
+		       , FORMAT(IFNULL(TPM.COST * A.STK_QTY,0),0) AS STK_AMT
+		       , IFNULL(TPM.EXPRT_DT,'') AS EXPRT_DT
+		       , IFNULL(D.BUY_DT_LAST,'') AS BUY_DT_LAST
+		       , IFNULL(C.SALES_DT_LAST,'') AS SALES_DT_LAST
+		       , IFNULL(D.TERM_VAL_LAST,'') AS TERM_VAL_LAST
+		       , IFNULL(C.SALES_NM_LAST,'') AS SALES_NM_LAST
+		       , IFNULL(	(SELECT SALES_PR_NM FROM TFM_SALES_PR_MST WHERE SALES_PR_CD = TPM.SALES_PR_CD), '')	AS SALES_PR_NM
+		       , IFNULL(	(SELECT SALES_NM FROM TFM_SALES_ADD_INFO WHERE SALES_CD = TPM.SALES_CD), '')		AS SALES_NM
+		  FROM (SELECT PRDT_CD, SUM(STK_QTY) AS STK_QTY
+		          FROM V_WH_PRDT_STK_NEW
+		         WHERE STK_QTY != 0
+		         GROUP BY PRDT_CD
+		       ) AS A
+		       LEFT OUTER JOIN
+			       (SELECT PRDT_CD
+			          FROM TSH_SALES_DLV
+			         WHERE SALES_DT BETWEEN CASE WHEN #{searchNotDlvDay}='10' THEN DATE_FORMAT(REPLACE(#{searchDt},'-','') - INTERVAL 15 DAY,'%Y%m%d')
+			                                     WHEN #{searchNotDlvDay}='20' THEN DATE_FORMAT(REPLACE(#{searchDt},'-','') - INTERVAL 30 DAY,'%Y%m%d')
+			                                     WHEN #{searchNotDlvDay}='30' THEN DATE_FORMAT(REPLACE(#{searchDt},'-','') - INTERVAL 60 DAY,'%Y%m%d')
+			                                     WHEN #{searchNotDlvDay}='40' THEN DATE_FORMAT(REPLACE(#{searchDt},'-','') - INTERVAL 90 DAY,'%Y%m%d')
+			                                END
+			                        AND REPLACE(#{searchDt},'-','')
+			         GROUP BY PRDT_CD
+			       ) AS B
+			       ON B.PRDT_CD = A.PRDT_CD
+			   LEFT OUTER JOIN
+			       (SELECT A.PRDT_CD, MAX(A.SALES_DT) AS SALES_DT_LAST, B.SALES_NM AS SALES_NM_LAST
+			          FROM TSH_SALES_DLV AS A
+			               JOIN TFM_SALES_ADD_INFO AS B
+			                   ON B.SALES_CD = A.SALES_CD
+			         WHERE A.SALES_DT BETWEEN DATE_FORMAT(LAST_DAY(REPLACE(#{searchDt},'-','') - INTERVAL 6 MONTH),'%Y%m%d') AND REPLACE(#{searchDt},'-','')
+			         GROUP BY A.PRDT_CD
+			       ) AS C
+			       ON C.PRDT_CD = A.PRDT_CD
+			   LEFT OUTER JOIN
+			       (SELECT PRDT_CD, MAX(BUY_DT) AS BUY_DT_LAST, MAX(TERM_VAL) AS TERM_VAL_LAST
+			          FROM TBH_PRDT_RCPT
+			         GROUP BY PRDT_CD
+			       ) AS D
+			       ON D.PRDT_CD = A.PRDT_CD
+			   JOIN TFM_PRDT_MST AS TPM
+			       ON TPM.PRDT_CD = A.PRDT_CD
+			   LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.COM_CD = 'M006'
+		          AND TCD.DTL_CD = TPM.ORD_UNIT
+			   JOIN TFM_BUY_MST AS TBM
+			       ON TBM.BUY_CD = TPM.BUY_CD
+			   LEFT OUTER JOIN 
+			       (SELECT PRDT_CD, SUM(SALES_QTY) AS PREV_SALES_QTY
+			          FROM TMH_MON_SALES_TOT 
+			         WHERE YEAR_MON = DATE_FORMAT(LAST_DAY(REPLACE(#{searchDt},'-','') - INTERVAL 1 MONTH),'%Y%m')
+			         GROUP BY PRDT_CD
+			       ) AS E
+			       ON E.PRDT_CD = A.PRDT_CD
+	     WHERE IFNULL(B.PRDT_CD,'') = ''
+	     <if test='searchLCd != null and searchLCd != ""'> 
+           AND TPM.L_CD = #{searchLCd}
+         </if>
+         <if test='searchMCd != null and searchMCd != ""'> 
+           AND TPM.M_CD = #{searchMCd}
+         </if>
+         <if test='searchStrgType != null and searchStrgType != ""'> 
+           AND TPM.STRG_TYPE = #{searchStrgType}
+         </if>
+         <if test='srchSalesPrCd != null and srchSalesPrCd != ""'> 
+           AND TPM.SALES_PR_CD = #{srchSalesPrCd}
+         </if>
+	</select>
+	
+	
+</mapper>
+

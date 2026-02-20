@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.bm.service.impl.PrdtMgmtMapper">
+
+	
+	<!-- 상품 조회 리스트 검색조건-->
+	<sql id="selectPrdtMgmtList_Where">
+		/*PrdtMgmtMapper.selectPrdtMgmtList_Where*/
+		<where>
+			<if test='prdtCd != null and prdtCd != ""'> 
+				AND TPM.PRDT_CD = #{prdtCd}
+			</if>
+			<if test='find_prdtNm != null and find_prdtNm != ""'> 
+				AND (TPM.PRDT_NM LIKE CONCAT('%',#{find_prdtNm},'%') OR TPM.PRDT_CD = #{find_prdtNm})
+			</if>			
+			<if test='useYn != null and useYn != ""'> 
+				AND TPM.USE_YN = #{useYn}
+			</if>
+			<if test='prdtMgrPr != null and prdtMgrPr != ""'> 
+				AND TPM.PRDT_MGR_PR = #{prdtMgrPr}
+			</if>
+			<if test='lCd != null and lCd != ""'> 
+				AND TPM.L_CD = #{lCd}
+			</if>
+			<if test='mCd != null and mCd != ""'> 
+				AND TPM.M_CD = #{mCd}
+			</if>
+			<if test='timeLimit != null and timeLimit != ""'> 
+				AND TPM.TIME_LIMIT = #{timeLimit}
+			</if>
+			<if test='issSluggish != null and issSluggish != ""'> 
+				AND TPM.ISS_SLUGGISH = #{issSluggish}
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 상품 조회  카운터 -->
+	<select id="selectPrdtMgmtListCount" parameterType="com.doppio.workplace.bm.service.PrdtMgmtVo" resultType="int">
+		/* PrdtMgmtMapper.selectPrdtMgmtListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM KRMC.TFM_PRDT_MST AS TPM
+		<include refid="selectPrdtMgmtList_Where"/>
+	</select>
+	
+	
+	<!-- 상품 조회 -->
+	<select id="selectPrdtMgmtList" parameterType="com.doppio.workplace.bm.service.PrdtMgmtVo" resultType="com.doppio.workplace.bm.service.PrdtMgmtVo">
+	/*PrdtMgmtMapper.selectPrdtMgmtList*/	
+		SELECT TPM.PRDT_CD
+               , TPM.PRDT_NM
+               , TPM.PRDT_STD
+               , TPM.COST
+               , TPM.USE_YN
+		  FROM KRMC.TFM_PRDT_MST AS TPM
+		 <include refid="selectPrdtMgmtList_Where"/>
+		 ORDER BY TPM.USE_YN DESC, TPM.PRDT_CD
+	</select>
+	
+	<!-- 상품 상세 조회 -->
+	<select id="selectPrdtMgmtData" parameterType="com.doppio.workplace.bm.service.PrdtMgmtVo" resultType="com.doppio.workplace.bm.service.PrdtMgmtVo">
+	/*PrdtMgmtMapper.selectPrdtMgmtData*/	
+		SELECT TPM.PRDT_CD
+               , TPM.PRDT_NM
+               , TPM.L_CD
+               , TPM.M_CD
+               , TPM.PRDT_STD
+               , TPM.ORD_UNIT
+               , TPM.ORIGIN_NM
+               , TPM.QTY_BOX
+               , TPM.VAT_YN
+               , TPM.STRG_TYPE
+               , TPM.LACK_NO_1
+               , TPM.LACK_NO_2
+               , TPM.TAX_YN
+               , TPM.CASE_W
+               , TPM.CASE_L
+               , TPM.CASE_H
+               , TPM.CASE_WT
+               , TPM.MNFCT
+               , TPM.STD_YN
+               , TPM.EXPRT_DT
+               , TPM.PRDT_MGR_PR
+               , TPM.ORD_LD_TM
+               , IFNULL(TPM.BASE_COST,0) AS BASE_COST
+               , TPM.BUY_PRDT_CD
+               , TPM.REMARKS
+               , TPM.EST_PRICE
+               , TPM.TIME_LIMIT
+               , TPM.ISS_SLUGGISH
+               , IFNULL(TPM.COST,0) AS COST
+               , TPM.COST_START_DT
+               , TPM.BUY_CD
+               , TBM_1.BUY_NM
+               , TPM.PREV_BUY_CD
+               , TBM_2.BUY_NM AS PREV_BUY_NM
+               , TPM.BUY_START_DT
+               , TPM.USE_YN
+               , TPM.REG_ID
+               , TM_1.USER_NM AS REG_NM
+               , TPM.REG_DT
+               , TPM.MOD_ID
+               , TM_2.USER_NM AS MOD_NM
+               , TPM.MOD_DT
+   		       , FORMAT(KRMC.FN_WH_PRDT_STK_QTY('10001',#{prdtCd}),2) AS HA_STK_QTY
+   		       , FORMAT(KRMC.FN_WH_PRDT_STK_QTY('10002',#{prdtCd}),2) AS YEO_STK_QTY
+   		       , FORMAT(A.TWO_MN_SALES_QTY,2) AS TWO_MN_SALES_QTY
+   		       , FORMAT(B.LAST_SALES_QTY,2) AS LAST_SALES_QTY
+   		       , FORMAT(C.THIS_SALES_QTY,2) AS THIS_SALES_QTY
+   		       , TPM.SALES_PR_CD
+   		       , TPM.SALES_CD
+   		       , D.SALES_PR_NM
+   		       , E.SALES_NM
+		  FROM KRMC.TFM_PRDT_MST AS TPM
+		  
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_1
+		         ON TPM.REG_ID = TM_1.USER_ID
+		         
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_2
+		         ON TPM.MOD_ID = TM_2.USER_ID
+		         
+		       LEFT OUTER JOIN TFM_BUY_MST AS TBM_1
+		         ON TPM.BUY_CD = TBM_1.BUY_CD 
+		         
+		       LEFT OUTER JOIN TFM_BUY_MST AS TBM_2
+		         ON TPM.PREV_BUY_CD = TBM_2.BUY_CD
+		      
+		       LEFT OUTER JOIN
+			       (SELECT PRDT_CD
+			               , SUM(SALES_QTY) AS TWO_MN_SALES_QTY
+			          FROM TMH_MON_SALES_TOT
+			         WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(NOW(), INTERVAL -2 MONTH),'%Y%m')
+					   AND PRDT_CD = #{prdtCd}
+					 GROUP BY PRDT_CD
+			       ) AS A
+			       ON A.PRDT_CD = TPM.PRDT_CD
+			   
+			   LEFT OUTER JOIN
+			       (SELECT PRDT_CD
+			               , SUM(SALES_QTY) AS LAST_SALES_QTY
+			          FROM TMH_MON_SALES_TOT
+			         WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(NOW(), INTERVAL -1 MONTH),'%Y%m')
+					   AND PRDT_CD = #{prdtCd}
+					 GROUP BY PRDT_CD
+			       ) AS B
+			       ON B.PRDT_CD = TPM.PRDT_CD
+			       
+			   LEFT OUTER JOIN
+			       (SELECT PRDT_CD
+			               , SUM(SALES_QTY) AS THIS_SALES_QTY
+			          FROM TSH_SALES_DLV
+			         WHERE SALES_DT LIKE CONCAT(DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 0 MONTH),'%Y%m'), '%')
+					   AND PRDT_CD = #{prdtCd}
+					 GROUP BY PRDT_CD
+			       ) AS C
+			       ON C.PRDT_CD = TPM.PRDT_CD
+			       
+			   LEFT OUTER JOIN TFM_SALES_PR_MST D ON D.SALES_PR_CD = TPM.SALES_PR_CD
+			   LEFT OUTER JOIN TFM_SALES_ADD_INFO E ON E.SALES_CD = TPM.SALES_CD
+		      
+		   <include refid="selectPrdtMgmtList_Where"/>
+	</select>
+
+	<!-- 최근 입고 조회 -->
+	<select id="selectPrdtBuyList" parameterType="com.doppio.workplace.bm.service.PrdtMgmtVo" resultType="com.doppio.workplace.bm.service.PrdtMgmtVo">
+	/*PrdtMgmtMapper.selectPrdtBuyList*/
+	    SELECT A.BUY_DT
+	           , A.TERM_VAL
+		       , TBM.BUY_NM
+		       , TWM.WH_NM
+		       , A.BUY_QTY
+		       , A.COST
+		       , A.PURE_AMT
+		       , A.VAT_AMT
+		       , A.TOT_AMT
+		  FROM ( 
+				SELECT BUY_DT
+				       , TERM_VAL
+				       , BUY_CD
+				       , WH_CD
+				       , BUY_QTY
+				       , COST
+				       , PURE_AMT
+				       , VAT_AMT
+				       , TOT_AMT
+				  FROM TBH_PRDT_RCPT
+				 WHERE BUY_DT BETWEEN '20200101' AND DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 30 DAY), '%Y%m%d')
+				   AND PRDT_CD = #{prdtCd}
+			    <if test='whCd != null and whCd != ""'>			<!-- 창고  --> 
+				   AND WH_CD = #{whCd}
+			    </if> 
+				   AND BUY_CONF_YN = 'Y'
+			   UNION ALL
+			    SELECT RTN_DT AS BUY_DT
+				       , TERM_VAL
+				       , BUY_CD
+				       , WH_CD
+				       , RTN_QTY*-1 AS BUY_QTY
+				       , COST
+				       , PURE_AMT*-1 AS PURE_AMT
+				       , VAT_AMT*-1 AS VAT_AMT
+				       , TOT_AMT*-1 AS TOT_AMT
+				  FROM TBH_PRDT_RETURN
+				 WHERE RTN_DT BETWEEN '20200101' AND DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 30 DAY), '%Y%m%d')
+				   AND PRDT_CD = #{prdtCd}
+			    <if test='whCd != null and whCd != ""'>			<!-- 창고  --> 
+				   AND WH_CD = #{whCd}
+			    </if>
+			   ) A, TFM_WH_MST AS TWM, TFM_BUY_MST AS TBM
+         WHERE A.BUY_QTY != 0
+           AND A.WH_CD = TWM.WH_CD
+           AND A.BUY_CD = TBM.BUY_CD
+         ORDER BY A.BUY_DT DESC, A.TERM_VAL DESC
+         LIMIT 40
+	</select>
+
+
+	<!-- 최근 출고 조회 -->
+	<select id="selectPrdtSalesList" parameterType="com.doppio.workplace.bm.service.PrdtMgmtVo" resultType="com.doppio.workplace.bm.service.PrdtMgmtVo">
+	/*PrdtMgmtMapper.selectPrdtSalesList*/
+	    SELECT A.SALES_DT
+	           , TSAI.SALES_NM
+	           , A.SALES_CLASS
+		       , TWM.WH_NM
+		       , A.SALES_QTY
+		       , A.PRICE
+		       , A.PURE_AMT
+		       , A.VAT_AMT
+		       , A.TOT_AMT
+		  FROM ( 
+				SELECT SALES_DT
+				       , SALES_CD
+				       , '출고' AS SALES_CLASS
+				       , WH_CD
+				       , PRICE
+				       , SUM(SALES_QTY) AS SALES_QTY
+				       , SUM(PURE_AMT) AS PURE_AMT
+				       , SUM(VAT_AMT) AS VAT_AMT
+				       , SUM(TOT_AMT) AS TOT_AMT
+				  FROM TSH_SALES_DLV
+				 WHERE SALES_DT BETWEEN '20200101' AND DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 30 DAY), '%Y%m%d')
+				<if test='prdtCd != null and prdtCd != ""'>			<!-- 상품명  --> 
+				   AND PRDT_CD = #{prdtCd}
+			    </if>
+			    <if test='whCd != null and whCd != ""'>			<!-- 창고  --> 
+				   AND WH_CD = #{whCd}
+			    </if>
+			     GROUP BY SALES_DT, SALES_CD, WH_CD, PRICE
+			   UNION ALL
+			    SELECT RTN_DT AS SALES_DT
+				       , SALES_CD
+				       , '반품' AS SALES_CLASS
+				       , WH_CD
+				       , PRICE
+				       , SUM(RTN_QTY)*-1 AS SALES_QTY
+				       , SUM(PURE_AMT)*-1 AS PURE_AMT
+				       , SUM(VAT_AMT)*-1 AS VAT_AMT
+				       , SUM(TOT_AMT)*-1 AS TOT_AMT
+				  FROM TSH_SALES_RETURN
+				 WHERE RTN_DT BETWEEN '20200101' AND DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 30 DAY), '%Y%m%d')
+				 <if test='prdtCd != null and prdtCd != ""'>			<!-- 상품명  --> 
+				   AND PRDT_CD = #{prdtCd}
+			    </if>
+			    <if test='whCd != null and whCd != ""'>			<!-- 창고  --> 
+				   AND WH_CD = #{whCd}
+			    </if>
+			     GROUP BY RTN_DT, SALES_CD, WH_CD, PRICE
+			   UNION ALL
+			    SELECT TSF.FREE_DT AS SALES_DT
+				       , TSF.SALES_CD
+				       , TCD.DTL_NM AS SALES_CLASS
+				       , TSF.WH_CD
+				       , 0 AS PRICE
+				       , SUM(TSF.FREE_QTY) AS SALES_QTY
+				       , 0 AS PURE_AMT
+				       , 0 AS VAT_AMT
+				       , 0 AS TOT_AMT
+				  FROM TSH_SALES_FREE AS TSF
+				       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+				           ON TSF.FREE_CLASS = TCD.DTL_CD
+				           AND TCD.COM_CD = 'M016'
+				 WHERE TSF.FREE_DT BETWEEN '20200101' AND DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 30 DAY), '%Y%m%d')
+				 <if test='prdtCd != null and prdtCd != ""'>			<!-- 상품명  --> 
+				   AND TSF.PRDT_CD = #{prdtCd}
+			    </if>
+			    <if test='whCd != null and whCd != ""'>			<!-- 창고  --> 
+				   AND TSF.WH_CD = #{whCd}
+			    </if>
+			     GROUP BY TSF.FREE_DT, TSF.SALES_CD, TSF.WH_CD
+			   ) A, TFM_WH_MST AS TWM, TFM_SALES_ADD_INFO AS TSAI
+         WHERE A.SALES_QTY != 0
+           AND A.WH_CD = TWM.WH_CD
+           AND A.SALES_CD = TSAI.SALES_CD
+         ORDER BY A.SALES_DT DESC
+         LIMIT 40
+	</select>
+
+	<!-- 상품 신규 저장 -->
+	<insert id="insertPrdtMgmt" parameterType="com.doppio.workplace.bm.service.PrdtMgmtVo">
+	/*PrdtMgmtMapper.insertPrdtMgmt*/
+	<selectKey keyProperty="prdtCd" resultType="String" order="BEFORE">
+		SELECT CONCAT(LEFT(#{strgType},1),#{lCd},SUBSTR(#{mCd},4,2),LPAD(CAST(RIGHT(IFNULL(MAX(PRDT_CD),'0000'),4) AS DECIMAL)+1, 4, '0'))
+          FROM TFM_PRDT_MST
+         WHERE STRG_TYPE = #{strgType}
+           AND L_CD = #{lCd}
+           AND M_CD = #{mCd}
+	</selectKey>
+	    INSERT INTO KRMC.TFM_PRDT_MST
+            (PRDT_CD, PRDT_NM, L_CD, M_CD, PRDT_STD, ORD_UNIT, ORIGIN_NM, QTY_BOX, VAT_YN
+             , STRG_TYPE, LACK_NO_1, LACK_NO_2, COST, COST_START_DT, BUY_CD, BUY_START_DT, PREV_BUY_CD, TAX_YN
+             , CASE_W, CASE_L, CASE_H, CASE_WT, MNFCT, STD_YN, EXPRT_DT, PRDT_MGR_PR, ORD_LD_TM, BASE_COST
+             , BUY_PRDT_CD,  REMARKS, EST_PRICE, TIME_LIMIT, ISS_SLUGGISH
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT, SALES_PR_CD, SALES_CD)
+        VALUES
+            (
+               	#{prdtCd}
+				,#{prdtNm}
+				,#{lCd}
+				,#{mCd}
+				,#{prdtStd}
+				,#{ordUnit}
+				,#{originNm}
+				,#{qtyBox}
+				,#{vatYn}
+				,#{strgType}
+				,#{lackNo1}
+				,#{lackNo2}
+				,#{cost}
+				,#{costStartDt}
+				,#{buyCd}
+				,#{buyStartDt}
+				,#{prevBuyCd}
+				,#{taxYn}
+				,#{caseW}
+				,#{caseL}
+				,#{caseH}
+				,#{caseWt}
+				,#{mnfct}
+				,#{stdYn}
+				,#{exprtDt}
+				,#{prdtMgrPr}
+				,#{ordLdTm}
+				,#{baseCost}
+				,#{buyPrdtCd}
+				,#{remarks}
+				,#{estPrice}
+				,#{timeLimit}
+				,#{issSluggish}
+				,#{useYn}
+				,#{workId}
+               , NOW()
+               , #{workId}
+               , NOW()
+               , #{salesPrCd}
+               , #{salesCd}
+            )
+	</insert>
+	
+
+	<!-- 상품 신규 저장 -->
+	<insert id="updatePrdtMgmt" parameterType="com.doppio.workplace.bm.service.PrdtMgmtVo">
+	/*PrdtMgmtMapper.updatePrdtMgmt*/	
+        UPDATE TFM_PRDT_MST
+           SET PRDT_NM        = #{prdtNm}
+               , PRDT_STD       = #{prdtStd}
+               , ORD_UNIT       = #{ordUnit}
+               , ORIGIN_NM      = #{originNm}
+               , QTY_BOX        = #{qtyBox}
+               , VAT_YN         = #{vatYn}
+               , LACK_NO_1      = #{lackNo1}
+               , LACK_NO_2      = #{lackNo2}
+               , TAX_YN         = #{taxYn}
+               , CASE_W         = #{caseW}
+               , CASE_L         = #{caseL}
+               , CASE_H         = #{caseH}
+               , CASE_WT        = #{caseWt}
+               , MNFCT          = #{mnfct}
+               , STD_YN         = #{stdYn}
+               , EXPRT_DT       = #{exprtDt}
+               , PRDT_MGR_PR    = #{prdtMgrPr}
+               , ORD_LD_TM      = #{ordLdTm}
+               , COST           = #{cost}
+               , COST_START_DT  = #{costStartDt}
+               , BUY_CD         = #{buyCd}
+               , BUY_START_DT   = #{buyStartDt}
+               , PREV_BUY_CD    = #{prevBuyCd}
+               , BASE_COST      = CASE WHEN #{baseCost}='' THEN 0 ELSE #{baseCost} END
+               , BUY_PRDT_CD    = #{buyPrdtCd}
+               , REMARKS        = #{remarks}
+               , EST_PRICE      = CASE WHEN #{estPrice}='' THEN 0 ELSE #{estPrice} END
+               , TIME_LIMIT     = #{timeLimit}
+               , ISS_SLUGGISH   = #{issSluggish}
+               , USE_YN         = #{useYn}
+               , MOD_ID         = #{workId}
+               , MOD_DT         = NOW()
+               , SALES_PR_CD	= #{salesPrCd}
+               , SALES_CD		= #{salesCd}
+         WHERE PRDT_CD =  #{prdtCd}
+	</insert>
+	
+	
+	<!-- 상품 엑셀 다운로드 -->
+	<select id="selectPrdtMgmtListExcelDown" parameterType="com.doppio.workplace.bm.service.PrdtMgmtVo" resultType="java.util.HashMap">
+	/*PrdtMgmtMapper.selectPrdtMgmtListExcelDown*/	
+		SELECT IFNULL(TPM.PRDT_CD,'') AS PRDT_CD
+               , IFNULL(TPM.PRDT_NM,'') AS PRDT_NM
+               , IFNULL(TPCM_1.L_NM,'') AS L_NM
+               , IFNULL(TPCM_2.M_NM,'') AS M_NM
+               , IFNULL(TPM.PRDT_STD,'') AS PRDT_STD
+               , IFNULL(TCD_1.DTL_NM,'') AS ORD_UNIT
+               , IFNULL(TPM.ORIGIN_NM,'') AS ORIGIN_NM
+               , IFNULL(TPM.QTY_BOX,'') AS QTY_BOX
+               , IFNULL(TCD_2.DTL_NM,'') AS VAT_YN
+               , IFNULL(TCD_3.DTL_NM,'') AS STRG_TYPE
+               , IFNULL(TPM.LACK_NO_1,'') AS LACK_NO_1
+               , IFNULL(TPM.LACK_NO_2,'') AS LACK_NO_2
+               , IFNULL(TPM.COST,'') AS COST
+               , IFNULL(TPM.COST_START_DT,'') AS COST_START_DT
+               , IFNULL(TPM.BUY_CD,'') AS BUY_CD
+               , IFNULL(TPM.BUY_START_DT,'') AS BUY_START_DT
+               , IFNULL(TPM.PREV_BUY_CD,'') AS PREV_BUY_CD
+               , IFNULL(TCD_4.DTL_NM,'') AS TAX_YN
+               , IFNULL(TPM.CASE_W,'') AS CASE_W
+               , IFNULL(TPM.CASE_L,'') AS CASE_L
+               , IFNULL(TPM.CASE_H,'') AS CASE_H
+               , IFNULL(TPM.CASE_WT,'') AS CASE_WT
+               , IFNULL(TPM.MNFCT,'') AS MNFCT
+               , IFNULL(TCD_5.DTL_NM,'') AS STD_YN
+               , IFNULL(TPM.EXPRT_DT,'') AS EXPRT_DT
+               , IFNULL(TPM.PRDT_MGR_PR,'') AS PRDT_MGR_PR
+               , IFNULL(TCD_6.DTL_NM,'') AS ORD_LD_TM
+               , IFNULL(TPM.BASE_COST,'') AS BASE_COST
+               , IFNULL(TPM.BUY_PRDT_CD,'') AS BUY_PRDT_CD
+               , IFNULL(TPM.REMARKS,'') AS REMARKS
+               , IFNULL(TPM.EST_PRICE,'') AS EST_PRICE
+               , IFNULL(TCD_7.DTL_NM,'') AS TIME_LIMIT
+               , IFNULL(TCD_8.DTL_NM,'') AS ISS_SLUGGISH
+               , IFNULL(TCD_9.DTL_NM,'') AS USE_YN
+		  FROM KRMC.TFM_PRDT_MST AS TPM
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_1
+		         ON TPM.REG_ID = TM_1.USER_ID
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_2
+		         ON TPM.MOD_ID = TM_2.USER_ID
+		       LEFT OUTER JOIN KRMC.TFM_PRDT_CLASS1_MST AS TPCM_1
+		         ON TPM.L_CD = TPCM_1.L_CD
+		       LEFT OUTER JOIN KRMC.TFM_PRDT_CLASS2_MST AS TPCM_2
+		         ON TPM.M_CD = TPCM_2.M_CD
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_1
+		         ON TPM.ORD_UNIT = TCD_1.DTL_CD
+		         AND TCD_1.COM_CD = 'M006'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_2
+		         ON TPM.VAT_YN = TCD_2.DTL_CD
+		         AND TCD_2.COM_CD = '9008'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_3
+		         ON TPM.STRG_TYPE = TCD_3.DTL_CD
+		         AND TCD_3.COM_CD = 'M001'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_4
+		         ON TPM.TAX_YN = TCD_4.DTL_CD
+		         AND TCD_4.COM_CD = '9008'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_5
+		         ON TPM.STD_YN = TCD_5.DTL_CD
+		         AND TCD_5.COM_CD = '9008'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_6
+		         ON TPM.ORD_LD_TM = TCD_6.DTL_CD
+		         AND TCD_6.COM_CD = 'M002'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_7
+		         ON TPM.TIME_LIMIT = TCD_7.DTL_CD
+		         AND TCD_7.COM_CD = '9008'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_8
+		         ON TPM.ISS_SLUGGISH = TCD_8.DTL_CD
+		         AND TCD_8.COM_CD = '9008'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_9
+		         ON TPM.USE_YN = TCD_9.DTL_CD
+		         AND TCD_9.COM_CD = '9008'
+		 <include refid="selectPrdtMgmtList_Where"/>
+	</select>
+</mapper>
+

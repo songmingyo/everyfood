@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusSalesEstRegMapper">
+
+	
+	<!-- 픔목 조회 -->
+	<select id="selectCusSalesEstPrdtList" parameterType="com.doppio.workplace.sm.service.CusSalesEstRegVo" resultType="com.doppio.workplace.sm.service.CusSalesEstRegVo">
+	/*CusSalesEstRegMapper.selectCusSalesEstPrdtList*/	
+		SELECT TPM.PRDT_CD
+               , TPM.PRDT_NM
+               , TPM.PRDT_STD
+               , TCD_1.DTL_NM AS ORD_UNIT_NM
+               , TPM.COST AS BUY_COST
+               , TPM.BASE_COST
+               , TPM.EST_PRICE
+               , TCD_2.DTL_NM AS STRG_TYPE_NM
+               , TPM.ORIGIN_NM
+               , TPM.EXPRT_DT
+               , TBM.BUY_NM
+               , TBM.SALES_PR_NM
+               , TBM.SALES_PR_HP
+               , TBM.SETL_CON
+               , TPM.VAT_YN
+		  FROM KRMC.TFM_PRDT_MST AS TPM
+		       LEFT OUTER JOIN KRMC.TFM_BUY_MST AS TBM
+		         ON TPM.BUY_CD = TBM.BUY_CD
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_1
+		         ON TCD_1.COM_CD = 'M006'
+		        AND TCD_1.DTL_CD = TPM.ORD_UNIT
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_2
+		         ON TCD_2.COM_CD = 'M001'
+		        AND TCD_2.DTL_CD = TPM.STRG_TYPE
+		 <where>
+			<if test='prdtNm != null and prdtNm != ""'>			<!-- 상품명  --> 
+				AND TPM.PRDT_NM LIKE CONCAT('%',#{prdtNm},'%')
+			</if>
+		</where>
+	</select>
+
+
+	<!-- 견적서 Head 조회 -->
+	<select id="selectCusSalesEstHeadList" parameterType="com.doppio.workplace.sm.service.CusSalesEstRegVo" resultType="com.doppio.workplace.sm.service.CusSalesEstRegVo">
+	/*CusSalesEstRegMapper.selectCusSalesEstHeadList*/	
+		SELECT TEH.EST_NUM
+               , TEH.SALES_CD
+               , TEH.SALES_NM
+               , TEH.SALES_TEL_NO
+               , TEH.EST_DT
+               , TEH.EFF_DT
+               , TEH.SALES_PR_NM
+               , TEH.M_TEL_NO
+               , TEH.CNSTR_REMARKS
+               , TEH.SPCL_REMARKS
+               , TEH.SALES_ST_DT
+               , TEH.BUY_ST_DT
+               , TEH.REQ_SALES_PR_NM
+               , TEH.REQ_SALES_TEL_NO
+		  FROM KRMC.TSH_EST_HEAD AS TEH
+		 <where>
+			<if test='searchEstNum != null and searchEstNum != ""'>			<!-- 견적번호  --> 
+				AND TEH.EST_NUM = #{searchEstNum}
+			</if>
+		</where>
+	</select>
+	
+	
+	<!-- 견적서 Item 조회 -->
+	<select id="selectCusSalesEstItemList" parameterType="com.doppio.workplace.sm.service.CusSalesEstRegVo" resultType="com.doppio.workplace.sm.service.CusSalesEstRegVo">
+	/*CusSalesEstRegMapper.selectCusSalesEstItemList*/	
+		SELECT TEI.EST_NUM
+               , TEI.EST_SEQ
+               , TEI.PRDT_CD
+               , TEI.PRDT_NM
+               , TEI.PRDT_STD
+               , TEI.ORD_UNIT_NM
+               , TEI.BUY_COST
+               , TEI.BASE_COST
+               , TEI.EST_PRICE
+               , TEI.VAT_AMT
+               , TEI.MARGIN_RATE
+               , TEI.MON_SALES_QTY
+               , TEI.SAVE_KIND_NM
+               , TEI.ORIGIN_NM
+               , TEI.EXPRT_DT
+               , TEI.BUY_ST_QTY
+               , TEI.BUY_NM
+               , TEI.BUY_PR_NM
+               , TEI.BUY_TEL_NO
+               , TEI.SETL_CON
+               , TEI.BUY_HOW
+               , TEI.CONFIRM_YN
+               , CASE WHEN TEI.USE_YN='N' THEN '삭제' ELSE '' END USE_YN_NM
+               , TEI.USE_YN
+               , 'U' AS GRID_FLAG
+		  FROM KRMC.TSH_EST_ITEM AS TEI
+		 WHERE TEI.USE_YN = 'Y'
+		 <if test='searchEstNum != null and searchEstNum != ""'>			<!-- 견적번호  --> 
+		   AND TEI.EST_NUM = #{searchEstNum}
+		 </if>
+		 <if test='confirmYn != null and confirmYn != ""'>			<!-- 견적번호  --> 
+		   AND TEI.CONFIRM_YN = #{confirmYn}
+		 </if>
+		 ORDER BY TEI.EST_SEQ
+	</select>
+
+
+	<!-- 견적서 Head 신규 저장 -->
+	<insert id="insertEstHead" parameterType="com.doppio.workplace.sm.service.CusSalesEstRegVo">
+	/*CusSalesEstRegMapper.insertEstHead*/
+	<selectKey keyProperty="estNum" resultType="String" order="BEFORE">
+		SELECT CONCAT(SUBSTRING(#{estDt},3,6), LPAD(CAST(IFNULL(RIGHT(MAX(EST_NUM),3),'000') AS DECIMAL)+1, 3, 0)) AS EST_NUM
+          FROM KRMC.TSH_EST_HEAD
+         WHERE EST_NUM LIKE CONCAT(SUBSTRING(#{estDt},3,6),'%')
+	</selectKey>
+	    INSERT INTO KRMC.TSH_EST_HEAD
+            (EST_NUM, SALES_CD, SALES_NM, SALES_TEL_NO, EST_DT
+             , EFF_DT, SALES_PR_NM, M_TEL_NO, CNSTR_REMARKS, SPCL_REMARKS
+             , SALES_ST_DT, BUY_ST_DT, REQ_SALES_PR_NM, REQ_SALES_TEL_NO
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT)
+        VALUES
+            (#{estNum}, #{salesCd}, #{salesNm}, #{salesTelNo}, #{estDt}
+			 , #{effDt}, #{salesPrNm}, #{mTelNo}, #{cnstrRemarks}, #{spclRemarks}
+			 , #{salesStDt}, #{buyStDt}, #{reqSalesPrNm}, #{reqSalesTelNo}
+			 , 'Y', #{workId}, NOW(), #{workId}, NOW()
+            )
+	</insert>
+	
+
+	<!-- 견적서 Head 수정 -->
+	<update id="updateEstHead" parameterType="com.doppio.workplace.sm.service.CusSalesEstRegVo">
+	/*CusSalesEstRegMapper.updateEstHead*/	
+        UPDATE TSH_EST_HEAD
+           SET SALES_CD           = #{salesCd}
+               , SALES_NM         = #{salesNm}
+               , SALES_TEL_NO     = #{salesTelNo}
+               , EST_DT           = #{estDt}
+               , EFF_DT           = #{effDt}
+               , SALES_PR_NM      = #{salesPrNm}
+               , M_TEL_NO         = #{mTelNo}
+               , CNSTR_REMARKS    = #{cnstrRemarks}
+               , SPCL_REMARKS     = #{spclRemarks}
+               , SALES_ST_DT      = #{salesStDt}
+               , BUY_ST_DT        = #{buyStDt}
+               , REQ_SALES_PR_NM  = #{reqSalesPrNm}
+               , REQ_SALES_TEL_NO = #{reqSalesTelNo}
+               , MOD_ID           = #{workId}
+               , MOD_DT           = NOW()
+         WHERE EST_NUM = #{estNum}
+	</update>
+	
+	
+	<!-- 견적서 Item 신규 저장 -->
+	<insert id="insertEstItem" parameterType="com.doppio.workplace.sm.service.CusSalesEstRegVo">
+	/*CusSalesEstRegMapper.insertEstItem*/
+	<selectKey keyProperty="estSeq" resultType="String" order="BEFORE">
+		SELECT IFNULL(MAX(EST_SEQ),0)+1 AS EST_SEQ
+          FROM KRMC.TSH_EST_ITEM
+         WHERE EST_NUM = #{estNum}
+	</selectKey>
+	    INSERT INTO KRMC.TSH_EST_ITEM
+            (EST_NUM, EST_SEQ, PRDT_CD, PRDT_NM, PRDT_STD
+             , ORD_UNIT_NM, BUY_COST, BASE_COST, EST_PRICE
+             , VAT_AMT, MARGIN_RATE, MON_SALES_QTY, SAVE_KIND_NM
+             , ORIGIN_NM, EXPRT_DT, BUY_ST_QTY, BUY_NM
+             , BUY_PR_NM, BUY_TEL_NO, SETL_CON, BUY_HOW, CONFIRM_YN
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT)
+        VALUES
+            (#{estNum}, #{estSeq}, #{prdtCd}, #{prdtNm}, #{prdtStd}
+             , #{ordUnitNm}, #{buyCost}, #{baseCost}, #{estPrice}
+             , #{vatAmt}, #{marginRate}, #{monSalesQty}, #{saveKindNm}
+             , #{originNm}, #{exprtDt}, #{buyStQty}, #{buyNm}
+             , #{buyPrNm}, #{buyTelNo}, #{setlCon}, #{buyHow}, #{confirmYn}
+			 , 'Y', #{workId}, NOW(), #{workId}, NOW()
+            )
+	</insert>
+	
+
+	<!-- 견적서 Head 수정 -->
+	<update id="updateEstItem" parameterType="com.doppio.workplace.sm.service.CusSalesEstRegVo">
+	/*CusSalesEstRegMapper.updateEstItem*/	
+        UPDATE TSH_EST_ITEM
+           SET PRDT_CD           = #{prdtCd}
+               , PRDT_NM         = #{prdtNm}
+               , PRDT_STD        = #{prdtStd}
+               , ORD_UNIT_NM     = #{ordUnitNm}
+               , BUY_COST        = #{buyCost}
+               , BASE_COST       = #{baseCost}
+               , EST_PRICE       = #{estPrice}
+               , VAT_AMT         = #{vatAmt}
+               , MARGIN_RATE     = #{marginRate}
+               , MON_SALES_QTY   = #{monSalesQty}
+               , SAVE_KIND_NM    = #{saveKindNm}
+               , ORIGIN_NM       = #{originNm}
+               , EXPRT_DT        = #{exprtDt}
+               , BUY_ST_QTY      = #{buyStQty}
+               , BUY_NM          = #{buyNm}
+               , BUY_PR_NM       = #{buyPrNm}
+               , BUY_TEL_NO      = #{buyTelNo}
+               , SETL_CON        = #{setlCon}
+               , BUY_HOW         = #{buyHow}
+               , CONFIRM_YN      = #{confirmYn}
+               , USE_YN          = #{useYn}
+               , MOD_ID          = #{workId}
+               , MOD_DT          = NOW()
+         WHERE EST_NUM = #{estNum}
+           AND EST_SEQ = #{estSeq}
+	</update>
+	
+	<!-- 견적서 출력 -->
+	<select id="selectCurSalesEstPrintList" parameterType="com.doppio.workplace.sm.service.CusSalesEstRegVo" resultType="com.doppio.workplace.sm.service.CusSalesEstRegVo">
+	/*CusSalesEstRegMapper.selectCurSalesEstPrintList*/	
+		SELECT TEH.SALES_NM
+		       , TEH.REQ_SALES_PR_NM
+		       , TEH.EST_NUM
+		       , DATE_FORMAT(TEH.EST_DT,'%Y-%m-%d') AS EST_DT
+		       , TEH.EFF_DT
+		       , TEH.SALES_PR_NM
+		       , TEH.M_TEL_NO
+		       , TEI.PRDT_NM
+               , TEI.PRDT_STD
+               , TEI.ORD_UNIT_NM
+               , TEI.BUY_COST
+               , TEI.BASE_COST
+               , TEI.EST_PRICE
+               , TEI.VAT_AMT
+               , TEI.MARGIN_RATE
+               , TEI.MON_SALES_QTY
+               , TSAI.SUBSIDY_RATE
+               , TEI.SAVE_KIND_NM
+               , TEI.ORIGIN_NM
+               , TEI.EXPRT_DT
+               , TEI.BUY_NM
+               , TEH.BUY_ST_DT
+               , TEI.BUY_PR_NM
+               , TEI.BUY_TEL_NO
+               , TEI.SETL_CON
+               , TEI.BUY_HOW
+               , TEH.CNSTR_REMARKS
+               , TEH.SPCL_REMARKS
+               , DATE_FORMAT(TEH.REG_DT,'%Y-%m-%d') AS REG_DT
+               , TM.USER_NM AS REG_NM
+               , TEH.SALES_ST_DT
+               , TEH.REQ_SALES_TEL_NO
+		  FROM TSH_EST_HEAD AS TEH
+		  
+		       JOIN TSH_EST_ITEM AS TEI
+		           ON TEI.EST_NUM = TEH.EST_NUM
+		           
+		       LEFT OUTER JOIN TFM_SALES_ADD_INFO AS TSAI
+		           ON TSAI.SALES_CD = TEH.SALES_CD
+		           
+		       LEFT OUTER JOIN TCM_MEMBER AS TM
+		           ON TM.USER_ID = TEH.REG_ID
+		           
+		 WHERE TEI.EST_NUM = #{searchEstNum}
+		   AND TEI.USE_YN = 'Y'
+		 <if test='searchPrtClass == "NEW"'>			<!-- 신규품목입점만 구분  --> 
+		   AND TEI.CONFIRM_YN = 'Y'
+		 </if>
+	</select>
+	
+</mapper>
+

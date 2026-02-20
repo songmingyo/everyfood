@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.br.service.impl.BuyOrdListMapper">
+
+	
+	<!-- 매입처 발주 조회 -->
+	<select id="selectBuyOrderList" parameterType="com.doppio.workplace.br.service.BuyOrdListVo" resultType="com.doppio.workplace.br.service.BuyOrdListVo">
+	/*BuyOrderMapper.selectBuyOrderList*/	
+		SELECT TPO.ORD_DT
+			   , TBM.BUY_NM			
+			   , TPO.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TPO.BUY_DT			
+			   , TPO.COST
+			   , SUM(TPO.ORD_QTY) AS ORD_QTY
+			   , SUM(TPO.PURE_AMT) AS PURE_AMT
+			   , SUM(TPO.VAT_AMT) AS VAT_AMT
+			   , SUM(TPO.TOT_AMT) AS TOT_AMT
+			   , TPM.REMARKS
+		  FROM KRMC.TBH_PRDT_ORD AS TPO
+		  
+		       JOIN KRMC.TFM_BUY_MST AS TBM
+		           ON TBM.BUY_CD = TPO.BUY_CD
+		           
+		       JOIN KRMC.TFM_PRDT_MST AS TPM
+		           ON TPM.PRDT_CD = TPO.PRDT_CD
+		           
+	     WHERE TPO.ORD_DT BETWEEN #{buyStartDt} AND #{buyEndDt}
+	       AND TPO.ORD_QTY != 0
+	     <if test='buyCd != null and buyCd != ""'> 
+		   AND TPO.BUY_CD = #{buyCd}
+		 </if>
+ 		 <if test='prdtCd != null and prdtCd != ""'> 
+		   AND TPO.PRDT_CD = #{prdtCd}
+		 </if>
+		 <if test='prdtNm != null and prdtNm != ""'> 
+		   AND TPM.PRDT_NM LIKE CONCAT('%',#{prdtNm},'%')
+		 </if>			
+		 <if test='lCd != null and lCd != ""'> 
+		   AND TPM.L_CD = #{lCd}
+		 </if>
+		 <if test='mCd != null and mCd != ""'> 
+		   AND TPM.M_CD = #{mCd}
+		 </if>
+		 GROUP BY TPO.ORD_DT
+			      , TBM.BUY_NM			
+			      , TPO.PRDT_CD
+			      , TPM.PRDT_NM
+			      , TPM.PRDT_STD
+			      , TPO.BUY_DT			
+			      , TPO.COST
+			      , TPM.REMARKS
+		 ORDER BY TPO.ORD_DT, TPO.PRDT_CD
+	</select>
+	
+
+	<!-- 매입처 발주 엑셀 다운로드 -->
+	<select id="selectBuyOrdListExcelDown" parameterType="com.doppio.workplace.br.service.BuyOrdListVo" resultType="java.util.HashMap">
+	/*BuyOrderMapper.selectBuyOrderData*/	
+		SELECT TPO.ORD_DT
+			   , TBM.BUY_NM			
+			   , TPO.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TPO.BUY_DT			
+			   , TPO.COST
+			   , SUM(TPO.ORD_QTY) AS ORD_QTY
+			   , SUM(TPO.PURE_AMT) AS PURE_AMT
+			   , SUM(TPO.VAT_AMT) AS VAT_AMT
+			   , SUM(TPO.TOT_AMT) AS TOT_AMT
+			   , TPM.REMARKS
+		  FROM KRMC.TBH_PRDT_ORD AS TPO
+		  
+		       JOIN KRMC.TFM_BUY_MST AS TBM
+		           ON TBM.BUY_CD = TPO.BUY_CD
+		           
+		       JOIN KRMC.TFM_PRDT_MST AS TPM
+		           ON TPM.PRDT_CD = TPO.PRDT_CD
+		           
+	     WHERE TPO.ORD_DT BETWEEN REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+	       AND TPO.ORD_QTY != 0
+	     <if test='buyCd != null and buyCd != ""'> 
+		   AND TPO.BUY_CD = #{buyCd}
+		 </if>
+ 		 <if test='prdtCd != null and prdtCd != ""'> 
+		   AND TPO.PRDT_CD = #{prdtCd}
+		 </if>
+		 <if test='prdtNm != null and prdtNm != ""'> 
+		   AND TPM.PRDT_NM LIKE CONCAT('%',#{prdtNm},'%')
+		 </if>			
+		 <if test='lCd != null and lCd != ""'> 
+		   AND TPM.L_CD = #{lCd}
+		 </if>
+		 <if test='mCd != null and mCd != ""'> 
+		   AND TPM.M_CD = #{mCd}
+		 </if>
+		 GROUP BY TPO.ORD_DT
+			      , TBM.BUY_NM			
+			      , TPO.PRDT_CD
+			      , TPM.PRDT_NM
+			      , TPM.PRDT_STD
+			      , TPO.BUY_DT			
+			      , TPO.COST
+			      , TPM.REMARKS
+		 ORDER BY TPO.ORD_DT, TPO.PRDT_CD
+
+	</select>
+
+</mapper>

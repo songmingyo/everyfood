@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.management.service.impl.MgrMemberMapper">
+	
+	<!-- 사용자정보 MAP -->
+	<resultMap id="memberInfoListMap"   type="com.doppio.management.service.MgrMemberVo">
+			<result column="MEMBER_CD"			property="memberCd"  		/> <!--사용자고유번호        	-->
+			<result column="USER_ID"			property="userId"  			/> <!--담당자ID             	-->
+			<result column="USER_NM"			property="userNm"  			/> <!--신청인성명              -->
+			<result column="USER_PW"			property="userPw"  			/> <!--비밀번호               -->
+			<result column="TEL_NO"				property="telNo"  			/> <!--전화번호               -->
+			<result column="HP_NO"				property="hpNo"  			/> <!--핸드폰번호             	-->
+			<result column="EMAIL"				property="email"  			/> <!--이메일                	-->
+			<result column="MASTER_ID"			property="masterId"  		/> <!--소속회사코드   			-->
+			<result column="COMP_NM"			property="compNm"  			/> <!--소속회사명칭(점포명)     	-->
+			<result column="POSITION_NM"		property="positionNm"  		/> <!--직책명                	-->
+			<result column="CLASS_NM"			property="classNm"  		/> <!--직급명                	-->
+			<result column="USER_TYPE"			property="userType"  		/> <!--사용자타입              -->
+			<result column="USER_TYPE_NAME"		property="userTypeName"  	/> <!--사용자타입              -->
+			<result column="PASS_CHG_YN"		property="passChgYn"  		/> <!--비밀번호필수변경유무      	-->
+			<result column="PASS_LAST_DY"		property="passLastDy"  		/> <!--비밀번호최종변경일자     	-->
+			<result column="USE_YN"				property="useYn"  			/> <!--사용유무               -->
+			<result column="GEN_DIVN_CD"		property="genDivnCd" 		/> <!--사용자 생성 구분 코드     -->
+			<result column="GEN_DIVN_CD_NAME"	property="genDivnCdName" 	/> <!--사용자 생성 구분 명칭     -->
+			<result column="REG_DT"				property="regDt"  			/> <!--등록일시               -->
+			<result column="REG_ID"				property="regId"  			/> <!--등록자아이디            -->
+			<result column="MOD_DT"				property="modDt"  			/> <!--수정일시               -->
+			<result column="MOD_ID"				property="modId"  			/> <!--수정자아이디            -->
+			<result column="PASS_FAIL_CNT"		property="passFailCnt" 		/> <!--패스워드 실패 횟수       -->
+			<result column="LOCK_YN"			property="lockYn"  			/> <!--계정 장금 	        	-->
+			<result column="IP_CNT"		    	property="ipCnt"			/> <!--금일 접속아이피 갯수   	-->
+			<result column="TOTAL_COUNT"		property="totalCount"  		/> <!--전체카운트        		-->
+			<result column="FIND_PWD_CD"		property="findPwdCd"		/> <!-- 비밀번호찾기질문			-->
+			<result column="FIND_PWD_ANSWER"	property="findPwdAnswer"	/> <!-- 비밀번호찾기답변 		-->
+			<result column="BMAN_NO"			property="bmanNo"			/> <!-- 사업자등록번호			-->
+	</resultMap>
+	
+	
+	<!-- 사용자GROUP MAP -->
+	<resultMap id="groupInfoListMap"   type="com.doppio.management.service.MgrGroupVo">
+			<result column="GROUP_ID"		property="groupId"     	/>	<!-- 그룹아이디		-->
+			<result column="GROUP_NM"	  	property="groupNm"     	/>	<!-- 그룹명       		-->
+			<result column="GROUP_SUB_NM"	property="groupSubNm"   />	<!-- 그룹확장명       	-->	
+			<result column="GROUP_DESC"		property="groupDesc"   	/>	<!-- 그룹설명			-->
+			<result column="GROUP_FG"	  	property="groupFg"     	/>	<!-- 그룹구분코드[CODE 1011 B:시스템,F:내부사용자, V:외부사용자]  -->
+			<result column="USER_AUTH"  	property="userAuth"		/>	<!--  설정(Y/N) 		-->
+	</resultMap>
+	
+	
+	<!-- 사용자정보 MAP -->
+	<resultMap id="accessIpListMap"   type="com.doppio.management.service.MgrMemberVo">
+			<result column="ACCESS_ID"		property="memberCd"  		/> <!--사용자고유번호        		-->
+			<result column="USER_ID"		property="userId"  			/> <!--담당자ID          	-->
+			<result column="USER_NM"		property="userNm"  			/> <!--신청인성명                	-->
+			<result column="ACCESS_DATE"	property="accessDate"  		/> <!--접속일자                		-->
+			<result column="ACCESS_IP"		property="accessIp"  		/> <!--접속아이피                	-->
+	</resultMap>		
+	
+	<!-- 사용자 정보 조회  WHERE [selectMemberList]-->
+	<sql id="selectMemberList_Where">
+		/*MgrMemberMapper.selectMemberList_Where*/
+		 <where>
+			    <if test='memberCd != null and memberCd != ""'>
+			        AND A.MEMBER_CD = #{memberCd}
+			    </if>
+			    <if test='search_userNm != null and search_userNm != ""'>
+			        AND A.USER_NM like CONCAT('%',#{search_userNm},'%')
+			    </if>
+			    <if test='search_compNm != null and search_compNm != ""'>
+			        AND B.COMP_NM like CONCAT('%',#{search_compNm},'%')
+			    </if>
+			    <if test='search_userId != null and search_userId != ""'>
+			        AND A.USER_ID like CONCAT('%',#{search_userId},'%')
+			    </if>
+			    <if test='search_userType != null and search_userType != ""'>
+			        AND A.USER_TYPE = #{search_userType}
+			    </if>
+			   <!--  <if test='search_userType == null or search_userType == ""'>
+			         AND A.USER_TYPE IN ('SA','SU')
+			    </if> -->
+			    <if test='search_useYn != null and search_useYn != ""'>
+			        AND A.USE_YN = #{search_useYn}
+			    </if>
+			    <if test='search_genDivnCd != null and search_genDivnCd != ""'>
+			        AND A.GEN_DIVN_CD = #{search_genDivnCd}
+			    </if>
+			    <if test='search_ipCnt != null and search_ipCnt != ""'>
+			        AND F.IP_CNT >= #{search_ipCnt}								<!-- 금일접속아이피갯수 -->	
+			    </if>
+			     
+		</where>
+	</sql>
+	
+	<!-- 사용자 정보 조회 -->
+	<select id="selectMemberList" resultMap="memberInfoListMap" parameterType="com.doppio.management.service.MgrMemberVo">
+		/*MgrMemberMapper.selectMemberList*/
+		SELECT C.* FROM (
+			SELECT 
+				S.rowcnt as rnum
+				, COUNT(1) OVER() AS TOTAL_COUNT
+				, S.* 
+			FROM (
+				SELECT row_number() over(ORDER BY USER_NM) as rowcnt
+					,A.MEMBER_CD
+					,A.USER_ID
+					,A.USER_NM
+					,A.USER_PW
+					,A.TEL_NO
+					,A.HP_NO
+					,A.EMAIL
+					,A.MASTER_ID
+					,A.POSITION_NM
+					,A.CLASS_NM
+					,A.USER_TYPE
+					,FN_CODE_LANG_RTN('9001', A.USER_TYPE, #{langCd}) AS USER_TYPE_NAME
+					,A.PASS_CHG_YN
+					,DATE_FORMAT(A.PASS_LAST_DY, '%Y-%m-%d') AS PASS_LAST_DY 
+					,A.USE_YN
+					,DATE_FORMAT(A.REG_DT , '%Y-%m-%d %H:%i') AS REG_DT
+					,A.REG_ID
+					,DATE_FORMAT(A.MOD_DT , '%Y-%m-%d %H:%i') AS MOD_DT
+					,A.MOD_ID
+					,F.IP_CNT
+					,A.GEN_DIVN_CD
+					,FN_CODE_LANG_RTN('9007',A.GEN_DIVN_CD,#{langCd}) AS GEN_DIVN_CD_NAME
+				FROM TCM_MEMBER A
+				LEFT OUTER JOIN 
+								(SELECT T1.REG_ID, COUNT(*) AS IP_CNT
+								 FROM (SELECT REG_ID, RES_IP
+										FROM TCM_PERSONALINFO_LOG
+										WHERE ACCESS_DY = DATE_FORMAT(NOW(), '%Y%m%d')
+										AND  REG_ID != 'guest'
+										GROUP BY REG_ID, RES_IP
+								) T1
+								 GROUP BY T1.REG_ID) F ON A.MEMBER_CD = F.REG_ID
+			<include refid="selectMemberList_Where"/>
+			)S
+			)C
+			<if test='startRowNo != null and startRowNo != ""'>   
+				WHERE rnum between #{startRowNo} and #{endRowNo}
+			</if>
+		ORDER BY C.USER_ID
+	</select>		   
+	
+	
+	
+	<!-- 사용자 상세 조회 -->
+	<select id="selectMemberData" resultMap="memberInfoListMap" parameterType="com.doppio.management.service.MgrMemberVo">
+		/*MgrMemberMapper.selectMemberData*/
+		   SELECT C.* FROM (
+		   SELECT S.rowcnt as rnum, S.* FROM (
+			  SELECT row_number() over(ORDER BY USER_NM) as rowcnt
+		         ,A.MEMBER_CD
+	             ,A.USER_ID
+	             ,A.USER_NM
+	             ,A.USER_PW
+	             ,A.TEL_NO
+	             ,A.HP_NO
+	             ,A.EMAIL
+	             ,A.MASTER_ID
+	             ,B.COMP_NM
+	             ,A.POSITION_NM
+	             ,A.CLASS_NM
+	             ,A.USER_TYPE
+	             ,FN_CODE_LANG_RTN('9001', A.USER_TYPE, #{langCd}) USER_TYPE_NAME
+	             ,A.PASS_CHG_YN
+	             ,A.PASS_LAST_DY
+	             ,A.USE_YN
+	             ,DATE_FORMAT(A.REG_DT , '%Y-%m-%d %H:%i') AS REG_DT
+	             ,A.REG_ID
+	             ,DATE_FORMAT(A.MOD_DT , '%Y-%m-%d %H:%i') AS MOD_DT
+	             ,A.MOD_ID
+	             ,A.PASS_FAIL_CNT
+	             ,A.LOCK_YN
+	             ,A.FIND_PWD_CD
+	             ,A.FIND_PWD_ANSWER
+	             ,B.BMAN_NO
+	             ,A.GEN_DIVN_CD
+             FROM TCM_MEMBER A
+                 LEFT OUTER JOIN VCM_COMPINFO  B ON A.MASTER_ID = B.MASTER_ID
+		    <include refid="selectMemberList_Where"/>
+		    )S
+		    )C
+		 <if test='startRowNo != null and startRowNo != ""'>   
+        WHERE rnum between #{startRowNo} and #{endRowNo}
+        </if>
+	</select>		   
+	
+	<!-- 사용자 그룹 정보 조회 -->
+	<select id="selectMemberGroupList" resultMap="groupInfoListMap"  parameterType="String" >
+		/*MgrMemberMapper.selectMemberGroupList*/
+		 SELECT A.GROUP_ID
+           	   ,A.GROUP_NM
+           	   ,A.GROUP_SUB_NM
+               ,A.GROUP_DESC
+               ,A.GROUP_FG
+               ,CASE WHEN B.MEMBER_CD IS NULL THEN 'N' ELSE 'Y' END USER_AUTH
+           FROM TCM_GROUP A LEFT OUTER JOIN TCM_MEMBER_AUTH B 
+                         ON A.GROUP_ID = B.GROUP_ID
+                        AND B.MEMBER_CD = IFNULL(#{memberCd},'0')
+          WHERE A.USE_YN = 'Y'
+            <![CDATA[ AND A.GROUP_ID <> 'guest' ]]>
+        ORDER BY GROUP_ID
+    </select>
+	
+	
+	<!-- 그룹권한 삭제 -->
+	<delete id="deleteMemberAuth" parameterType="String">
+		/*MgrMemberMapper.deleteMemberAuth*/
+		DELETE FROM TCM_MEMBER_AUTH WHERE MEMBER_CD = #{memberCd}
+	</delete>
+
+
+    <!-- 사용자 등록/수정 -->
+    <update id="updateMergeMemberMergeData" parameterType="com.doppio.management.service.MgrMemberVo">
+        <selectKey keyProperty="memberCd" resultType="String" order="BEFORE">
+    		<if test='memberCd == null or memberCd == ""'>
+				<!-- SELECT ('S' + LPAD((MAX(SUBSTRING(MEMBER_CD,2,9)) + 1), 9, '0')) AS memberCd  FROM TCM_MEMBER -->
+				SELECT CONCAT('L',LPAD(CONCAT(NEXTVAL(SQ_MEMBERCD)),10-LENGTH('L'),'0')) AS memberCd FROM DUAL
+			</if>
+			<if test='memberCd != null and memberCd != ""'>
+				SELECT #{memberCd} AS memberCd
+			</if>
+      	</selectKey>
+	    /* MgrMemberMapper.updateMergeMemberMergeData */
+		INSERT INTO TCM_MEMBER
+            (
+	          MEMBER_CD
+	         ,USER_ID
+	         ,USER_NM
+	         ,USER_PW    
+	         ,TEL_NO
+	         ,HP_NO
+	         ,EMAIL
+	         ,MASTER_ID
+	         ,POSITION_NM
+	         ,CLASS_NM
+	         ,USER_TYPE
+	         ,PASS_CHG_YN
+	         ,PASS_LAST_DY
+	         ,USE_YN
+	         ,REG_DT
+	         ,REG_ID
+	         ,MOD_DT
+	         ,MOD_ID 
+	         ,USER_ROLES
+	         ,PASS_FAIL_CNT
+	         ,LOCK_YN   
+	         ,GEN_DIVN_CD
+            )VALUES(
+           #{memberCd}
+            ,#{userId}      
+            ,#{userNm}      
+            ,#{userPw}      
+            ,IF(#{telNo} ='' OR #{telNo} IS NULL, NULL, #{telNo})      
+            ,#{hpNo}      
+            ,#{email}      
+            ,IF(#{masterId} ='' OR #{masterId} IS NULL, NULL, #{masterId}) 
+            ,IF(#{positionNm} ='' OR #{positionNm} IS NULL, NULL, #{positionNm})
+            ,IF(#{classNm} ='' OR #{classNm} IS NULL, NULL, #{classNm})
+            ,#{userType}   
+            ,#{passChgYn}   
+            ,#{passLastDyLocale}
+            ,#{useYn}    
+          ,SYSDATE()
+            ,#{workId}   
+          ,SYSDATE()
+            ,#{workId}                      
+            ,#{userRoles}    
+            ,#{passFailCnt} 
+            ,#{lockYn}       
+            ,#{genDivnCd}
+            )
+            ON DUPLICATE KEY UPDATE
+                 USER_ID           =   #{userId}
+            ,USER_NM           =   #{userNm}      
+            <if test='userPw != null and userPw != ""'>
+               ,USER_PW           =   #{userPw}
+            </if>
+            ,TEL_NO            =   #{telNo}   
+            ,HP_NO             =   #{hpNo}
+            ,EMAIL             =   #{email}   
+            ,MASTER_ID         =   #{masterId}      
+            ,POSITION_NM       =   #{positionNm}
+            ,CLASS_NM          =   #{classNm}
+            ,USER_TYPE         =   #{userType}   
+            ,PASS_CHG_YN       =   #{passChgYn}   
+            ,PASS_LAST_DY      =    #{passLastDyLocale}
+            ,USE_YN            =   #{useYn}
+            ,MOD_DT            =   SYSDATE()
+            ,MOD_ID            =   #{workId}   
+            ,USER_ROLES        =   #{userRoles}   
+            ,PASS_FAIL_CNT     =   #{passFailCnt} 
+            ,LOCK_YN           =   #{lockYn}
+            ,GEN_DIVN_CD       =   #{genDivnCd}
+		</update>
+
+
+		<!-- 그룹등록 -->
+		<insert id="insertMemberAuth" parameterType="com.doppio.management.service.MgrMemberVo">
+			/*MgrMemberMapper.insertMemberAuth*/
+			INSERT INTO TCM_MEMBER_AUTH
+	      	SELECT A.GROUP_ID, #{memberCd}, NOW(), #{workId}
+	      	FROM TCM_GROUP A
+	      	<where>
+		      	<if test='groupIds != null and groupIds != ""'>
+				    A.GROUP_ID IN
+				    <foreach collection="groupIds" item="item" separator="," close=")" open="(">
+		     	  		#{item} 
+		     	  	</foreach>
+				</if>
+			</where>
+       </insert>
+		
+		
+	  <!-- 사용자,일자별 접속 아이피  list  -->
+      <select id="selectAccessIpList" resultMap="accessIpListMap" parameterType="com.doppio.management.service.MgrMemberVo">
+      /*MgrMemberMapper.selectAccessIpList*/
+      	    SELECT T0.REG_ID  AS ACCESS_ID
+			     , T0.RES_IP  AS ACCESS_IP
+			     , DATE_FORMAT(T0.MOD_DT, '%Y%m%d%H%i%s') AS ACCESS_DATE
+			     , T2.USER_NM
+			     , T2.USER_ID
+			  FROM 
+			  TCM_PERSONALINFO_LOG T0
+			  INNER JOIN 
+			 (SELECT REG_ID, RES_IP, MAX(LOG_IDX) LOG_IDX
+			   FROM TCM_PERSONALINFO_LOG
+			  WHERE ACCESS_DY    
+			        BETWEEN 
+			        <choose>
+			        	<when test='searchAccessDateFrLocale != null and searchAccessDateFrLocale != ""'>#{searchAccessDateFrLocale}</when>
+			        	<otherwise>CONVERT(VARCHAR, NOW(), 112)</otherwise>
+			        </choose>
+			        AND
+			        <choose>
+			        	<when test='searchAccessDateToLocale != null and searchAccessDateToLocale != ""'>#{searchAccessDateToLocale}</when>
+			        	<otherwise>CONVERT(VARCHAR, NOW(), 112)</otherwise>
+			        </choose> 
+			        
+			    AND  REG_ID = #{access_memberCd}
+			  GROUP BY REG_ID, RES_IP) T1 ON T0.LOG_IDX = T1.LOG_IDX
+			  INNER JOIN TCM_MEMBER T2 ON T1.REG_ID = T2.MEMBER_CD
+			ORDER BY   T0.MOD_DT DESC
+      </select>
+      
+      <!-- 사용자 정보- 비밀번호 변경 -->
+    <update id="updateMgrPassWord" parameterType="com.doppio.management.service.MgrMemberVo">
+    	/*MgrMemberMapper.updateMgrPassWord*/
+    	UPDATE TCM_MEMBER
+    	SET    USER_PW = #{userPw}
+    		  ,PASS_CHG_YN = #{passChgYn}
+    		  ,PASS_FAIL_CNT = #{passFailCnt}
+    		  ,LOCK_YN = #{lockYn}	
+    		  ,MOD_DT = NOW()
+    		  ,MOD_ID = #{workId}
+    	WHERE  MEMBER_CD = #{memberCd}	
+	</update>
+      
+</mapper>

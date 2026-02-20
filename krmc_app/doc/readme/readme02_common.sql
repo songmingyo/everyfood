@@ -1,0 +1,65 @@
+#### \uC785\uC810\uC0C1\uB2F4 \uC2DC\uC2A4\uD15C \uAC1C\uBC1C \uC804 \uD544\uC218 \uD655\uC778 \uC0AC\uD56D
+#### \uC791\uC5C5 \uC804 \uBC18\uB4DC\uC2DC \uD655\uC778\uD558\uC2E0\uD6C4 \uC791\uC5C5 \uBC14\uB78D\uB2C8\uB2E4.
+
+#1. \uBA54\uC18C\uB4DC\uBA85 \uD328\uD134 #####################################################################################
+1. \uBA54\uC18C\uB4DC\uBA85 \uD328\uD134
+- \uBA54\uC18C\uB4DC \uBA85\uC740 \uB2E4\uC74C\uACFC \uAC19\uC774 \uC2DC\uC791\uD558\uB3C4\uB85D \uC791\uC131
+- \uBA54\uC18C\uB4DC \uBA85 \uAE30\uC900\uC73C\uB85C \uD2B8\uB79C\uC7AD\uC158\uC774 \uC7A1\uD788\uBBC0\uB85C \uBC18\uB4DC\uC2DC \uC77C\uCE58\uD558\uB3C4\uB85D \uC791\uC131 
+\uC870\uD68C: select ~~~~
+\uB4F1\uB85D: insert ~~~~
+\uC0AD\uC81C: delete ~~~~
+\uC218\uC815: update ~~~~ (\uC624\uD0C0 \uC8FC\uC758)
+	(\uCC38\uACE0 ::transaction-context.xml)
+
+2. \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC \uBA54\uC18C\uB4DC\uBA85 \uD328\uD134
+~~~~~ExcelDown
+==> \uBC18\uB4DC\uC2DC ExcelDown\uC73C\uB85C \uB05D\uB9C8\uCCD0\uC57C \uB2E4\uC6B4\uB85C\uB4DC \uC774\uB825 \uC0DD\uC131\uB428.
+
+#2. URL \uD328\uD134 ########################################################################################
+1. URL \uD328\uD134
+- URL \uD328\uD134\uC744 \uAE30\uC900\uC73C\uB85C \uC811\uADFC \uAD8C\uD55C \uCCB4\uD06C\uB97C \uD558\uBBC0\uB85C \uC720\uC758\uD558\uC5EC \uC791\uC131
+	(\uAD8C\uD55C\uCCB4\uD06C \uCC38\uACE0					:: AccessCommonServiceImpl.java > selectFuncPermission)
+	(\uB808\uC774\uC544\uC6C3 \uCC38\uACE0					:: decorator.xml)
+	(spring-security \uAD00\uB828 \uCC38\uACE0		:: security-context.xml)
+
+2. \uC804\uCCB4 URL \uD328\uD134
+<\uAD8C\uD55C\uAD00\uB9AC\uBA54\uB274 \u5167 \uC124\uC815\uB41C \uAD8C\uD55C \uCCB4\uD06C>
+					|		\uD328\uD134														|	ex) SampleController \uD655\uC778
+-------------------------------------------------------------------------------------------------------------------
+\uBA54\uB274\uAC00 \uB4F1\uB85D\uB41C \uD654\uBA74(\uD604\uD669)	|	/{security\uCCB4\uD06C\uC6A9 \uD328\uD134}/{\uC5C5\uBB34\uAD6C\uBD84}/{\uBA54\uB274\uBA85}.do						|	/app/lnch/lnchPrcond.do
+\uBA54\uB274 \uC5C6\uB294 \uC11C\uBE0C\uD654\uBA74(\uC0C1\uC138)	|	/{security\uCCB4\uD06C\uC6A9 \uD328\uD134}/{\uC5C5\uBB34\uAD6C\uBD84}/{\uBA54\uB274\uBA85}_selDetail.do			|	/app/lnch/lnchPrcond_selDetail.do
+\uBA54\uB274 \uC5C6\uB294 \uC11C\uBE0C\uD654\uBA74(\uD31D\uC5C5)	|	/{security\uCCB4\uD06C\uC6A9 \uD328\uD134}/{\uC5C5\uBB34\uAD6C\uBD84}/{\uBA54\uB274\uBA85}_sel{\uD0ED\uAD6C\uBD84}Tab.do			|	/app/lnch/lnchPrcond_selFirstTab.do
+
+\uC870\uD68C					|	/{security\uCCB4\uD06C\uC6A9 \uD328\uD134}/{\uC5C5\uBB34\uAD6C\uBD84}/{\uBA54\uB274\uBA85}_sel~~~.json				|	/app/lnch/lnchPrcond_selPrcondList.json	
+\uB4F1\uB85D					|	/{security\uCCB4\uD06C\uC6A9 \uD328\uD134}/{\uC5C5\uBB34\uAD6C\uBD84}/{\uBA54\uB274\uBA85}_ins~~~.json				|	/app/info/lnchBscInfo_insNewCategories.json
+\uC218\uC815					|	/{security\uCCB4\uD06C\uC6A9 \uD328\uD134}/{\uC5C5\uBB34\uAD6C\uBD84}/{\uBA54\uB274\uBA85}_upd~~~.json				|	/app/info/lnchBscInfo_updNewCategories.json
+\uC0AD\uC81C					|	/{security\uCCB4\uD06C\uC6A9 \uD328\uD134}/{\uC5C5\uBB34\uAD6C\uBD84}/{\uBA54\uB274\uBA85}_del~~~.json				|	/app/info/lnchBscInfo_delCategories.json
+\uCD9C\uB825					|	/{security\uCCB4\uD06C\uC6A9 \uD328\uD134}/{\uC5C5\uBB34\uAD6C\uBD84}/{\uBA54\uB274\uBA85}_prt~~~.json				|	/app/info/lnchBscInfo_prtCategories.json
+
+******\uC0C1\uC138 \uB85C\uC9C1url \uC791\uC131\uC2DC _\uC55E\uC5D0\uBD80\uBD84\uC744 \uD604\uD669\uACFC \uB3D9\uC77C\uD558\uAC8C \uC791\uC131
+
+2-1) security \uCCB4\uD06C\uC6A9 \uD328\uD134
+	\u3131. \uB0B4\uBD80\uC0AC\uC6A9\uC790 (\uAD00\uB9AC\uC790, MD)		: /app/~~
+	\u3134. \uC678\uBD80\uC0AC\uC6A9\uC790 (\uD611\uB825\uC0AC, guest)	: /front/~~
+	
+2-2) \uC5C5\uBB34 \uAD6C\uBD84 \uD328\uD134
+	- \uD328\uD0A4\uC9C0\uBA85\uACFC \uC77C\uCE58\uD558\uB3C4\uB85D \uC791\uC131
+	
+	\u3131. \uC785\uC810		: lnch
+	\u3134. \uAE30\uC900\uC815\uBCF4	: info
+	\u3137. \uD68C\uC6D0\uC815\uBCF4	: mmbr
+
+2-3)  \uD654\uBA74/\uAE30\uB2A5 \uAD6C\uBD84 \uD328\uD134
+	\u3131. \uC77C\uBC18\uD654\uBA74		: ~~~~.do
+	\u3134. \uC708\uB3C4\uC6B0 \uD31D\uC5C5		: ~~~.po
+	\u3137. \uAE30\uB2A5			: ~~~~.json
+	
+#3. \uD30C\uC77C\uBA85 \uC9C0\uC815 \uC608\uC2DC ##################################################################################
+1. \uD30C\uC77C\uBA85 \uC9C0\uC815 \uC608\uC2DC
+plsLnchPrcond.jsp	: \uD604\uD669
+plsLnchDtl.jsp		: \uC0C1\uC138
+plsLnchCompTab.jsp	: \uC0C1\uC138 \uD0ED
+###################################################################################################
+
+
+

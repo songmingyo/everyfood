@@ -1,0 +1,40 @@
+@charset "UTF-8";
+/* CSS Document */
+@import url("layout.css");
+
+
+
+/* base */
+body { font-size:0.75em 13px; color:#666} 
+
+
+body, div, h1, h2, h3, h4, h5, h6, ul, ol, li, dl, dt, dd, p, form, fieldset, table, tr, th, td{margin:0;padding:0}
+h1, h2, h3, h4, h5, h6{font-weight:normal;font-size:100%}
+ul, ol, li{list-style:none}
+fieldset, img{border:none}
+legend {display:none}
+caption {display:none}
+/* a-style */
+a {color:#1c94c4;text-decoration:none}
+a:hover, a:active {color:#1c94c4;text-decoration:underline}
+
+/* html {overflow-x:hidden} */
+html {overflow-x:auto}
+input {font-family:Arial, inherit, sans-serif; color:#666}
+select, option {font-family:Arial, inherit, sans-serif; font-size:inherit; height:23px; color:#666}
+textarea {border:1px solid #bbb; color:#999; height:23px;}
+input[type="radio"],
+input[type="checkbox"] {width:13px; height:13px; display:inline-block}
+table {table-layout:fixed; border-collapse:collapse}
+table *{vertical-align:middle}
+table .button {vertical-align:middle; _margin-bottom:-1px}
+table td { padding:2px; font-size:13px;}
+table th { color:#555; background:#f8f6f6; font-size:12px;  }
+label.radio {padding-right:12px}
+
+
+
+label.radio {padding-right:10px;}
+label.radio .radio, label.radio .checkbox {margin-right:3px; margin-top:-3px; margin-top:-1px}
+input[type="text"] { border-radius: 3px; height:20px;  border:1px solid #bfbfbf;}
+form .validate{ margin-top: 2px;  color: #b22222;}

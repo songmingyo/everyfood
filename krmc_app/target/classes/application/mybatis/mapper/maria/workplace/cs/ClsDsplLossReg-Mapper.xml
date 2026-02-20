@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.cs.service.impl.ClsDsplLossRegMapper">
+
+	  
+	
+	<!-- 폐기/로스등록 대상품목 조회 -->
+	<select id="clsDsplLossRegPrdtList" parameterType="com.doppio.workplace.cs.service.ClsDsplLossRegVo" resultType="com.doppio.workplace.cs.service.ClsDsplLossRegVo">
+	/*ClsDsplLossRegMapper.clsDsplLossRegPrdtList*/	
+		SELECT TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD_1.DTL_NM AS ORD_UNIT
+		       , TCD_2.DTL_NM AS STRG_TYPE
+		       , TCD_3.DTL_NM AS VAT_YN_NM
+		       , TPM.QTY_BOX
+		       , TPM.COST
+		  FROM TFM_PRDT_MST AS TPM
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_1
+		           ON TCD_1.DTL_CD = TPM.ORD_UNIT 
+		          AND TCD_1.COM_CD = 'M006'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_2
+		           ON TCD_2.DTL_CD = TPM.STRG_TYPE 
+		          AND TCD_2.COM_CD = 'M001'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_3
+		           ON TCD_3.DTL_CD = TPM.VAT_YN 
+		          AND TCD_3.COM_CD = '9008'
+         <where>
+	         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+			   AND TPM.PRDT_CD = #{searchPrdtCd}
+			 </if>
+		 </where>
+
+	</select>
+	
+	<!-- 폐기/로스등록 마스터 하나의 품목만 조회 -->
+	<select id="selectClsDsplLossRegPrdtAdd" parameterType="com.doppio.workplace.cs.service.ClsDsplLossRegVo" resultType="com.doppio.workplace.cs.service.ClsDsplLossRegVo">
+	/*ClsDsplLossRegMapper.selectClsDsplLossRegPrdtAdd*/	
+		SELECT TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD_1.DTL_NM AS ORD_UNIT
+		       , TPM.COST
+		  FROM TFM_PRDT_MST AS TPM
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_1
+		           ON TCD_1.DTL_CD = TPM.ORD_UNIT 
+		          AND TCD_1.COM_CD = 'M006'
+         WHERE TPM.PRDT_CD = #{searchPrdtCd}
+
+	</select>
+	
+	<!--  폐기/로스등록 내역 조회  -->
+	<select id="selectClsDsplLossRegDetailList" parameterType="com.doppio.workplace.cs.service.ClsDsplLossRegVo" resultType="com.doppio.workplace.cs.service.ClsDsplLossRegVo">
+	/*ClsDsplLossRegMapper.selectClsDsplLossRegDetailList*/	
+	    SELECT TPD.BUY_SLIP_NO
+	           , TPD.BUY_SEQ
+		  	   , TPD.DSP_DT
+			   , TPD.PRDT_CD
+		  	   , TPM.PRDT_NM 
+		  	   , TPM.PRDT_STD
+		  	   , TCD_1.DTL_NM AS ORD_UNIT
+		  	   , TPD.DSP_QTY
+		  	   , TPD.COST
+		  	   , TPD.DSP_AMT
+		  	   , TPD.WH_CD
+    	  	   , TWM.WH_NM 
+    	  	   , TPD.REMARKS
+    	  	   , TM_1.USER_NM AS MOD_NM
+    	  	   , TM_2.USER_NM AS REG_NM
+    	  	   , TCD_2.DTL_NM AS DSP_CLASS_NM
+    	  	   
+    	  	   , TPD.DSP_AMT AS DSP_ORG_AMT
+    	  	   , TPD.REMARKS AS ORG_REMARKS
+    	  	   
+    	  	   , 'N' AS GRID_FLAG
+			   
+	      FROM TBH_PRDT_DSPL AS TPD
+    	          
+		       JOIN TFM_WH_MST AS TWM 
+		           ON TWM.WH_CD = TPD.WH_CD 
+		         
+		       JOIN TCM_MEMBER AS TM_1
+		         ON TM_1.USER_ID = TPD.REG_ID 
+		         
+		       JOIN TCM_MEMBER AS TM_2
+		         ON TM_2.USER_ID = TPD.MOD_ID
+		        
+		       JOIN TFM_PRDT_MST AS TPM 
+		         ON TPM.PRDT_CD = TPD.PRDT_CD 
+		         
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD_1
+    	         ON TCD_1.DTL_CD = TPM.ORD_UNIT
+    	        AND TCD_1.COM_CD = 'M006'
+    	        
+    	       LEFT OUTER JOIN TCM_CODE_DTL AS TCD_2
+    	         ON TCD_2.DTL_CD = TPD.DSP_CLASS
+    	        AND TCD_2.COM_CD = 'M015'
+    	       
+    	 WHERE TPD.DSP_DT = #{searchDspDt}
+    	   AND TPD.DSP_CLASS = #{searchDspClass}
+    	   AND TPD.USE_YN = 'Y'
+    	   AND TPD.DSP_QTY != 0
+    	 ORDER BY TPD.BUY_SLIP_NO
+		          , TPD.BUY_SEQ
+			  	  , TPD.DSP_DT
+				  , TPD.PRDT_CD
+	</select>
+	
+	<select id="selectClsDsplLossRegSlipNo" parameterType="com.doppio.workplace.cs.service.ClsDsplLossRegVo" resultType="String">
+	/*ClsDsplLossRegMapper.selectClsDsplLossRegSlipNo*/
+		SELECT MAX(BUY_SLIP_NO)
+		  FROM TBH_PRDT_DSPL
+		 WHERE DSP_DT = #{dspDt}
+	</select>
+	
+	
+	<!--  전표번호 생성 및 조회 	-->
+     <insert id="insertDsplLossSlipNo" parameterType="com.doppio.workplace.cs.service.ClsDsplLossRegVo">
+     /*ClsDsplLossRegMapper.insertDsplLossSlipNo*/
+	<selectKey keyProperty="buySlipNo" resultType="String" order="BEFORE">
+		SELECT CONCAT(#{dspDt}, '-', LPAD(CAST(RIGHT(IFNULL(MAX(BUY_SLIP_NO),'0000'),4) AS DECIMAL)+1, 4, 0)) AS BUY_SLIP_NO
+          FROM TBH_DAY_SLIPNO
+         WHERE BUY_SLIP_DT = #{dspDt}
+	</selectKey>
+	    INSERT INTO KRMC.TBH_DAY_SLIPNO
+            (BUY_SLIP_DT, BUY_SLIP_NO
+             , REG_DT)
+        VALUES
+            (SUBSTRING(#{buySlipNo},1,8), #{buySlipNo}
+			 , NOW()
+            )
+	</insert>
+	   
+	<!-- 폐기/로스등록 데이터 저장   -->
+	<insert id="insertDsplLossDlv" parameterType="com.doppio.workplace.cs.service.ClsDsplLossRegVo">
+	/*ClsDsplLossRegMapper.insertDsplLossDlv*/
+	<selectKey resultType="string" keyProperty="buySeq" order="BEFORE">
+	 	SELECT IFNULL( MAX(BUY_SEQ),0)+1 AS BUY_SEQ 
+	 	  FROM TBH_PRDT_DSPL
+	 	 WHERE BUY_SLIP_NO = #{buySlipNo} 
+	 </selectKey>
+		INSERT INTO TBH_PRDT_DSPL
+	    	(BUY_SLIP_NO, BUY_SEQ, DSP_DT, PRDT_CD, DSP_CLASS, WH_CD
+             , DSP_QTY, COST, DSP_AMT, REMARKS
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT
+			)
+		VALUES
+			(#{buySlipNo}, #{buySeq}, #{dspDt}, #{prdtCd}, #{dspClass}, #{whCd}
+			 , #{dspQty}, #{cost}, #{dspAmt}, #{remarks}
+			 , #{useYn}, #{workId}, NOW(), #{workId}, NOW()
+			)
+	</insert>		
+		
+		
+	<!-- 폐기/로스등록 데이터 수정 처리    -->
+	<update id="updateDsplLossDlv" parameterType="com.doppio.workplace.cs.service.ClsDsplLossRegVo">
+	/*ClsDsplLossRegMapper.updateDsplLossDlv*/
+		UPDATE TBH_PRDT_DSPL
+		   SET DSP_QTY 	  = #{dspQty}
+		       , COST     = #{cost}
+			   , DSP_AMT  = #{dspAmt}
+			   , REMARKS  = #{remarks}
+			   , USE_YN   = #{useYn}
+			   , MOD_ID   = #{workId}
+			   , MOD_DT   = NOW() 
+	     WHERE BUY_SLIP_NO  = #{buySlipNo}
+	       AND BUY_SEQ    = #{buySeq}
+	</update>
+
+	
+</mapper>

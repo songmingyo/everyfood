@@ -1,0 +1,709 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.SalSalesYearOnYearDtlListMapper">
+	
+	<!-- 전년대비매출처별매출현황(상세) 조회 -->
+	<select id="selectSalSalesYearOnYearDtlList" parameterType="com.doppio.workplace.as.service.SalSalesYearOnYearDtlListVo" resultType="com.doppio.workplace.as.service.SalSalesYearOnYearDtlListVo">
+	/*SalSalesYearOnYearDtlListMapper.selectSalSalesYearOnYearDtlList*/	
+        WITH SALES_THIS AS (
+            SELECT LEFT(TMST.YEAR_MON,4) AS YEAR
+                   , SUBSTRING(TMST.YEAR_MON,5,2) AS MON
+                   , VSHC.HQ_CD AS SALES_CD
+                   , TSAI.SALES_NM
+                   , TCD.DTL_NM AS SALES_CLASS_NM
+                   , TSPM.SALES_PR_NM
+                   , SUM(TMST.PURE_AMT) SALES_AMT
+              FROM TMH_MON_SALES_TOT AS TMST
+                   
+                   JOIN
+                       (SELECT DISTINCT CASE WHEN #{searchSalesHqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                               , SALES_CD
+                          FROM V_SALES_HQ_CD
+                         <where>
+                         <if test='searchSalesHqClass != null and searchSalesHqClass != ""'> 
+                           AND HQ_CLASS = #{searchSalesHqClass}
+                         </if>
+                         <if test='searchSalesCd != null and searchSalesCd != ""'> 
+                           AND (HQ_CD = #{searchSalesCd} OR SALES_CD = #{searchSalesCd})
+                         </if>
+                         </where>
+                       ) AS VSHC
+                       ON VSHC.SALES_CD = TMST.SALES_CD
+	               
+	               JOIN TFM_SALES_ADD_INFO AS TSAI
+	                   ON TSAI.SALES_CD = VSHC.HQ_CD
+	               
+	               JOIN TFM_SALES_PR_MST AS TSPM
+                       ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+                       
+                   LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                       ON TCD.DTL_CD = TSAI.SALES_CLASS
+                      AND TCD.COM_CD = 'M013'
+                   
+             WHERE TMST.YEAR_MON BETWEEN #{searchYearMnSt} AND #{searchYearMnEt}
+
+		     <if test='salesClass != null and salesClass != ""'>
+	           AND TSAI.SALES_CLASS = #{salesClass}
+             </if>
+             
+             <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+               AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+             </if>
+             
+             GROUP BY LEFT(TMST.YEAR_MON,4)
+                      , SUBSTRING(TMST.YEAR_MON,5,2)
+                      , VSHC.HQ_CD
+                      , TSAI.SALES_NM
+                      , TCD.DTL_NM
+                      , TSPM.SALES_PR_NM
+        ), SALES_PREV AS (
+            SELECT LEFT(TMST.YEAR_MON,4) AS YEAR
+                   , SUBSTRING(TMST.YEAR_MON,5,2) AS MON
+                   , VSHC.HQ_CD AS SALES_CD
+                   , TSAI.SALES_NM
+                   , TCD.DTL_NM AS SALES_CLASS_NM
+                   , TSPM.SALES_PR_NM
+                   , SUM(TMST.PURE_AMT) SALES_AMT
+              FROM TMH_MON_SALES_TOT AS TMST
+                   
+                   JOIN
+                       (SELECT DISTINCT CASE WHEN #{searchSalesHqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                               , SALES_CD
+                          FROM V_SALES_HQ_CD
+                         <where>
+                         <if test='searchSalesHqClass != null and searchSalesHqClass != ""'> 
+                           AND HQ_CLASS = #{searchSalesHqClass}
+                         </if>
+                         <if test='searchSalesCd != null and searchSalesCd != ""'> 
+                           AND (HQ_CD = #{searchSalesCd} OR SALES_CD = #{searchSalesCd})
+                         </if>
+                         </where>
+                       ) AS VSHC
+                       ON VSHC.SALES_CD = TMST.SALES_CD
+	               
+	               JOIN TFM_SALES_ADD_INFO AS TSAI
+	                   ON TSAI.SALES_CD = VSHC.HQ_CD
+	               
+	               JOIN TFM_SALES_PR_MST AS TSPM
+                       ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+                       
+                   LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                       ON TCD.DTL_CD = TSAI.SALES_CLASS
+                      AND TCD.COM_CD = 'M013'
+                      
+            WHERE TMST.YEAR_MON BETWEEN DATE_FORMAT(DATE_ADD(CONCAT(#{searchYearMnSt},'01'), INTERVAL -12 month),'%Y%m') AND DATE_FORMAT(DATE_ADD(CONCAT(#{searchYearMnEt},'01'), INTERVAL -12 month),'%Y%m')
+
+             <if test='salesClass != null and salesClass != ""'>
+	           AND TSAI.SALES_CLASS = #{salesClass}
+             </if>
+             <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+               AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+             </if>
+             
+             GROUP BY LEFT(TMST.YEAR_MON,4)
+                      , SUBSTRING(TMST.YEAR_MON,5,2)
+                      , VSHC.HQ_CD
+                      , TSAI.SALES_NM
+                      , TCD.DTL_NM
+                      , TSPM.SALES_PR_NM
+        )
+        SELECT A.YEAR_NM
+               , CASE WHEN A.SALES_CLASS_NM = 'B01' THEN '종합' ELSE A.SALES_CLASS_NM END  AS SALES_CLASS_NM
+               , A.SALES_NM
+               , SUM(IFNULL(A.MON_1,0)) AS MON_1
+               , SUM(IFNULL(A.MON_2,0)) AS MON_2
+               , SUM(IFNULL(A.MON_3,0)) AS MON_3
+               , SUM(IFNULL(A.MON_4,0)) AS MON_4
+               , SUM(IFNULL(A.MON_5,0)) AS MON_5
+               , SUM(IFNULL(A.MON_6,0)) AS MON_6
+               , SUM(IFNULL(A.MON_7,0)) AS MON_7
+               , SUM(IFNULL(A.MON_8,0)) AS MON_8
+               , SUM(IFNULL(A.MON_9,0)) AS MON_9
+               , SUM(IFNULL(A.MON_10,0)) AS MON_10
+               , SUM(IFNULL(A.MON_11,0)) AS MON_11
+               , SUM(IFNULL(A.MON_12,0)) AS MON_12
+               , SUM(IFNULL(A.AMT,0)) AS MON_TOT
+               , IFNULL(A.SALES_PR_NM,'') AS SALES_PR_NM
+          FROM (			
+	                SELECT  '1' AS SORT
+	                        , CONCAT(A.YEAR,'년') AS YEAR_NM
+	                        , '00000' 	AS SALES_CD
+	                        , '총합계' 	AS SALES_NM
+	                        , 'B01' 	AS SALES_CLASS_NM
+	                        , '종합'		AS SALES_PR_NM
+	                        , SUM(CASE WHEN A.MON='01' THEN IFNULL(A.SALES_AMT,0) END) AS MON_1
+	                        , SUM(CASE WHEN A.MON='02' THEN IFNULL(A.SALES_AMT,0) END) AS MON_2
+	                        , SUM(CASE WHEN A.MON='03' THEN IFNULL(A.SALES_AMT,0) END) AS MON_3
+	                        , SUM(CASE WHEN A.MON='04' THEN IFNULL(A.SALES_AMT,0) END) AS MON_4
+	                        , SUM(CASE WHEN A.MON='05' THEN IFNULL(A.SALES_AMT,0) END) AS MON_5
+	                        , SUM(CASE WHEN A.MON='06' THEN IFNULL(A.SALES_AMT,0) END) AS MON_6
+	                        , SUM(CASE WHEN A.MON='07' THEN IFNULL(A.SALES_AMT,0) END) AS MON_7
+	                        , SUM(CASE WHEN A.MON='08' THEN IFNULL(A.SALES_AMT,0) END) AS MON_8
+	                        , SUM(CASE WHEN A.MON='09' THEN IFNULL(A.SALES_AMT,0) END) AS MON_9
+	                        , SUM(CASE WHEN A.MON='10' THEN IFNULL(A.SALES_AMT,0) END) AS MON_10
+	                        , SUM(CASE WHEN A.MON='11' THEN IFNULL(A.SALES_AMT,0) END) AS MON_11
+	                        , SUM(CASE WHEN A.MON='12' THEN IFNULL(A.SALES_AMT,0) END) AS MON_12
+	                        , SUM(IFNULL(A.SALES_AMT,0)) AS AMT
+	                  FROM  SALES_PREV A
+	                 GROUP BY 1	
+	                 
+	                 
+	                UNION ALL
+	                SELECT  '2' AS SORT
+	                        , CONCAT(A.YEAR,'년') AS YEAR_NM
+	                        , '00000' 	AS SALES_CD
+	                        , '총합계' 	AS SALES_NM
+	                        , 'B01' 	AS SALES_CLASS_NM
+	                        , '종합'		AS SALES_PR_NM
+	                        , SUM(CASE WHEN A.MON='01' THEN IFNULL(A.SALES_AMT,0) END) AS MON_1
+	                        , SUM(CASE WHEN A.MON='02' THEN IFNULL(A.SALES_AMT,0) END) AS MON_2
+	                        , SUM(CASE WHEN A.MON='03' THEN IFNULL(A.SALES_AMT,0) END) AS MON_3
+	                        , SUM(CASE WHEN A.MON='04' THEN IFNULL(A.SALES_AMT,0) END) AS MON_4
+	                        , SUM(CASE WHEN A.MON='05' THEN IFNULL(A.SALES_AMT,0) END) AS MON_5
+	                        , SUM(CASE WHEN A.MON='06' THEN IFNULL(A.SALES_AMT,0) END) AS MON_6
+	                        , SUM(CASE WHEN A.MON='07' THEN IFNULL(A.SALES_AMT,0) END) AS MON_7
+	                        , SUM(CASE WHEN A.MON='08' THEN IFNULL(A.SALES_AMT,0) END) AS MON_8
+	                        , SUM(CASE WHEN A.MON='09' THEN IFNULL(A.SALES_AMT,0) END) AS MON_9
+	                        , SUM(CASE WHEN A.MON='10' THEN IFNULL(A.SALES_AMT,0) END) AS MON_10
+	                        , SUM(CASE WHEN A.MON='11' THEN IFNULL(A.SALES_AMT,0) END) AS MON_11
+	                        , SUM(CASE WHEN A.MON='12' THEN IFNULL(A.SALES_AMT,0) END) AS MON_12
+	                        , SUM(IFNULL(A.SALES_AMT,0)) AS AMT
+	                  FROM  SALES_THIS A
+	                 GROUP BY 1	
+	                 
+	                 
+	                  UNION ALL
+                SELECT  '3' AS SORT
+                        , '전년대비차액' AS YEAR_NM
+                        , '00000' 	as SALES_CD
+                        , '총합계'  	as SALES_NM
+                        , 'B01'   	as SALES_CLASS_NM
+                        , '종합' 		as SALES_PR_NM
+                        , SUM(IFNULL(A.THIS_MON_1 ,0)) - SUM(IFNULL(A.PREV_MON_1 ,0)) AS MON_1
+                        , SUM(IFNULL(A.THIS_MON_2 ,0)) - SUM(IFNULL(A.PREV_MON_2 ,0)) AS MON_2
+                        , SUM(IFNULL(A.THIS_MON_3 ,0)) - SUM(IFNULL(A.PREV_MON_3 ,0)) AS MON_3
+                        , SUM(IFNULL(A.THIS_MON_4 ,0)) - SUM(IFNULL(A.PREV_MON_4 ,0)) AS MON_4
+                        , SUM(IFNULL(A.THIS_MON_5 ,0)) - SUM(IFNULL(A.PREV_MON_5 ,0)) AS MON_5
+                        , SUM(IFNULL(A.THIS_MON_6 ,0)) - SUM(IFNULL(A.PREV_MON_6 ,0)) AS MON_6
+                        , SUM(IFNULL(A.THIS_MON_7 ,0)) - SUM(IFNULL(A.PREV_MON_7 ,0)) AS MON_7
+                        , SUM(IFNULL(A.THIS_MON_8 ,0)) - SUM(IFNULL(A.PREV_MON_8 ,0)) AS MON_8
+                        , SUM(IFNULL(A.THIS_MON_9 ,0)) - SUM(IFNULL(A.PREV_MON_9 ,0)) AS MON_9
+                        , SUM(IFNULL(A.THIS_MON_10,0)) - SUM(IFNULL(A.PREV_MON_10,0)) AS MON_10
+                        , SUM(IFNULL(A.THIS_MON_11,0)) - SUM(IFNULL(A.PREV_MON_11,0)) AS MON_11
+                        , SUM(IFNULL(A.THIS_MON_12,0)) - SUM(IFNULL(A.PREV_MON_12,0)) AS MON_12
+                        , SUM(IFNULL(A.THIS_AMT,0)) - SUM(IFNULL(A.PREV_AMT,0)) AS AMT
+                  FROM  (SELECT A.SALES_CD
+                                , A.SALES_NM
+                                , A.SALES_PR_NM
+                                , A.SALES_CLASS_NM
+                                , SUM(CASE WHEN A.MON='01' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_1
+                                , SUM(CASE WHEN A.MON='02' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_2
+                                , SUM(CASE WHEN A.MON='03' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_3
+                                , SUM(CASE WHEN A.MON='04' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_4
+                                , SUM(CASE WHEN A.MON='05' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_5
+                                , SUM(CASE WHEN A.MON='06' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_6
+                                , SUM(CASE WHEN A.MON='07' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_7
+                                , SUM(CASE WHEN A.MON='08' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_8
+                                , SUM(CASE WHEN A.MON='09' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_9
+                                , SUM(CASE WHEN A.MON='10' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_10
+                                , SUM(CASE WHEN A.MON='11' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_11
+                                , SUM(CASE WHEN A.MON='12' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_12
+                                , SUM(IFNULL(A.SALES_AMT,0)) AS THIS_AMT
+                                , 0 AS PREV_MON_1
+                                , 0 AS PREV_MON_2
+                                , 0 AS PREV_MON_3
+                                , 0 AS PREV_MON_4
+                                , 0 AS PREV_MON_5
+                                , 0 AS PREV_MON_6
+                                , 0 AS PREV_MON_7
+                                , 0 AS PREV_MON_8
+                                , 0 AS PREV_MON_9
+                                , 0 AS PREV_MON_10
+                                , 0 AS PREV_MON_11
+                                , 0 AS PREV_MON_12
+                                , 0 AS PREV_AMT
+                          FROM  SALES_THIS A
+                         GROUP BY A.SALES_CD
+                                  , A.SALES_NM
+                                  , A.SALES_PR_NM
+                                  , A.SALES_CLASS_NM
+                       UNION ALL
+                        SELECT A.SALES_CD
+                                , A.SALES_NM
+                                , A.SALES_PR_NM
+                                , A.SALES_CLASS_NM
+                                , 0 AS THIS_MON_1
+                                , 0 AS THIS_MON_2
+                                , 0 AS THIS_MON_3
+                                , 0 AS THIS_MON_4
+                                , 0 AS THIS_MON_5
+                                , 0 AS THIS_MON_6
+                                , 0 AS THIS_MON_7
+                                , 0 AS THIS_MON_8
+                                , 0 AS THIS_MON_9
+                                , 0 AS THIS_MON_10
+                                , 0 AS THIS_MON_11
+                                , 0 AS THIS_MON_12
+                                , 0 AS THIS_AMT
+                                , SUM(CASE WHEN A.MON='01' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_1
+                                , SUM(CASE WHEN A.MON='02' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_2
+                                , SUM(CASE WHEN A.MON='03' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_3
+                                , SUM(CASE WHEN A.MON='04' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_4
+                                , SUM(CASE WHEN A.MON='05' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_5
+                                , SUM(CASE WHEN A.MON='06' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_6
+                                , SUM(CASE WHEN A.MON='07' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_7
+                                , SUM(CASE WHEN A.MON='08' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_8
+                                , SUM(CASE WHEN A.MON='09' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_9
+                                , SUM(CASE WHEN A.MON='10' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_10
+                                , SUM(CASE WHEN A.MON='11' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_11
+                                , SUM(CASE WHEN A.MON='12' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_12
+                                , SUM(IFNULL(A.SALES_AMT,0)) AS PREV_AMT
+                          FROM  SALES_PREV A
+                         GROUP BY A.SALES_CD
+                                  , A.SALES_NM
+                                  , A.SALES_PR_NM
+                                  , A.SALES_CLASS_NM
+                       ) AS A
+                 GROUP BY A.SALES_CD
+                          , A.SALES_NM
+                          , A.SALES_CLASS_NM
+                          , A.SALES_PR_NM	
+			
+					UNION ALL
+					SELECT  '4' AS SORT
+                        , CONCAT(A.YEAR,'년') AS YEAR_NM
+                        , A.SALES_CD
+                        , A.SALES_NM
+                        , A.SALES_CLASS_NM
+                        , A.SALES_PR_NM
+                        , SUM(CASE WHEN A.MON='01' THEN IFNULL(A.SALES_AMT,0) END) AS MON_1
+                        , SUM(CASE WHEN A.MON='02' THEN IFNULL(A.SALES_AMT,0) END) AS MON_2
+                        , SUM(CASE WHEN A.MON='03' THEN IFNULL(A.SALES_AMT,0) END) AS MON_3
+                        , SUM(CASE WHEN A.MON='04' THEN IFNULL(A.SALES_AMT,0) END) AS MON_4
+                        , SUM(CASE WHEN A.MON='05' THEN IFNULL(A.SALES_AMT,0) END) AS MON_5
+                        , SUM(CASE WHEN A.MON='06' THEN IFNULL(A.SALES_AMT,0) END) AS MON_6
+                        , SUM(CASE WHEN A.MON='07' THEN IFNULL(A.SALES_AMT,0) END) AS MON_7
+                        , SUM(CASE WHEN A.MON='08' THEN IFNULL(A.SALES_AMT,0) END) AS MON_8
+                        , SUM(CASE WHEN A.MON='09' THEN IFNULL(A.SALES_AMT,0) END) AS MON_9
+                        , SUM(CASE WHEN A.MON='10' THEN IFNULL(A.SALES_AMT,0) END) AS MON_10
+                        , SUM(CASE WHEN A.MON='11' THEN IFNULL(A.SALES_AMT,0) END) AS MON_11
+                        , SUM(CASE WHEN A.MON='12' THEN IFNULL(A.SALES_AMT,0) END) AS MON_12
+                        , SUM(IFNULL(A.SALES_AMT,0)) AS AMT
+                  FROM  SALES_PREV A
+                 GROUP BY CONCAT(A.YEAR,'년')
+                          , A.SALES_CD
+                          , A.SALES_NM
+                          , A.SALES_CLASS_NM
+                          , A.SALES_PR_NM
+              UNION ALL
+                SELECT  '5' AS SORT
+                        , CONCAT(A.YEAR,'년') AS YEAR_NM
+                        , A.SALES_CD
+                        , A.SALES_NM
+                        , A.SALES_CLASS_NM
+                        , A.SALES_PR_NM
+                        , SUM(CASE WHEN A.MON='01' THEN IFNULL(A.SALES_AMT,0) END) AS MON_1
+                        , SUM(CASE WHEN A.MON='02' THEN IFNULL(A.SALES_AMT,0) END) AS MON_2
+                        , SUM(CASE WHEN A.MON='03' THEN IFNULL(A.SALES_AMT,0) END) AS MON_3
+                        , SUM(CASE WHEN A.MON='04' THEN IFNULL(A.SALES_AMT,0) END) AS MON_4
+                        , SUM(CASE WHEN A.MON='05' THEN IFNULL(A.SALES_AMT,0) END) AS MON_5
+                        , SUM(CASE WHEN A.MON='06' THEN IFNULL(A.SALES_AMT,0) END) AS MON_6
+                        , SUM(CASE WHEN A.MON='07' THEN IFNULL(A.SALES_AMT,0) END) AS MON_7
+                        , SUM(CASE WHEN A.MON='08' THEN IFNULL(A.SALES_AMT,0) END) AS MON_8
+                        , SUM(CASE WHEN A.MON='09' THEN IFNULL(A.SALES_AMT,0) END) AS MON_9
+                        , SUM(CASE WHEN A.MON='10' THEN IFNULL(A.SALES_AMT,0) END) AS MON_10
+                        , SUM(CASE WHEN A.MON='11' THEN IFNULL(A.SALES_AMT,0) END) AS MON_11
+                        , SUM(CASE WHEN A.MON='12' THEN IFNULL(A.SALES_AMT,0) END) AS MON_12
+                        , SUM(IFNULL(A.SALES_AMT,0)) AS AMT
+                  FROM  SALES_THIS A
+                 GROUP BY CONCAT(A.YEAR,'년')
+                          , A.SALES_CD
+                          , A.SALES_NM
+                          , A.SALES_CLASS_NM
+                          , A.SALES_PR_NM
+             UNION ALL
+                SELECT  '6' AS SORT
+                        , '전년대비차액' AS YEAR_NM
+                        , A.SALES_CD
+                        , A.SALES_NM
+                        , A.SALES_CLASS_NM
+                        , A.SALES_PR_NM
+                        , SUM(IFNULL(A.THIS_MON_1 ,0)) - SUM(IFNULL(A.PREV_MON_1 ,0)) AS MON_1
+                        , SUM(IFNULL(A.THIS_MON_2 ,0)) - SUM(IFNULL(A.PREV_MON_2 ,0)) AS MON_2
+                        , SUM(IFNULL(A.THIS_MON_3 ,0)) - SUM(IFNULL(A.PREV_MON_3 ,0)) AS MON_3
+                        , SUM(IFNULL(A.THIS_MON_4 ,0)) - SUM(IFNULL(A.PREV_MON_4 ,0)) AS MON_4
+                        , SUM(IFNULL(A.THIS_MON_5 ,0)) - SUM(IFNULL(A.PREV_MON_5 ,0)) AS MON_5
+                        , SUM(IFNULL(A.THIS_MON_6 ,0)) - SUM(IFNULL(A.PREV_MON_6 ,0)) AS MON_6
+                        , SUM(IFNULL(A.THIS_MON_7 ,0)) - SUM(IFNULL(A.PREV_MON_7 ,0)) AS MON_7
+                        , SUM(IFNULL(A.THIS_MON_8 ,0)) - SUM(IFNULL(A.PREV_MON_8 ,0)) AS MON_8
+                        , SUM(IFNULL(A.THIS_MON_9 ,0)) - SUM(IFNULL(A.PREV_MON_9 ,0)) AS MON_9
+                        , SUM(IFNULL(A.THIS_MON_10,0)) - SUM(IFNULL(A.PREV_MON_10,0)) AS MON_10
+                        , SUM(IFNULL(A.THIS_MON_11,0)) - SUM(IFNULL(A.PREV_MON_11,0)) AS MON_11
+                        , SUM(IFNULL(A.THIS_MON_12,0)) - SUM(IFNULL(A.PREV_MON_12,0)) AS MON_12
+                        , SUM(IFNULL(A.THIS_AMT,0)) - SUM(IFNULL(A.PREV_AMT,0)) AS AMT
+                  FROM  (SELECT A.SALES_CD
+                                , A.SALES_NM
+                                , A.SALES_PR_NM
+                                , A.SALES_CLASS_NM
+                                , SUM(CASE WHEN A.MON='01' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_1
+                                , SUM(CASE WHEN A.MON='02' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_2
+                                , SUM(CASE WHEN A.MON='03' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_3
+                                , SUM(CASE WHEN A.MON='04' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_4
+                                , SUM(CASE WHEN A.MON='05' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_5
+                                , SUM(CASE WHEN A.MON='06' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_6
+                                , SUM(CASE WHEN A.MON='07' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_7
+                                , SUM(CASE WHEN A.MON='08' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_8
+                                , SUM(CASE WHEN A.MON='09' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_9
+                                , SUM(CASE WHEN A.MON='10' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_10
+                                , SUM(CASE WHEN A.MON='11' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_11
+                                , SUM(CASE WHEN A.MON='12' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_12
+                                , SUM(IFNULL(A.SALES_AMT,0)) AS THIS_AMT
+                                , 0 AS PREV_MON_1
+                                , 0 AS PREV_MON_2
+                                , 0 AS PREV_MON_3
+                                , 0 AS PREV_MON_4
+                                , 0 AS PREV_MON_5
+                                , 0 AS PREV_MON_6
+                                , 0 AS PREV_MON_7
+                                , 0 AS PREV_MON_8
+                                , 0 AS PREV_MON_9
+                                , 0 AS PREV_MON_10
+                                , 0 AS PREV_MON_11
+                                , 0 AS PREV_MON_12
+                                , 0 AS PREV_AMT
+                          FROM  SALES_THIS A
+                         GROUP BY A.SALES_CD
+                                  , A.SALES_NM
+                                  , A.SALES_PR_NM
+                                  , A.SALES_CLASS_NM
+                       UNION ALL
+                        SELECT A.SALES_CD
+                                , A.SALES_NM
+                                , A.SALES_PR_NM
+                                , A.SALES_CLASS_NM
+                                , 0 AS THIS_MON_1
+                                , 0 AS THIS_MON_2
+                                , 0 AS THIS_MON_3
+                                , 0 AS THIS_MON_4
+                                , 0 AS THIS_MON_5
+                                , 0 AS THIS_MON_6
+                                , 0 AS THIS_MON_7
+                                , 0 AS THIS_MON_8
+                                , 0 AS THIS_MON_9
+                                , 0 AS THIS_MON_10
+                                , 0 AS THIS_MON_11
+                                , 0 AS THIS_MON_12
+                                , 0 AS THIS_AMT
+                                , SUM(CASE WHEN A.MON='01' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_1
+                                , SUM(CASE WHEN A.MON='02' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_2
+                                , SUM(CASE WHEN A.MON='03' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_3
+                                , SUM(CASE WHEN A.MON='04' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_4
+                                , SUM(CASE WHEN A.MON='05' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_5
+                                , SUM(CASE WHEN A.MON='06' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_6
+                                , SUM(CASE WHEN A.MON='07' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_7
+                                , SUM(CASE WHEN A.MON='08' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_8
+                                , SUM(CASE WHEN A.MON='09' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_9
+                                , SUM(CASE WHEN A.MON='10' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_10
+                                , SUM(CASE WHEN A.MON='11' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_11
+                                , SUM(CASE WHEN A.MON='12' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_12
+                                , SUM(IFNULL(A.SALES_AMT,0)) AS PREV_AMT
+                          FROM  SALES_PREV A
+                         GROUP BY A.SALES_CD
+                                  , A.SALES_NM
+                                  , A.SALES_PR_NM
+                                  , A.SALES_CLASS_NM
+                       ) AS A
+                 GROUP BY A.SALES_CD
+                          , A.SALES_NM
+                          , A.SALES_CLASS_NM
+                          , A.SALES_PR_NM
+               ) A
+         GROUP BY A.YEAR_NM
+                  , A.SALES_CLASS_NM
+                  , A.SALES_NM
+                  , A.SALES_PR_NM
+         ORDER BY A.SALES_CD, A.SORT
+	</select>
+	
+
+
+	
+	<!-- 전년대비매출처별매출현황(상세) 엑셀 다운로드 -->
+	<select id="selectSalSalesYearOnYearDtlListExcelDown" parameterType="com.doppio.workplace.as.service.SalSalesYearOnYearDtlListVo" resultType="java.util.HashMap">
+	/*SalSalesYearOnYearDtlListMapper.selectSalSalesYearOnYearDtlListExcelDown*/	
+        WITH SALES_THIS AS (
+            SELECT LEFT(TMST.YEAR_MON,4) AS YEAR
+                   , SUBSTRING(TMST.YEAR_MON,5,2) AS MON
+                   , VSHC.HQ_CD AS SALES_CD
+                   , TSAI.SALES_NM
+                   , TCD.DTL_NM AS SALES_CLASS_NM
+                   , TSPM.SALES_PR_NM
+                   , SUM(TMST.PURE_AMT) SALES_AMT
+              FROM TMH_MON_SALES_TOT AS TMST
+                   
+                   JOIN
+                       (SELECT DISTINCT CASE WHEN #{searchSalesHqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                               , SALES_CD
+                          FROM V_SALES_HQ_CD
+                         <where>
+                         <if test='searchSalesHqClass != null and searchSalesHqClass != ""'> 
+                           AND HQ_CLASS = #{searchSalesHqClass}
+                         </if>
+                         <if test='searchSalesCd != null and searchSalesCd != ""'> 
+                           AND (HQ_CD = #{searchSalesCd} OR SALES_CD = #{searchSalesCd})
+                         </if>
+                         </where>
+                       ) AS VSHC
+                       ON VSHC.SALES_CD = TMST.SALES_CD
+	               
+	               JOIN TFM_SALES_ADD_INFO AS TSAI
+	                   ON TSAI.SALES_CD = VSHC.HQ_CD
+	               
+	               JOIN TFM_SALES_PR_MST AS TSPM
+                       ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+                       
+                   LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                       ON TCD.DTL_CD = TSAI.SALES_CLASS
+                      AND TCD.COM_CD = 'M013'
+                   
+             WHERE TMST.YEAR_MON BETWEEN REPLACE(#{searchYearMnSt},'-','') AND REPLACE(#{searchYearMnEt},'-','')
+
+		     <if test='salesClass != null and salesClass != ""'>
+	           AND TSAI.SALES_CLASS = #{salesClass}
+             </if>
+             
+             <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+               AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+             </if>
+             
+             GROUP BY LEFT(TMST.YEAR_MON,4)
+                      , SUBSTRING(TMST.YEAR_MON,5,2)
+                      , VSHC.HQ_CD
+                      , TSAI.SALES_NM
+                      , TCD.DTL_NM
+                      , TSPM.SALES_PR_NM
+        ), SALES_PREV AS (
+            SELECT LEFT(TMST.YEAR_MON,4) AS YEAR
+                   , SUBSTRING(TMST.YEAR_MON,5,2) AS MON
+                   , VSHC.HQ_CD AS SALES_CD
+                   , TSAI.SALES_NM
+                   , TCD.DTL_NM AS SALES_CLASS_NM
+                   , TSPM.SALES_PR_NM
+                   , SUM(TMST.PURE_AMT) SALES_AMT
+              FROM TMH_MON_SALES_TOT AS TMST
+                   
+                   JOIN
+                       (SELECT DISTINCT CASE WHEN #{searchSalesHqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                               , SALES_CD
+                          FROM V_SALES_HQ_CD
+                         <where>
+                         <if test='searchSalesHqClass != null and searchSalesHqClass != ""'> 
+                           AND HQ_CLASS = #{searchSalesHqClass}
+                         </if>
+                         <if test='searchSalesCd != null and searchSalesCd != ""'> 
+                           AND (HQ_CD = #{searchSalesCd} OR SALES_CD = #{searchSalesCd})
+                         </if>
+                         </where>
+                       ) AS VSHC
+                       ON VSHC.SALES_CD = TMST.SALES_CD
+	               
+	               JOIN TFM_SALES_ADD_INFO AS TSAI
+	                   ON TSAI.SALES_CD = VSHC.HQ_CD
+	               
+	               JOIN TFM_SALES_PR_MST AS TSPM
+                       ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+                       
+                   LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                       ON TCD.DTL_CD = TSAI.SALES_CLASS
+                      AND TCD.COM_CD = 'M013'
+                      
+            WHERE TMST.YEAR_MON BETWEEN DATE_FORMAT(DATE_ADD(CONCAT(REPLACE(#{searchYearMnSt},'-',''),'01'), INTERVAL -12 month),'%Y%m') AND DATE_FORMAT(DATE_ADD(CONCAT(REPLACE(#{searchYearMnEt},'-',''),'01'), INTERVAL -12 month),'%Y%m')
+
+             <if test='salesClass != null and salesClass != ""'>
+	           AND TSAI.SALES_CLASS = #{salesClass}
+             </if>
+             <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+               AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+             </if>
+             
+             GROUP BY LEFT(TMST.YEAR_MON,4)
+                      , SUBSTRING(TMST.YEAR_MON,5,2)
+                      , VSHC.HQ_CD
+                      , TSAI.SALES_NM
+                      , TCD.DTL_NM
+                      , TSPM.SALES_PR_NM
+        )
+        SELECT A.YEAR_NM
+               , A.SALES_CLASS_NM
+               , A.SALES_NM
+               , SUM(IFNULL(A.MON_1,0)) AS MON_1
+               , SUM(IFNULL(A.MON_2,0)) AS MON_2
+               , SUM(IFNULL(A.MON_3,0)) AS MON_3
+               , SUM(IFNULL(A.MON_4,0)) AS MON_4
+               , SUM(IFNULL(A.MON_5,0)) AS MON_5
+               , SUM(IFNULL(A.MON_6,0)) AS MON_6
+               , SUM(IFNULL(A.MON_7,0)) AS MON_7
+               , SUM(IFNULL(A.MON_8,0)) AS MON_8
+               , SUM(IFNULL(A.MON_9,0)) AS MON_9
+               , SUM(IFNULL(A.MON_10,0)) AS MON_10
+               , SUM(IFNULL(A.MON_11,0)) AS MON_11
+               , SUM(IFNULL(A.MON_12,0)) AS MON_12
+               , SUM(IFNULL(A.AMT,0)) AS MON_TOT
+               , IFNULL(A.SALES_PR_NM,'') AS SALES_PR_NM
+          FROM (SELECT  '1' AS SORT
+                        , CONCAT(A.YEAR,'년') AS YEAR_NM
+                        , A.SALES_CD
+                        , A.SALES_NM
+                        , A.SALES_CLASS_NM
+                        , A.SALES_PR_NM
+                        , SUM(CASE WHEN A.MON='01' THEN IFNULL(A.SALES_AMT,0) END) AS MON_1
+                        , SUM(CASE WHEN A.MON='02' THEN IFNULL(A.SALES_AMT,0) END) AS MON_2
+                        , SUM(CASE WHEN A.MON='03' THEN IFNULL(A.SALES_AMT,0) END) AS MON_3
+                        , SUM(CASE WHEN A.MON='04' THEN IFNULL(A.SALES_AMT,0) END) AS MON_4
+                        , SUM(CASE WHEN A.MON='05' THEN IFNULL(A.SALES_AMT,0) END) AS MON_5
+                        , SUM(CASE WHEN A.MON='06' THEN IFNULL(A.SALES_AMT,0) END) AS MON_6
+                        , SUM(CASE WHEN A.MON='07' THEN IFNULL(A.SALES_AMT,0) END) AS MON_7
+                        , SUM(CASE WHEN A.MON='08' THEN IFNULL(A.SALES_AMT,0) END) AS MON_8
+                        , SUM(CASE WHEN A.MON='09' THEN IFNULL(A.SALES_AMT,0) END) AS MON_9
+                        , SUM(CASE WHEN A.MON='10' THEN IFNULL(A.SALES_AMT,0) END) AS MON_10
+                        , SUM(CASE WHEN A.MON='11' THEN IFNULL(A.SALES_AMT,0) END) AS MON_11
+                        , SUM(CASE WHEN A.MON='12' THEN IFNULL(A.SALES_AMT,0) END) AS MON_12
+                        , SUM(IFNULL(A.SALES_AMT,0)) AS AMT
+                  FROM  SALES_PREV A
+                 GROUP BY CONCAT(A.YEAR,'년')
+                          , A.SALES_CD
+                          , A.SALES_NM
+                          , A.SALES_CLASS_NM
+                          , A.SALES_PR_NM
+              UNION ALL
+                SELECT  '2' AS SORT
+                        , CONCAT(A.YEAR,'년') AS YEAR_NM
+                        , A.SALES_CD
+                        , A.SALES_NM
+                        , A.SALES_CLASS_NM
+                        , A.SALES_PR_NM
+                        , SUM(CASE WHEN A.MON='01' THEN IFNULL(A.SALES_AMT,0) END) AS MON_1
+                        , SUM(CASE WHEN A.MON='02' THEN IFNULL(A.SALES_AMT,0) END) AS MON_2
+                        , SUM(CASE WHEN A.MON='03' THEN IFNULL(A.SALES_AMT,0) END) AS MON_3
+                        , SUM(CASE WHEN A.MON='04' THEN IFNULL(A.SALES_AMT,0) END) AS MON_4
+                        , SUM(CASE WHEN A.MON='05' THEN IFNULL(A.SALES_AMT,0) END) AS MON_5
+                        , SUM(CASE WHEN A.MON='06' THEN IFNULL(A.SALES_AMT,0) END) AS MON_6
+                        , SUM(CASE WHEN A.MON='07' THEN IFNULL(A.SALES_AMT,0) END) AS MON_7
+                        , SUM(CASE WHEN A.MON='08' THEN IFNULL(A.SALES_AMT,0) END) AS MON_8
+                        , SUM(CASE WHEN A.MON='09' THEN IFNULL(A.SALES_AMT,0) END) AS MON_9
+                        , SUM(CASE WHEN A.MON='10' THEN IFNULL(A.SALES_AMT,0) END) AS MON_10
+                        , SUM(CASE WHEN A.MON='11' THEN IFNULL(A.SALES_AMT,0) END) AS MON_11
+                        , SUM(CASE WHEN A.MON='12' THEN IFNULL(A.SALES_AMT,0) END) AS MON_12
+                        , SUM(IFNULL(A.SALES_AMT,0)) AS AMT
+                  FROM  SALES_THIS A
+                 GROUP BY CONCAT(A.YEAR,'년')
+                          , A.SALES_CD
+                          , A.SALES_NM
+                          , A.SALES_CLASS_NM
+                          , A.SALES_PR_NM
+             UNION ALL
+                SELECT  '3' AS SORT
+                        , '전년대비차액' AS YEAR_NM
+                        , A.SALES_CD
+                        , A.SALES_NM
+                        , A.SALES_CLASS_NM
+                        , A.SALES_PR_NM
+                        , SUM(IFNULL(A.THIS_MON_1 ,0)) - SUM(IFNULL(A.PREV_MON_1 ,0)) AS MON_1
+                        , SUM(IFNULL(A.THIS_MON_2 ,0)) - SUM(IFNULL(A.PREV_MON_2 ,0)) AS MON_2
+                        , SUM(IFNULL(A.THIS_MON_3 ,0)) - SUM(IFNULL(A.PREV_MON_3 ,0)) AS MON_3
+                        , SUM(IFNULL(A.THIS_MON_4 ,0)) - SUM(IFNULL(A.PREV_MON_4 ,0)) AS MON_4
+                        , SUM(IFNULL(A.THIS_MON_5 ,0)) - SUM(IFNULL(A.PREV_MON_5 ,0)) AS MON_5
+                        , SUM(IFNULL(A.THIS_MON_6 ,0)) - SUM(IFNULL(A.PREV_MON_6 ,0)) AS MON_6
+                        , SUM(IFNULL(A.THIS_MON_7 ,0)) - SUM(IFNULL(A.PREV_MON_7 ,0)) AS MON_7
+                        , SUM(IFNULL(A.THIS_MON_8 ,0)) - SUM(IFNULL(A.PREV_MON_8 ,0)) AS MON_8
+                        , SUM(IFNULL(A.THIS_MON_9 ,0)) - SUM(IFNULL(A.PREV_MON_9 ,0)) AS MON_9
+                        , SUM(IFNULL(A.THIS_MON_10,0)) - SUM(IFNULL(A.PREV_MON_10,0)) AS MON_10
+                        , SUM(IFNULL(A.THIS_MON_11,0)) - SUM(IFNULL(A.PREV_MON_11,0)) AS MON_11
+                        , SUM(IFNULL(A.THIS_MON_12,0)) - SUM(IFNULL(A.PREV_MON_12,0)) AS MON_12
+                        , SUM(IFNULL(A.THIS_AMT,0)) - SUM(IFNULL(A.PREV_AMT,0)) AS AMT
+                  FROM  (SELECT A.SALES_CD
+                                , A.SALES_NM
+                                , A.SALES_PR_NM
+                                , A.SALES_CLASS_NM
+                                , SUM(CASE WHEN A.MON='01' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_1
+                                , SUM(CASE WHEN A.MON='02' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_2
+                                , SUM(CASE WHEN A.MON='03' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_3
+                                , SUM(CASE WHEN A.MON='04' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_4
+                                , SUM(CASE WHEN A.MON='05' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_5
+                                , SUM(CASE WHEN A.MON='06' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_6
+                                , SUM(CASE WHEN A.MON='07' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_7
+                                , SUM(CASE WHEN A.MON='08' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_8
+                                , SUM(CASE WHEN A.MON='09' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_9
+                                , SUM(CASE WHEN A.MON='10' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_10
+                                , SUM(CASE WHEN A.MON='11' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_11
+                                , SUM(CASE WHEN A.MON='12' THEN IFNULL(A.SALES_AMT,0) END) AS THIS_MON_12
+                                , SUM(IFNULL(A.SALES_AMT,0)) AS THIS_AMT
+                                , 0 AS PREV_MON_1
+                                , 0 AS PREV_MON_2
+                                , 0 AS PREV_MON_3
+                                , 0 AS PREV_MON_4
+                                , 0 AS PREV_MON_5
+                                , 0 AS PREV_MON_6
+                                , 0 AS PREV_MON_7
+                                , 0 AS PREV_MON_8
+                                , 0 AS PREV_MON_9
+                                , 0 AS PREV_MON_10
+                                , 0 AS PREV_MON_11
+                                , 0 AS PREV_MON_12
+                                , 0 AS PREV_AMT
+                          FROM  SALES_THIS A
+                         GROUP BY A.SALES_CD
+                                  , A.SALES_NM
+                                  , A.SALES_PR_NM
+                                  , A.SALES_CLASS_NM
+                       UNION ALL
+                        SELECT A.SALES_CD
+                                , A.SALES_NM
+                                , A.SALES_PR_NM
+                                , A.SALES_CLASS_NM
+                                , 0 AS THIS_MON_1
+                                , 0 AS THIS_MON_2
+                                , 0 AS THIS_MON_3
+                                , 0 AS THIS_MON_4
+                                , 0 AS THIS_MON_5
+                                , 0 AS THIS_MON_6
+                                , 0 AS THIS_MON_7
+                                , 0 AS THIS_MON_8
+                                , 0 AS THIS_MON_9
+                                , 0 AS THIS_MON_10
+                                , 0 AS THIS_MON_11
+                                , 0 AS THIS_MON_12
+                                , 0 AS THIS_AMT
+                                , SUM(CASE WHEN A.MON='01' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_1
+                                , SUM(CASE WHEN A.MON='02' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_2
+                                , SUM(CASE WHEN A.MON='03' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_3
+                                , SUM(CASE WHEN A.MON='04' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_4
+                                , SUM(CASE WHEN A.MON='05' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_5
+                                , SUM(CASE WHEN A.MON='06' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_6
+                                , SUM(CASE WHEN A.MON='07' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_7
+                                , SUM(CASE WHEN A.MON='08' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_8
+                                , SUM(CASE WHEN A.MON='09' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_9
+                                , SUM(CASE WHEN A.MON='10' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_10
+                                , SUM(CASE WHEN A.MON='11' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_11
+                                , SUM(CASE WHEN A.MON='12' THEN IFNULL(A.SALES_AMT,0) END) AS PREV_MON_12
+                                , SUM(IFNULL(A.SALES_AMT,0)) AS PREV_AMT
+                          FROM  SALES_PREV A
+                         GROUP BY A.SALES_CD
+                                  , A.SALES_NM
+                                  , A.SALES_PR_NM
+                                  , A.SALES_CLASS_NM
+                       ) AS A
+                 GROUP BY A.SALES_CD
+                          , A.SALES_NM
+                          , A.SALES_CLASS_NM
+                          , A.SALES_PR_NM
+               ) A
+         GROUP BY A.YEAR_NM
+                  , A.SALES_CLASS_NM
+                  , A.SALES_NM
+                  , A.SALES_PR_NM
+         ORDER BY A.SALES_CD, A.SORT
+	</select>
+	
+</mapper>
+

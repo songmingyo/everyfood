@@ -1,0 +1,1430 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.SalSalesGoalListMapper">
+
+	
+	
+	<!-- 영업 목표현황  조회  카운터 -->
+	<select id="selectSalSalesGoalListCount" parameterType="com.doppio.workplace.as.service.SalSalesGoalListVo" resultType="int">
+		/* SalSalesGoalListMapper.selectSalSalesGoalListCount */
+		SELECT COUNT(*)
+		  FROM TSH_SALES_GOAL AS TSG
+		 WHERE TSG.GOAL_YEAR = #{goalYear}
+	</select>
+	
+	<!-- 영업 목표현황 조회 -->
+	<select id="selectSalSalesGoalList" parameterType="com.doppio.workplace.as.service.SalSalesGoalListVo" resultType="com.doppio.workplace.as.service.SalSalesGoalListVo">
+	/*SalSalesGoalListMapper.selectSalSalesGoalList*/	
+		WITH SALES_AMT AS (
+		    SELECT #{goalYear} AS GOAL_YEAR
+		           , TSPM.SALES_PR_CD
+		           , TSPM.SALES_PR_NM
+		           , A.PRDT_CD
+		           , A.MON_QTY_1 
+                   , A.MON_QTY_2 
+                   , A.MON_QTY_3 
+                   , A.MON_QTY_4 
+                   , A.MON_QTY_5 
+                   , A.MON_QTY_6 
+                   , A.MON_QTY_7 
+                   , A.MON_QTY_8 
+                   , A.MON_QTY_9 
+                   , A.MON_QTY_10
+                   , A.MON_QTY_11
+                   , A.MON_QTY_12
+                   , A.TOT_QTY
+		           , A.MON_1 
+                   , A.MON_2 
+                   , A.MON_3 
+                   , A.MON_4 
+                   , A.MON_5 
+                   , A.MON_6 
+                   , A.MON_7  
+                   , A.MON_8 
+                   , A.MON_9 
+                   , A.MON_10
+                   , A.MON_11
+                   , A.MON_12
+                   , A.TOT_AMT
+		      FROM (SELECT SALES_CD
+		                   , PRDT_CD
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '01' THEN SALES_QTY END) AS MON_QTY_1
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '02' THEN SALES_QTY END) AS MON_QTY_2
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '03' THEN SALES_QTY END) AS MON_QTY_3
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '04' THEN SALES_QTY END) AS MON_QTY_4
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '05' THEN SALES_QTY END) AS MON_QTY_5
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '06' THEN SALES_QTY END) AS MON_QTY_6
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '07' THEN SALES_QTY END) AS MON_QTY_7
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '08' THEN SALES_QTY END) AS MON_QTY_8
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '09' THEN SALES_QTY END) AS MON_QTY_9
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '10' THEN SALES_QTY END) AS MON_QTY_10
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '11' THEN SALES_QTY END) AS MON_QTY_11
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '12' THEN SALES_QTY END) AS MON_QTY_12
+		                   , SUM(SALES_QTY) AS TOT_QTY
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '01' THEN PURE_AMT END) AS MON_1
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '02' THEN PURE_AMT END) AS MON_2
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '03' THEN PURE_AMT END) AS MON_3
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '04' THEN PURE_AMT END) AS MON_4
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '05' THEN PURE_AMT END) AS MON_5
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '06' THEN PURE_AMT END) AS MON_6
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '07' THEN PURE_AMT END) AS MON_7
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '08' THEN PURE_AMT END) AS MON_8
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '09' THEN PURE_AMT END) AS MON_9
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '10' THEN PURE_AMT END) AS MON_10
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '11' THEN PURE_AMT END) AS MON_11
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '12' THEN PURE_AMT END) AS MON_12
+		                   , SUM(PURE_AMT) AS TOT_AMT
+		              FROM TMH_MON_SALES_TOT
+		             WHERE YEAR_MON LIKE CONCAT(#{goalYear}, '%') 
+		             GROUP BY SALES_CD, PRDT_CD
+                   ) A, TFM_SALES_ADD_INFO AS TSAI, TFM_SALES_PR_MST AS TSPM
+             WHERE A.SALES_CD = TSAI.SALES_CD
+               AND TSAI.SALES_PR_CD = TSPM.SALES_PR_CD
+               AND TSPM.USE_YN = 'Y'	/* 2025.07.07 조광연 팀장 중지 영업사원 조회 DATA 에서 제거 요청 */
+           ), SALES_AMT_PREV AS (
+		    SELECT #{goalYear} AS GOAL_YEAR
+		           , TSPM.SALES_PR_CD
+		           , TSPM.SALES_PR_NM
+		           , A.MON_1 
+                   , A.MON_2 
+                   , A.MON_3 
+                   , A.MON_4 
+                   , A.MON_5 
+                   , A.MON_6 
+                   , A.MON_7 
+                   , A.MON_8 
+                   , A.MON_9 
+                   , A.MON_10
+                   , A.MON_11
+                   , A.MON_12
+                   , A.TOT_AMT
+		      FROM (SELECT SALES_CD
+		                   , PRDT_CD
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '01' THEN PURE_AMT END) AS MON_1
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '02' THEN PURE_AMT END) AS MON_2
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '03' THEN PURE_AMT END) AS MON_3
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '04' THEN PURE_AMT END) AS MON_4
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '05' THEN PURE_AMT END) AS MON_5
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '06' THEN PURE_AMT END) AS MON_6
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '07' THEN PURE_AMT END) AS MON_7
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '08' THEN PURE_AMT END) AS MON_8
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '09' THEN PURE_AMT END) AS MON_9
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '10' THEN PURE_AMT END) AS MON_10
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '11' THEN PURE_AMT END) AS MON_11
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '12' THEN PURE_AMT END) AS MON_12
+		                   , SUM(PURE_AMT) AS TOT_AMT
+		              FROM TMH_MON_SALES_TOT
+		             WHERE YEAR_MON LIKE CONCAT(LEFT(DATE_ADD(CONCAT(#{goalYear}, '0101'), INTERVAL -1 YEAR),4),'%') 
+		             GROUP BY SALES_CD, PRDT_CD
+                   ) A, TFM_SALES_ADD_INFO AS TSAI, TFM_SALES_PR_MST AS TSPM
+             WHERE A.SALES_CD = TSAI.SALES_CD
+               AND TSAI.SALES_PR_CD = TSPM.SALES_PR_CD
+               AND TSPM.USE_YN = 'Y'	/* 2025.07.07 조광연 팀장 중지 영업사원 조회 DATA 에서 제거 요청 */
+           ), GOAL_AMT AS (
+		    SELECT #{goalYear} AS GOAL_YEAR
+		           , TSPM.SALES_PR_CD
+		           , TSPM.SALES_PR_NM
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '01' THEN TSG.GOAL_AMT END),0) AS MON_1
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '02' THEN TSG.GOAL_AMT END),0) AS MON_2
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '03' THEN TSG.GOAL_AMT END),0) AS MON_3
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '04' THEN TSG.GOAL_AMT END),0) AS MON_4
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '05' THEN TSG.GOAL_AMT END),0) AS MON_5
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '06' THEN TSG.GOAL_AMT END),0) AS MON_6
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '07' THEN TSG.GOAL_AMT END),0) AS MON_7
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '08' THEN TSG.GOAL_AMT END),0) AS MON_8
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '09' THEN TSG.GOAL_AMT END),0) AS MON_9
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '10' THEN TSG.GOAL_AMT END),0) AS MON_10
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '11' THEN TSG.GOAL_AMT END),0) AS MON_11
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '12' THEN TSG.GOAL_AMT END),0) AS MON_12
+		           , IFNULL(SUM(TSG.GOAL_AMT),0) AS TOT_AMT
+		      FROM TFM_SALES_PR_MST AS TSPM
+		           LEFT OUTER JOIN TSH_SALES_GOAL AS TSG
+		             ON TSG.SALES_PR_CD = TSPM.SALES_PR_CD 
+		            AND TSG.GOAL_YEAR = #{goalYear}	
+		      WHERE 1=1
+		      AND TSPM.USE_YN = 'Y'      	       
+		     GROUP BY TSPM.SALES_PR_CD, TSPM.SALES_PR_NM
+		   ), BUY_COST AS (
+		    SELECT #{goalYear} AS GOAL_YEAR
+		           , A.PRDT_CD
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '01' THEN A.COST END),0) AS MON_1
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '02' THEN A.COST END),0) AS MON_2
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '03' THEN A.COST END),0) AS MON_3
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '04' THEN A.COST END),0) AS MON_4
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '05' THEN A.COST END),0) AS MON_5
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '06' THEN A.COST END),0) AS MON_6
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '07' THEN A.COST END),0) AS MON_7
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '08' THEN A.COST END),0) AS MON_8
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '09' THEN A.COST END),0) AS MON_9
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '10' THEN A.COST END),0) AS MON_10
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '11' THEN A.COST END),0) AS MON_11
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '12' THEN A.COST END),0) AS MON_12
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '12' THEN A.COST END),0) AS TOT_AMT
+		      FROM (SELECT A.YEAR_MON
+		                   , A.PRDT_CD
+		                   , MAX(CASE WHEN IFNULL(A.COST,0)=0 THEN A.CONF_COST ELSE A.COST END) AS COST
+		              FROM (
+				            SELECT LEFT(TPR.BUY_DT, 6) AS YEAR_MON
+					               , TPR.PRDT_CD
+			    		           , IFNULL(MAX(TPR.COST),0) AS COST
+			            		   , 0 AS CONF_COST
+					          FROM TBH_PRDT_RCPT AS TPR
+					               JOIN
+			    		               (SELECT SUBSTRING(BUY_DT,5,2) AS YEAR_MON
+			            		               , PRDT_CD
+			                    		       , MAX(BUY_DT) AS MAX_BUY_DT
+					                      FROM TBH_PRDT_RCPT
+					                     WHERE BUY_DT LIKE CONCAT(#{goalYear}, '%')
+			    		                   AND BUY_CONF_YN = 'Y'
+			            		           AND BUY_QTY != 0
+			                    		 GROUP BY PRDT_CD
+					                   ) AS A
+						     WHERE TPR.BUY_DT = A.MAX_BUY_DT
+						       AND TPR.PRDT_CD = A.PRDT_CD
+				        	   AND TPR.BUY_CONF_YN = 'Y'
+						       AND TPR.BUY_QTY != 0
+						     GROUP BY SUBSTRING(BUY_DT,5,2), TPR.PRDT_CD
+						 UNION ALL
+				        	SELECT YEAR_MON
+						           , PRDT_CD
+						           , 0 AS COST
+						           , COST AS CONF_COST
+				        	  FROM TMH_MON_BUY_COST
+						     WHERE YEAR_MON LIKE CONCAT(#{goalYear}, '%')
+						   ) AS A
+					 GROUP BY A.YEAR_MON
+ 		                      , A.PRDT_CD
+				   ) AS A
+		     GROUP BY A.PRDT_CD
+           )
+			 SELECT A.SALES_PR_NM
+					, A.GUBUN
+					, A.MON_1
+					, A.MON_2
+					, A.MON_3
+					, A.MON_4
+					, A.MON_5
+					, A.MON_6
+					, A.MON_7
+					, A.MON_8
+					, A.MON_9
+					, A.MON_10
+					, A.MON_11
+					, A.MON_12
+				    , A.TOT_AMT
+			   FROM (
+					 SELECT A.GOAL_YEAR
+							, A.SALES_PR_CD
+							, A.SALES_PR_NM
+							, A.GUBUN
+							, A.SORT
+							, A.MON_1
+							, A.MON_2
+							, A.MON_3
+							, A.MON_4
+							, A.MON_5
+							, A.MON_6
+							, A.MON_7
+							, A.MON_8
+							, A.MON_9
+							, A.MON_10
+							, A.MON_11
+							, A.MON_12
+							, A.TOT_AMT
+					   FROM	(SELECT	A.GOAL_YEAR
+									, A.SALES_PR_CD
+									, A.SALES_PR_NM
+									, A.GUBUN
+									, A.SORT
+									, IFNULL(A.MON_1,0)  AS MON_1
+									, IFNULL(A.MON_2,0)  AS MON_2
+									, IFNULL(A.MON_3,0)  AS MON_3
+									, IFNULL(A.MON_4,0)  AS MON_4
+									, IFNULL(A.MON_5,0)  AS MON_5
+									, IFNULL(A.MON_6,0)  AS MON_6
+									, IFNULL(A.MON_7,0)  AS MON_7
+									, IFNULL(A.MON_8,0)  AS MON_8
+									, IFNULL(A.MON_9,0)  AS MON_9
+									, IFNULL(A.MON_10,0) AS MON_10
+									, IFNULL(A.MON_11,0) AS MON_11
+									, IFNULL(A.MON_12,0) AS MON_12
+									, IFNULL(A.TOT_AMT,0) AS TOT_AMT
+							  FROM	(
+									SELECT	A.GOAL_YEAR
+											, A.SALES_PR_CD
+											, A.SALES_PR_NM
+											, '1' AS SORT
+											, '전년매출액' AS GUBUN
+											, SUM(IFNULL(B.MON_1,0))  AS MON_1
+											, SUM(IFNULL(B.MON_2,0))  AS MON_2
+											, SUM(IFNULL(B.MON_3,0))  AS MON_3
+											, SUM(IFNULL(B.MON_4,0))  AS MON_4
+											, SUM(IFNULL(B.MON_5,0))  AS MON_5
+											, SUM(IFNULL(B.MON_6,0))  AS MON_6
+											, SUM(IFNULL(B.MON_7,0))  AS MON_7
+											, SUM(IFNULL(B.MON_8,0))  AS MON_8
+											, SUM(IFNULL(B.MON_9,0))  AS MON_9
+											, SUM(IFNULL(B.MON_10,0)) AS MON_10
+											, SUM(IFNULL(B.MON_11,0)) AS MON_11
+											, SUM(IFNULL(B.MON_12,0)) AS MON_12
+											, SUM(IFNULL(B.TOT_AMT,0)) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN SALES_AMT_PREV AS B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+									 GROUP BY A.GOAL_YEAR, A.SALES_PR_CD, A.SALES_PR_NM
+								   UNION ALL
+									SELECT	GOAL_YEAR
+											, SALES_PR_CD
+											, SALES_PR_NM
+											, '2' AS SORT					
+											, '목표액' AS GUBUN
+											, MON_1
+											, MON_2
+											, MON_3
+											, MON_4
+											, MON_5
+											, MON_6
+											, MON_7
+											, MON_8
+											, MON_9
+											, MON_10
+											, MON_11
+											, MON_12
+											, TOT_AMT
+									  FROM	GOAL_AMT
+								  UNION ALL
+									SELECT	A.GOAL_YEAR
+											, A.SALES_PR_CD
+											, A.SALES_PR_NM
+											, '3' AS SORT
+											, '매출액' AS GUBUN
+											, SUM(IFNULL(B.MON_1,0))  AS MON_1
+											, SUM(IFNULL(B.MON_2,0))  AS MON_2
+											, SUM(IFNULL(B.MON_3,0))  AS MON_3
+											, SUM(IFNULL(B.MON_4,0))  AS MON_4
+											, SUM(IFNULL(B.MON_5,0))  AS MON_5
+											, SUM(IFNULL(B.MON_6,0))  AS MON_6
+											, SUM(IFNULL(B.MON_7,0))  AS MON_7
+											, SUM(IFNULL(B.MON_8,0))  AS MON_8
+											, SUM(IFNULL(B.MON_9,0))  AS MON_9
+											, SUM(IFNULL(B.MON_10,0)) AS MON_10
+											, SUM(IFNULL(B.MON_11,0)) AS MON_11
+											, SUM(IFNULL(B.MON_12,0)) AS MON_12
+											, SUM(IFNULL(B.TOT_AMT,0)) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN 
+													(SELECT GOAL_YEAR
+															, SALES_PR_CD
+															, SUM(MON_1) AS MON_1
+															, SUM(MON_2) AS MON_2
+															, SUM(MON_3) AS MON_3
+															, SUM(MON_4) AS MON_4
+															, SUM(MON_5) AS MON_5
+															, SUM(MON_6) AS MON_6
+															, SUM(MON_7) AS MON_7
+															, SUM(MON_8) AS MON_8
+															, SUM(MON_9) AS MON_9
+															, SUM(MON_10) AS MON_10
+															, SUM(MON_11) AS MON_11
+															, SUM(MON_12) AS MON_12
+															, SUM(TOT_AMT) AS TOT_AMT
+													   FROM SALES_AMT
+													  GROUP BY GOAL_YEAR, SALES_PR_CD
+													) AS B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+									 GROUP BY A.GOAL_YEAR, A.SALES_PR_CD, A.SALES_PR_NM
+									 
+								/* 2026.02.11 BY SONG MIN KYO 구글시트 53번 참조	 
+								   UNION ALL
+									SELECT	A.GOAL_YEAR
+											, A.SALES_PR_CD
+											, A.SALES_PR_NM
+											, '4' AS SORT
+											, '이익금액' AS GUBUN
+											, SUM(IFNULL(B.MON_1,0))  AS MON_1
+											, SUM(IFNULL(B.MON_2,0))  AS MON_2
+											, SUM(IFNULL(B.MON_3,0))  AS MON_3
+											, SUM(IFNULL(B.MON_4,0))  AS MON_4
+											, SUM(IFNULL(B.MON_5,0))  AS MON_5
+											, SUM(IFNULL(B.MON_6,0))  AS MON_6
+											, SUM(IFNULL(B.MON_7,0))  AS MON_7
+											, SUM(IFNULL(B.MON_8,0))  AS MON_8
+											, SUM(IFNULL(B.MON_9,0))  AS MON_9
+											, SUM(IFNULL(B.MON_10,0)) AS MON_10
+											, SUM(IFNULL(B.MON_11,0)) AS MON_11
+											, SUM(IFNULL(B.MON_12,0)) AS MON_12
+											, SUM(IFNULL(B.MON_1,0)) + SUM(IFNULL(B.MON_2,0)) + SUM(IFNULL(B.MON_3,0)) + SUM(IFNULL(B.MON_4,0)) + SUM(IFNULL(B.MON_5,0))
+											+ SUM(IFNULL(B.MON_6,0)) + SUM(IFNULL(B.MON_7,0)) + SUM(IFNULL(B.MON_8,0)) + SUM(IFNULL(B.MON_9,0)) + SUM(IFNULL(B.MON_10,0))
+											+ SUM(IFNULL(B.MON_11,0)) + SUM(IFNULL(B.MON_12,0)) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN 
+				                					(SELECT A.GOAL_YEAR
+				                							, A.SALES_PR_CD
+				                							, SUM(IFNULL(A.MON_1,0) -  (IFNULL(A.MON_QTY_1,0)  * IFNULL(B.MON_1,C.COST))) AS MON_1
+				                							, SUM(IFNULL(A.MON_2,0) -  (IFNULL(A.MON_QTY_2,0)  * IFNULL(B.MON_2,C.COST))) AS MON_2
+				                							, SUM(IFNULL(A.MON_3,0) -  (IFNULL(A.MON_QTY_3,0)  * IFNULL(B.MON_3,C.COST))) AS MON_3
+				                							, SUM(IFNULL(A.MON_4,0) -  (IFNULL(A.MON_QTY_4,0)  * IFNULL(B.MON_4,C.COST))) AS MON_4
+				                							, SUM(IFNULL(A.MON_5,0) -  (IFNULL(A.MON_QTY_5,0)  * IFNULL(B.MON_5,C.COST))) AS MON_5
+				                							, SUM(IFNULL(A.MON_6,0) -  (IFNULL(A.MON_QTY_6,0)  * IFNULL(B.MON_6,C.COST))) AS MON_6
+				                							, SUM(IFNULL(A.MON_7,0) -  (IFNULL(A.MON_QTY_7,0)  * IFNULL(B.MON_7,C.COST))) AS MON_7
+				                							, SUM(IFNULL(A.MON_8,0) -  (IFNULL(A.MON_QTY_8,0)  * IFNULL(B.MON_8,C.COST))) AS MON_8
+				                							, SUM(IFNULL(A.MON_9,0) -  (IFNULL(A.MON_QTY_9,0)  * IFNULL(B.MON_9,C.COST))) AS MON_9
+				                							, SUM(IFNULL(A.MON_10,0) - (IFNULL(A.MON_QTY_10,0) * IFNULL(B.MON_10,C.COST))) AS MON_10
+				                							, SUM(IFNULL(A.MON_11,0) - (IFNULL(A.MON_QTY_11,0) * IFNULL(B.MON_11,C.COST))) AS MON_11
+				                							, SUM(IFNULL(A.MON_12,0) - (IFNULL(A.MON_QTY_12,0) * IFNULL(B.MON_12,C.COST))) AS MON_12
+				                					   FROM SALES_AMT AS A 
+				                					        LEFT OUTER JOIN BUY_COST AS B
+				                					            ON B.GOAL_YEAR = A.GOAL_YEAR
+				                					           AND B.PRDT_CD = A.PRDT_CD
+															, TFM_PRDT_MST C
+													  WHERE A.PRDT_CD = C.PRDT_CD
+													  GROUP BY A.GOAL_YEAR, A.SALES_PR_CD
+													) B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD 
+									 GROUP BY A.GOAL_YEAR, A.SALES_PR_CD, A.SALES_PR_NM
+									*/ 
+									
+									
+									UNION ALL 
+									SELECT	A.GOAL_YEAR
+											, A.SALES_PR_CD
+											, A.SALES_PR_NM
+											, '4' AS SORT
+											, '전년대비차액' AS GUBUN
+											, CASE WHEN IFNULL(A.MON_1,0) = 0 THEN 0 ELSE IFNULL(A.MON_1,0) - IFNULL(A.PREV_MON_1, 0) END AS MON_1
+											, CASE WHEN IFNULL(A.MON_2,0) = 0 THEN 0 ELSE IFNULL(A.MON_2,0) - IFNULL(A.PREV_MON_2, 0) END AS MON_2
+											, CASE WHEN IFNULL(A.MON_3,0) = 0 THEN 0 ELSE IFNULL(A.MON_3,0) - IFNULL(A.PREV_MON_3, 0) END AS MON_3
+											, CASE WHEN IFNULL(A.MON_4,0) = 0 THEN 0 ELSE IFNULL(A.MON_4,0) - IFNULL(A.PREV_MON_4, 0) END AS MON_4
+											, CASE WHEN IFNULL(A.MON_5,0) = 0 THEN 0 ELSE IFNULL(A.MON_5,0) - IFNULL(A.PREV_MON_5, 0) END AS MON_5
+											, CASE WHEN IFNULL(A.MON_6,0) = 0 THEN 0 ELSE IFNULL(A.MON_6,0) - IFNULL(A.PREV_MON_6, 0) END AS MON_6
+											, CASE WHEN IFNULL(A.MON_7,0) = 0 THEN 0 ELSE IFNULL(A.MON_7,0) - IFNULL(A.PREV_MON_7, 0) END AS MON_7
+											, CASE WHEN IFNULL(A.MON_8,0) = 0 THEN 0 ELSE IFNULL(A.MON_8,0) - IFNULL(A.PREV_MON_8, 0) END AS MON_8
+											, CASE WHEN IFNULL(A.MON_9,0) = 0 THEN 0 ELSE IFNULL(A.MON_9,0) - IFNULL(A.PREV_MON_9, 0) END AS MON_9
+											, CASE WHEN IFNULL(A.MON_10,0) = 0 THEN 0 ELSE IFNULL(A.MON_10,0) - IFNULL(A.PREV_MON_10, 0) END AS MON_10
+											, CASE WHEN IFNULL(A.MON_11,0) = 0 THEN 0 ELSE IFNULL(A.MON_11,0) - IFNULL(A.PREV_MON_11, 0) END AS MON_11
+											, CASE WHEN IFNULL(A.MON_12,0) = 0 THEN 0 ELSE IFNULL(A.MON_12,0) - IFNULL(A.PREV_MON_12, 0) END AS MON_12
+											, CASE WHEN IFNULL(A.TOT_AMT,0) = 0 THEN 0 ELSE IFNULL(A.TOT_AMT,0) - IFNULL(A.PREV_TOT_AMT, 0) END AS TOT_AMT
+										FROM
+										(
+										   
+											SELECT	A.GOAL_YEAR
+													, A.SALES_PR_CD
+													, A.SALES_PR_NM
+													, '1' AS SORT
+													, '전년대비차액' AS GUBUN
+													, SUM(IFNULL(B.MON_1,0))  AS PREV_MON_1
+													, SUM(IFNULL(B.MON_2,0))  AS PREV_MON_2
+													, SUM(IFNULL(B.MON_3,0))  AS PREV_MON_3
+													, SUM(IFNULL(B.MON_4,0))  AS PREV_MON_4
+													, SUM(IFNULL(B.MON_5,0))  AS PREV_MON_5
+													, SUM(IFNULL(B.MON_6,0))  AS PREV_MON_6
+													, SUM(IFNULL(B.MON_7,0))  AS PREV_MON_7
+													, SUM(IFNULL(B.MON_8,0))  AS PREV_MON_8
+													, SUM(IFNULL(B.MON_9,0))  AS PREV_MON_9
+													, SUM(IFNULL(B.MON_10,0)) AS PREV_MON_10
+													, SUM(IFNULL(B.MON_11,0)) AS PREV_MON_11
+													, SUM(IFNULL(B.MON_12,0)) AS PREV_MON_12
+													, SUM(IFNULL(B.TOT_AMT,0)) AS PREV_TOT_AMT
+													
+													, IFNULL(C.MON_1,0)  AS MON_1
+													, IFNULL(C.MON_2,0)  AS MON_2
+													, IFNULL(C.MON_3,0)  AS MON_3
+													, IFNULL(C.MON_4,0)  AS MON_4
+													, IFNULL(C.MON_5,0)  AS MON_5
+													, IFNULL(C.MON_6,0)  AS MON_6
+													, IFNULL(C.MON_7,0)  AS MON_7
+													, IFNULL(C.MON_8,0)  AS MON_8
+													, IFNULL(C.MON_9,0)  AS MON_9
+													, IFNULL(C.MON_10,0) AS MON_10
+													, IFNULL(C.MON_11,0) AS MON_11
+													, IFNULL(C.MON_12,0) AS MON_12
+													, IFNULL(C.TOT_AMT,0) AS TOT_AMT 
+											  FROM	GOAL_AMT AS A 
+														LEFT OUTER JOIN SALES_AMT_PREV AS B
+														  ON A.GOAL_YEAR = B.GOAL_YEAR
+														  AND A.SALES_PR_CD = B.SALES_PR_CD
+														  
+														LEFT OUTER JOIN 
+															(SELECT GOAL_YEAR
+																	, SALES_PR_CD
+																	, SUM(MON_1) AS MON_1
+																	, SUM(MON_2) AS MON_2
+																	, SUM(MON_3) AS MON_3
+																	, SUM(MON_4) AS MON_4
+																	, SUM(MON_5) AS MON_5
+																	, SUM(MON_6) AS MON_6
+																	, SUM(MON_7) AS MON_7
+																	, SUM(MON_8) AS MON_8
+																	, SUM(MON_9) AS MON_9
+																	, SUM(MON_10) AS MON_10
+																	, SUM(MON_11) AS MON_11
+																	, SUM(MON_12) AS MON_12
+																	, SUM(TOT_AMT) AS TOT_AMT
+															   FROM SALES_AMT
+															  GROUP BY GOAL_YEAR, SALES_PR_CD
+															) AS C 
+														  ON A.GOAL_YEAR = C.GOAL_YEAR
+														  AND A.SALES_PR_CD = C.SALES_PR_CD  														  
+											 GROUP BY A.GOAL_YEAR, A.SALES_PR_CD, A.SALES_PR_NM 											
+										) A  
+									
+									 
+								   UNION ALL
+									SELECT	A.GOAL_YEAR
+											, A.SALES_PR_CD
+											, A.SALES_PR_NM
+											, '5' AS SORT
+											, '달성율' AS GUBUN
+											, ROUND(CASE WHEN IFNULL(A.MON_1,0)  = 0 THEN 0 ELSE IFNULL(B.MON_1,0)  / IFNULL(A.MON_1,0)  * 100 END ,1) AS MON_1
+											, ROUND(CASE WHEN IFNULL(A.MON_2,0)  = 0 THEN 0 ELSE IFNULL(B.MON_2,0)  / IFNULL(A.MON_2,0)  * 100 END ,1) AS MON_2
+											, ROUND(CASE WHEN IFNULL(A.MON_3,0)  = 0 THEN 0 ELSE IFNULL(B.MON_3,0)  / IFNULL(A.MON_3,0)  * 100 END ,1) AS MON_3
+											, ROUND(CASE WHEN IFNULL(A.MON_4,0)  = 0 THEN 0 ELSE IFNULL(B.MON_4,0)  / IFNULL(A.MON_4,0)  * 100 END ,1) AS MON_4
+											, ROUND(CASE WHEN IFNULL(A.MON_5,0)  = 0 THEN 0 ELSE IFNULL(B.MON_5,0)  / IFNULL(A.MON_5,0)  * 100 END ,1) AS MON_5
+											, ROUND(CASE WHEN IFNULL(A.MON_6,0)  = 0 THEN 0 ELSE IFNULL(B.MON_6,0)  / IFNULL(A.MON_6,0)  * 100 END ,1) AS MON_6
+											, ROUND(CASE WHEN IFNULL(A.MON_7,0)  = 0 THEN 0 ELSE IFNULL(B.MON_7,0)  / IFNULL(A.MON_7,0)  * 100 END ,1) AS MON_7
+											, ROUND(CASE WHEN IFNULL(A.MON_8,0)  = 0 THEN 0 ELSE IFNULL(B.MON_8,0)  / IFNULL(A.MON_8,0)  * 100 END ,1) AS MON_8
+											, ROUND(CASE WHEN IFNULL(A.MON_9,0)  = 0 THEN 0 ELSE IFNULL(B.MON_9,0)  / IFNULL(A.MON_9,0)  * 100 END ,1) AS MON_9
+											, ROUND(CASE WHEN IFNULL(A.MON_10,0) = 0 THEN 0 ELSE IFNULL(B.MON_10,0) / IFNULL(A.MON_10,0) * 100 END ,1) AS MON_10
+											, ROUND(CASE WHEN IFNULL(A.MON_11,0) = 0 THEN 0 ELSE IFNULL(B.MON_11,0) / IFNULL(A.MON_11,0) * 100 END ,1) AS MON_11
+											, ROUND(CASE WHEN IFNULL(A.MON_12,0) = 0 THEN 0 ELSE IFNULL(B.MON_12,0) / IFNULL(A.MON_12,0) * 100 END ,1) AS MON_12
+											, ROUND(CASE WHEN IFNULL(A.TOT_AMT,0) = 0 THEN 0 ELSE IFNULL(B.TOT_AMT,0) / IFNULL(A.TOT_AMT,0) * 100 END ,1) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN 
+													(SELECT GOAL_YEAR
+															, SALES_PR_CD
+															, SUM(MON_1) AS MON_1
+															, SUM(MON_2) AS MON_2
+															, SUM(MON_3) AS MON_3
+															, SUM(MON_4) AS MON_4
+															, SUM(MON_5) AS MON_5
+															, SUM(MON_6) AS MON_6
+															, SUM(MON_7) AS MON_7
+															, SUM(MON_8) AS MON_8
+															, SUM(MON_9) AS MON_9
+															, SUM(MON_10) AS MON_10
+															, SUM(MON_11) AS MON_11
+															, SUM(MON_12) AS MON_12
+															, SUM(TOT_AMT) AS TOT_AMT
+													   FROM SALES_AMT
+													  GROUP BY GOAL_YEAR, SALES_PR_CD
+													) AS B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+								   ) A
+							 ) A
+				    UNION ALL
+				      SELECT A.GOAL_YEAR
+							, A.SALES_PR_CD
+							, A.SALES_PR_NM
+							, A.GUBUN
+							, A.SORT
+							, A.MON_1
+							, A.MON_2
+							, A.MON_3
+							, A.MON_4
+							, A.MON_5
+							, A.MON_6
+							, A.MON_7
+							, A.MON_8
+							, A.MON_9
+							, A.MON_10
+							, A.MON_11
+							, A.MON_12
+							, A.TOT_AMT
+					   FROM	(SELECT	A.GOAL_YEAR
+									, '99999' SALES_PR_CD
+									, '합계' SALES_PR_NM
+									, A.GUBUN
+									, A.SORT
+									, IFNULL(A.MON_1,0)  AS MON_1
+									, IFNULL(A.MON_2,0)  AS MON_2
+									, IFNULL(A.MON_3,0)  AS MON_3
+									, IFNULL(A.MON_4,0)  AS MON_4
+									, IFNULL(A.MON_5,0)  AS MON_5
+									, IFNULL(A.MON_6,0)  AS MON_6
+									, IFNULL(A.MON_7,0)  AS MON_7
+									, IFNULL(A.MON_8,0)  AS MON_8
+									, IFNULL(A.MON_9,0)  AS MON_9
+									, IFNULL(A.MON_10,0) AS MON_10
+									, IFNULL(A.MON_11,0) AS MON_11
+									, IFNULL(A.MON_12,0) AS MON_12
+									, IFNULL(A.TOT_AMT,0) AS TOT_AMT
+							  FROM	(
+									SELECT	A.GOAL_YEAR
+											, '1' AS SORT
+											, '전년매출액' AS GUBUN
+											, SUM(IFNULL(B.MON_1,0))  AS MON_1
+											, SUM(IFNULL(B.MON_2,0))  AS MON_2
+											, SUM(IFNULL(B.MON_3,0))  AS MON_3
+											, SUM(IFNULL(B.MON_4,0))  AS MON_4
+											, SUM(IFNULL(B.MON_5,0))  AS MON_5
+											, SUM(IFNULL(B.MON_6,0))  AS MON_6
+											, SUM(IFNULL(B.MON_7,0))  AS MON_7
+											, SUM(IFNULL(B.MON_8,0))  AS MON_8
+											, SUM(IFNULL(B.MON_9,0))  AS MON_9
+											, SUM(IFNULL(B.MON_10,0)) AS MON_10
+											, SUM(IFNULL(B.MON_11,0)) AS MON_11
+											, SUM(IFNULL(B.MON_12,0)) AS MON_12
+											, SUM(IFNULL(B.TOT_AMT,0)) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN SALES_AMT_PREV AS B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+									 GROUP BY A.GOAL_YEAR
+								   UNION ALL
+									SELECT	GOAL_YEAR
+											, '2' AS SORT					
+											, '목표액' AS GUBUN
+											, SUM(MON_1)  AS MON_1
+											, SUM(MON_2)  AS MON_2
+											, SUM(MON_3)  AS MON_3
+											, SUM(MON_4)  AS MON_4
+											, SUM(MON_5)  AS MON_5
+											, SUM(MON_6)  AS MON_6
+											, SUM(MON_7)  AS MON_7
+											, SUM(MON_8)  AS MON_8
+											, SUM(MON_9)  AS MON_9
+											, SUM(MON_10) AS MON_10
+											, SUM(MON_11) AS MON_11
+											, SUM(MON_12) AS MON_12
+											, SUM(TOT_AMT) AS TOT_AMT
+									  FROM	GOAL_AMT
+									 GROUP  BY GOAL_YEAR
+								  UNION ALL
+									SELECT	A.GOAL_YEAR
+											, '3' AS SORT
+											, '매출액' AS GUBUN
+											, SUM(IFNULL(B.MON_1,0))  AS MON_1
+											, SUM(IFNULL(B.MON_2,0))  AS MON_2
+											, SUM(IFNULL(B.MON_3,0))  AS MON_3
+											, SUM(IFNULL(B.MON_4,0))  AS MON_4
+											, SUM(IFNULL(B.MON_5,0))  AS MON_5
+											, SUM(IFNULL(B.MON_6,0))  AS MON_6
+											, SUM(IFNULL(B.MON_7,0))  AS MON_7
+											, SUM(IFNULL(B.MON_8,0))  AS MON_8
+											, SUM(IFNULL(B.MON_9,0))  AS MON_9
+											, SUM(IFNULL(B.MON_10,0)) AS MON_10
+											, SUM(IFNULL(B.MON_11,0)) AS MON_11
+											, SUM(IFNULL(B.MON_12,0)) AS MON_12
+											, SUM(IFNULL(B.TOT_AMT,0)) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN 
+													(SELECT GOAL_YEAR
+															, SALES_PR_CD
+															, SUM(MON_1) AS MON_1
+															, SUM(MON_2) AS MON_2
+															, SUM(MON_3) AS MON_3
+															, SUM(MON_4) AS MON_4
+															, SUM(MON_5) AS MON_5
+															, SUM(MON_6) AS MON_6
+															, SUM(MON_7) AS MON_7
+															, SUM(MON_8) AS MON_8
+															, SUM(MON_9) AS MON_9
+															, SUM(MON_10) AS MON_10
+															, SUM(MON_11) AS MON_11
+															, SUM(MON_12) AS MON_12
+															, SUM(TOT_AMT) AS TOT_AMT
+													   FROM SALES_AMT
+													  GROUP BY GOAL_YEAR, SALES_PR_CD
+													) AS B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+									 GROUP BY A.GOAL_YEAR
+									 
+									 
+									/* 2026.02.11 BY SONG MIN KYO 구글시트 53번 참조  
+								   UNION ALL
+									SELECT	A.GOAL_YEAR
+											, '4' AS SORT
+											, '이익금액' AS GUBUN
+											, SUM(IFNULL(B.MON_1,0))  AS MON_1
+											, SUM(IFNULL(B.MON_2,0))  AS MON_2
+											, SUM(IFNULL(B.MON_3,0))  AS MON_3
+											, SUM(IFNULL(B.MON_4,0))  AS MON_4
+											, SUM(IFNULL(B.MON_5,0))  AS MON_5
+											, SUM(IFNULL(B.MON_6,0))  AS MON_6
+											, SUM(IFNULL(B.MON_7,0))  AS MON_7
+											, SUM(IFNULL(B.MON_8,0))  AS MON_8
+											, SUM(IFNULL(B.MON_9,0))  AS MON_9
+											, SUM(IFNULL(B.MON_10,0)) AS MON_10
+											, SUM(IFNULL(B.MON_11,0)) AS MON_11
+											, SUM(IFNULL(B.MON_12,0)) AS MON_12
+											, SUM(IFNULL(B.MON_1,0)) + SUM(IFNULL(B.MON_2,0)) + SUM(IFNULL(B.MON_3,0)) + SUM(IFNULL(B.MON_4,0)) + SUM(IFNULL(B.MON_5,0))
+											+ SUM(IFNULL(B.MON_6,0)) + SUM(IFNULL(B.MON_7,0)) + SUM(IFNULL(B.MON_8,0)) + SUM(IFNULL(B.MON_9,0)) + SUM(IFNULL(B.MON_10,0))
+											+ SUM(IFNULL(B.MON_11,0)) + SUM(IFNULL(B.MON_12,0)) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN 
+				                					(SELECT A.GOAL_YEAR
+				                							, A.SALES_PR_CD
+				                							, SUM(IFNULL(A.MON_1,0) -  (IFNULL(A.MON_QTY_1,0)  * IFNULL(B.MON_1,C.COST))) AS MON_1
+				                							, SUM(IFNULL(A.MON_2,0) -  (IFNULL(A.MON_QTY_2,0)  * IFNULL(B.MON_2,C.COST))) AS MON_2
+				                							, SUM(IFNULL(A.MON_3,0) -  (IFNULL(A.MON_QTY_3,0)  * IFNULL(B.MON_3,C.COST))) AS MON_3
+				                							, SUM(IFNULL(A.MON_4,0) -  (IFNULL(A.MON_QTY_4,0)  * IFNULL(B.MON_4,C.COST))) AS MON_4
+				                							, SUM(IFNULL(A.MON_5,0) -  (IFNULL(A.MON_QTY_5,0)  * IFNULL(B.MON_5,C.COST))) AS MON_5
+				                							, SUM(IFNULL(A.MON_6,0) -  (IFNULL(A.MON_QTY_6,0)  * IFNULL(B.MON_6,C.COST))) AS MON_6
+				                							, SUM(IFNULL(A.MON_7,0) -  (IFNULL(A.MON_QTY_7,0)  * IFNULL(B.MON_7,C.COST))) AS MON_7
+				                							, SUM(IFNULL(A.MON_8,0) -  (IFNULL(A.MON_QTY_8,0)  * IFNULL(B.MON_8,C.COST))) AS MON_8
+				                							, SUM(IFNULL(A.MON_9,0) -  (IFNULL(A.MON_QTY_9,0)  * IFNULL(B.MON_9,C.COST))) AS MON_9
+				                							, SUM(IFNULL(A.MON_10,0) - (IFNULL(A.MON_QTY_10,0) * IFNULL(B.MON_10,C.COST))) AS MON_10
+				                							, SUM(IFNULL(A.MON_11,0) - (IFNULL(A.MON_QTY_11,0) * IFNULL(B.MON_11,C.COST))) AS MON_11
+				                							, SUM(IFNULL(A.MON_12,0) - (IFNULL(A.MON_QTY_12,0) * IFNULL(B.MON_12,C.COST))) AS MON_12
+				                					   FROM SALES_AMT AS A 
+				                					        LEFT OUTER JOIN BUY_COST AS B
+				                					            ON B.GOAL_YEAR = A.GOAL_YEAR
+				                					           AND B.PRDT_CD = A.PRDT_CD
+															, TFM_PRDT_MST C
+													  WHERE A.PRDT_CD = C.PRDT_CD
+													  GROUP BY A.GOAL_YEAR, A.SALES_PR_CD
+													) B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+									 GROUP BY A.GOAL_YEAR
+									 */
+									 
+									 UNION ALL
+									SELECT	A.GOAL_YEAR
+											, '4' AS SORT
+											, '전년대비차액' AS GUBUN
+											
+											, CASE WHEN SUM(IFNULL(B.MON_1,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_1,0)) - IFNULL(C.MON_1, 0) END AS MON_1
+											, CASE WHEN SUM(IFNULL(B.MON_2,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_2,0)) - IFNULL(C.MON_2, 0) END AS MON_2
+											, CASE WHEN SUM(IFNULL(B.MON_3,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_3,0)) - IFNULL(C.MON_3, 0) END AS MON_3
+											, CASE WHEN SUM(IFNULL(B.MON_4,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_4,0)) - IFNULL(C.MON_4, 0) END AS MON_4
+											, CASE WHEN SUM(IFNULL(B.MON_5,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_5,0)) - IFNULL(C.MON_5, 0) END AS MON_5
+											, CASE WHEN SUM(IFNULL(B.MON_6,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_6,0)) - IFNULL(C.MON_6, 0) END AS MON_6
+											, CASE WHEN SUM(IFNULL(B.MON_7,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_7,0)) - IFNULL(C.MON_7, 0) END AS MON_7
+											, CASE WHEN SUM(IFNULL(B.MON_8,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_8,0)) - IFNULL(C.MON_8, 0) END AS MON_8
+											, CASE WHEN SUM(IFNULL(B.MON_9,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_9,0)) - IFNULL(C.MON_9, 0) END AS MON_9
+											, CASE WHEN SUM(IFNULL(B.MON_10,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_10,0)) - IFNULL(C.MON_10, 0) END AS MON_10
+											, CASE WHEN SUM(IFNULL(B.MON_11,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_11,0)) - IFNULL(C.MON_11, 0) END AS MON_11
+											, CASE WHEN SUM(IFNULL(B.MON_12,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_12,0)) - IFNULL(C.MON_12, 0) END AS MON_12
+											, CASE WHEN SUM(IFNULL(B.TOT_AMT,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.TOT_AMT,0)) - IFNULL(C.TOT_AMT, 0) END AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN 
+													(SELECT GOAL_YEAR
+															, SALES_PR_CD
+															, SUM(MON_1) AS MON_1
+															, SUM(MON_2) AS MON_2
+															, SUM(MON_3) AS MON_3
+															, SUM(MON_4) AS MON_4
+															, SUM(MON_5) AS MON_5
+															, SUM(MON_6) AS MON_6
+															, SUM(MON_7) AS MON_7
+															, SUM(MON_8) AS MON_8
+															, SUM(MON_9) AS MON_9
+															, SUM(MON_10) AS MON_10
+															, SUM(MON_11) AS MON_11
+															, SUM(MON_12) AS MON_12
+															, SUM(TOT_AMT) AS TOT_AMT
+													   FROM SALES_AMT
+													  GROUP BY GOAL_YEAR, SALES_PR_CD
+													) AS B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD		
+												  
+												  
+												 LEFT OUTER JOIN
+												 (
+												 	SELECT	A.GOAL_YEAR
+															, '1' AS SORT
+															, '전년매출액' AS GUBUN
+															, SUM(IFNULL(B.MON_1,0))  AS MON_1
+															, SUM(IFNULL(B.MON_2,0))  AS MON_2
+															, SUM(IFNULL(B.MON_3,0))  AS MON_3
+															, SUM(IFNULL(B.MON_4,0))  AS MON_4
+															, SUM(IFNULL(B.MON_5,0))  AS MON_5
+															, SUM(IFNULL(B.MON_6,0))  AS MON_6
+															, SUM(IFNULL(B.MON_7,0))  AS MON_7
+															, SUM(IFNULL(B.MON_8,0))  AS MON_8
+															, SUM(IFNULL(B.MON_9,0))  AS MON_9
+															, SUM(IFNULL(B.MON_10,0)) AS MON_10
+															, SUM(IFNULL(B.MON_11,0)) AS MON_11
+															, SUM(IFNULL(B.MON_12,0)) AS MON_12
+															, SUM(IFNULL(B.TOT_AMT,0)) AS TOT_AMT
+													  FROM	GOAL_AMT AS A 
+																LEFT OUTER JOIN SALES_AMT_PREV AS B
+																  ON A.GOAL_YEAR = B.GOAL_YEAR
+																  AND A.SALES_PR_CD = B.SALES_PR_CD
+													 GROUP BY A.GOAL_YEAR
+												 ) AS C
+												 ON A.GOAL_YEAR = B.GOAL_YEAR
+									 GROUP BY A.GOAL_YEAR
+									 
+									 
+								   UNION ALL
+									SELECT	A.GOAL_YEAR
+											, '5' AS SORT
+											, '달성율' AS GUBUN
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_1,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_1,0))  / SUM(IFNULL(A.MON_1,0))  * 100 END ,1) AS MON_1
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_2,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_2,0))  / SUM(IFNULL(A.MON_2,0))  * 100 END ,1) AS MON_2
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_3,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_3,0))  / SUM(IFNULL(A.MON_3,0))  * 100 END ,1) AS MON_3
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_4,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_4,0))  / SUM(IFNULL(A.MON_4,0))  * 100 END ,1) AS MON_4
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_5,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_5,0))  / SUM(IFNULL(A.MON_5,0))  * 100 END ,1) AS MON_5
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_6,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_6,0))  / SUM(IFNULL(A.MON_6,0))  * 100 END ,1) AS MON_6
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_7,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_7,0))  / SUM(IFNULL(A.MON_7,0))  * 100 END ,1) AS MON_7
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_8,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_8,0))  / SUM(IFNULL(A.MON_8,0))  * 100 END ,1) AS MON_8
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_9,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_9,0))  / SUM(IFNULL(A.MON_9,0))  * 100 END ,1) AS MON_9
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_10,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_10,0)) / SUM(IFNULL(A.MON_10,0)) * 100 END ,1) AS MON_10
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_11,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_11,0)) / SUM(IFNULL(A.MON_11,0)) * 100 END ,1) AS MON_11
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_12,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_12,0)) / SUM(IFNULL(A.MON_12,0)) * 100 END ,1) AS MON_12
+											, ROUND(CASE WHEN SUM(IFNULL(A.TOT_AMT,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.TOT_AMT,0)) / SUM(IFNULL(A.TOT_AMT,0)) * 100 END ,1) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN 
+													(SELECT GOAL_YEAR
+															, SALES_PR_CD
+															, SUM(MON_1) AS MON_1
+															, SUM(MON_2) AS MON_2
+															, SUM(MON_3) AS MON_3
+															, SUM(MON_4) AS MON_4
+															, SUM(MON_5) AS MON_5
+															, SUM(MON_6) AS MON_6
+															, SUM(MON_7) AS MON_7
+															, SUM(MON_8) AS MON_8
+															, SUM(MON_9) AS MON_9
+															, SUM(MON_10) AS MON_10
+															, SUM(MON_11) AS MON_11
+															, SUM(MON_12) AS MON_12
+															, SUM(TOT_AMT) AS TOT_AMT
+													   FROM SALES_AMT
+													  GROUP BY GOAL_YEAR, SALES_PR_CD
+													) AS B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+									 GROUP  BY A.GOAL_YEAR
+								   ) A
+							 ) A
+					    ) A
+			ORDER BY A.SALES_PR_CD, A.SORT
+	</select>
+	
+	
+	<!-- 영업 목표현황 엑셀 다운로드 -->
+	<select id="selectSalSalesGoalListExcelDown" parameterType="com.doppio.workplace.as.service.SalSalesGoalListVo" resultType="java.util.HashMap">
+	/*SalSalesGoalListMapper.selectSalSalesGoalListExcelDown*/	
+		WITH SALES_AMT AS (
+		    SELECT #{goalYear} AS GOAL_YEAR
+		           , TSPM.SALES_PR_CD
+		           , TSPM.SALES_PR_NM
+		           , A.PRDT_CD
+		           , A.MON_QTY_1 
+                   , A.MON_QTY_2 
+                   , A.MON_QTY_3 
+                   , A.MON_QTY_4 
+                   , A.MON_QTY_5 
+                   , A.MON_QTY_6 
+                   , A.MON_QTY_7 
+                   , A.MON_QTY_8 
+                   , A.MON_QTY_9 
+                   , A.MON_QTY_10
+                   , A.MON_QTY_11
+                   , A.MON_QTY_12
+                   , A.TOT_QTY
+		           , A.MON_1 
+                   , A.MON_2 
+                   , A.MON_3 
+                   , A.MON_4 
+                   , A.MON_5 
+                   , A.MON_6 
+                   , A.MON_7 
+                   , A.MON_8 
+                   , A.MON_9 
+                   , A.MON_10
+                   , A.MON_11
+                   , A.MON_12
+                   , A.TOT_AMT
+		      FROM (SELECT SALES_CD
+		                   , PRDT_CD
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '01' THEN SALES_QTY END) AS MON_QTY_1
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '02' THEN SALES_QTY END) AS MON_QTY_2
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '03' THEN SALES_QTY END) AS MON_QTY_3
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '04' THEN SALES_QTY END) AS MON_QTY_4
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '05' THEN SALES_QTY END) AS MON_QTY_5
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '06' THEN SALES_QTY END) AS MON_QTY_6
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '07' THEN SALES_QTY END) AS MON_QTY_7
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '08' THEN SALES_QTY END) AS MON_QTY_8
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '09' THEN SALES_QTY END) AS MON_QTY_9
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '10' THEN SALES_QTY END) AS MON_QTY_10
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '11' THEN SALES_QTY END) AS MON_QTY_11
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '12' THEN SALES_QTY END) AS MON_QTY_12
+		                   , SUM(SALES_QTY) AS TOT_QTY
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '01' THEN PURE_AMT END) AS MON_1
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '02' THEN PURE_AMT END) AS MON_2
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '03' THEN PURE_AMT END) AS MON_3
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '04' THEN PURE_AMT END) AS MON_4
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '05' THEN PURE_AMT END) AS MON_5
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '06' THEN PURE_AMT END) AS MON_6
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '07' THEN PURE_AMT END) AS MON_7
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '08' THEN PURE_AMT END) AS MON_8
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '09' THEN PURE_AMT END) AS MON_9
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '10' THEN PURE_AMT END) AS MON_10
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '11' THEN PURE_AMT END) AS MON_11
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '12' THEN PURE_AMT END) AS MON_12
+		                   , SUM(PURE_AMT) AS TOT_AMT
+		              FROM TMH_MON_SALES_TOT
+		             WHERE YEAR_MON LIKE CONCAT(#{goalYear}, '%') 
+		             GROUP BY SALES_CD, PRDT_CD
+                   ) A, TFM_SALES_ADD_INFO AS TSAI, TFM_SALES_PR_MST AS TSPM
+             WHERE A.SALES_CD = TSAI.SALES_CD
+               AND TSAI.SALES_PR_CD = TSPM.SALES_PR_CD
+               AND TSPM.USE_YN = 'Y'	/* 2025.07.07 조광연 팀장 중지 영업사원 조회 DATA 에서 제거 요청 */
+           ), SALES_AMT_PREV AS (
+		    SELECT #{goalYear} AS GOAL_YEAR
+		           , TSPM.SALES_PR_CD
+		           , TSPM.SALES_PR_NM
+		           , A.MON_1 
+                   , A.MON_2 
+                   , A.MON_3 
+                   , A.MON_4 
+                   , A.MON_5 
+                   , A.MON_6 
+                   , A.MON_7 
+                   , A.MON_8 
+                   , A.MON_9 
+                   , A.MON_10
+                   , A.MON_11
+                   , A.MON_12
+                   , A.TOT_AMT
+		      FROM (SELECT SALES_CD
+		                   , PRDT_CD
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '01' THEN PURE_AMT END) AS MON_1
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '02' THEN PURE_AMT END) AS MON_2
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '03' THEN PURE_AMT END) AS MON_3
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '04' THEN PURE_AMT END) AS MON_4
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '05' THEN PURE_AMT END) AS MON_5
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '06' THEN PURE_AMT END) AS MON_6
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '07' THEN PURE_AMT END) AS MON_7
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '08' THEN PURE_AMT END) AS MON_8
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '09' THEN PURE_AMT END) AS MON_9
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '10' THEN PURE_AMT END) AS MON_10
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '11' THEN PURE_AMT END) AS MON_11
+		                   , SUM(CASE WHEN RIGHT(YEAR_MON,2) = '12' THEN PURE_AMT END) AS MON_12
+		                   , SUM(PURE_AMT) AS TOT_AMT
+		              FROM TMH_MON_SALES_TOT
+		             WHERE YEAR_MON LIKE CONCAT(LEFT(DATE_ADD(CONCAT(#{goalYear}, '0101'), INTERVAL -1 YEAR),4),'%') 
+		             GROUP BY SALES_CD, PRDT_CD
+                   ) A, TFM_SALES_ADD_INFO AS TSAI, TFM_SALES_PR_MST AS TSPM
+             WHERE A.SALES_CD = TSAI.SALES_CD
+               AND TSAI.SALES_PR_CD = TSPM.SALES_PR_CD
+               AND TSPM.USE_YN = 'Y'	/* 2025.07.07 조광연 팀장 중지 영업사원 조회 DATA 에서 제거 요청 */
+           ), GOAL_AMT AS (
+		    SELECT #{goalYear} AS GOAL_YEAR
+		           , TSPM.SALES_PR_CD
+		           , TSPM.SALES_PR_NM
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '01' THEN TSG.GOAL_AMT END),0) AS MON_1
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '02' THEN TSG.GOAL_AMT END),0) AS MON_2
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '03' THEN TSG.GOAL_AMT END),0) AS MON_3
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '04' THEN TSG.GOAL_AMT END),0) AS MON_4
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '05' THEN TSG.GOAL_AMT END),0) AS MON_5
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '06' THEN TSG.GOAL_AMT END),0) AS MON_6
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '07' THEN TSG.GOAL_AMT END),0) AS MON_7
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '08' THEN TSG.GOAL_AMT END),0) AS MON_8
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '09' THEN TSG.GOAL_AMT END),0) AS MON_9
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '10' THEN TSG.GOAL_AMT END),0) AS MON_10
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '11' THEN TSG.GOAL_AMT END),0) AS MON_11
+		           , IFNULL(SUM(CASE WHEN TSG.GOAL_MON = '12' THEN TSG.GOAL_AMT END),0) AS MON_12
+		           , IFNULL(SUM(TSG.GOAL_AMT),0) AS TOT_AMT
+		      FROM TFM_SALES_PR_MST AS TSPM
+		           LEFT OUTER JOIN TSH_SALES_GOAL AS TSG
+		             ON TSG.SALES_PR_CD = TSPM.SALES_PR_CD 
+		            AND TSG.GOAL_YEAR = #{goalYear}		 
+		      WHERE 1=1
+		      AND TSPM.USE_YN = 'Y'            
+		     GROUP BY TSPM.SALES_PR_CD, TSPM.SALES_PR_NM
+		   ), BUY_COST AS (
+		    SELECT #{goalYear} AS GOAL_YEAR
+		           , A.PRDT_CD
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '01' THEN A.COST END),0) AS MON_1
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '02' THEN A.COST END),0) AS MON_2
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '03' THEN A.COST END),0) AS MON_3
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '04' THEN A.COST END),0) AS MON_4
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '05' THEN A.COST END),0) AS MON_5
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '06' THEN A.COST END),0) AS MON_6
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '07' THEN A.COST END),0) AS MON_7
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '08' THEN A.COST END),0) AS MON_8
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '09' THEN A.COST END),0) AS MON_9
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '10' THEN A.COST END),0) AS MON_10
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '11' THEN A.COST END),0) AS MON_11
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '12' THEN A.COST END),0) AS MON_12
+		           , IFNULL(SUM(CASE WHEN RIGHT(A.YEAR_MON,2) = '12' THEN A.COST END),0) AS TOT_AMT
+		      FROM (SELECT A.YEAR_MON
+		                   , A.PRDT_CD
+		                   , MAX(CASE WHEN IFNULL(A.COST,0)=0 THEN A.CONF_COST ELSE A.COST END) AS COST
+		              FROM (
+				            SELECT LEFT(TPR.BUY_DT, 6) AS YEAR_MON
+					               , TPR.PRDT_CD
+			    		           , IFNULL(MAX(TPR.COST),0) AS COST
+			            		   , 0 AS CONF_COST
+					          FROM TBH_PRDT_RCPT AS TPR
+					               JOIN
+			    		               (SELECT SUBSTRING(BUY_DT,5,2) AS YEAR_MON
+			            		               , PRDT_CD
+			                    		       , MAX(BUY_DT) AS MAX_BUY_DT
+					                      FROM TBH_PRDT_RCPT
+					                     WHERE BUY_DT LIKE CONCAT(#{goalYear}, '%')
+			    		                   AND BUY_CONF_YN = 'Y'
+			            		           AND BUY_QTY != 0
+			                    		 GROUP BY PRDT_CD
+					                   ) AS A
+						     WHERE TPR.BUY_DT = A.MAX_BUY_DT
+						       AND TPR.PRDT_CD = A.PRDT_CD
+				        	   AND TPR.BUY_CONF_YN = 'Y'
+						       AND TPR.BUY_QTY != 0
+						     GROUP BY SUBSTRING(BUY_DT,5,2), TPR.PRDT_CD
+						 UNION ALL
+				        	SELECT YEAR_MON
+						           , PRDT_CD
+						           , 0 AS COST
+						           , COST AS CONF_COST
+				        	  FROM TMH_MON_BUY_COST
+						     WHERE YEAR_MON LIKE CONCAT(#{goalYear}, '%')
+						   ) AS A
+					 GROUP BY A.YEAR_MON
+ 		                      , A.PRDT_CD
+				   ) AS A
+		     GROUP BY A.PRDT_CD
+           )
+           
+			 SELECT A.SALES_PR_NM
+					, A.GUBUN
+					, A.MON_1  
+					, A.MON_2  
+					, A.MON_3  
+					, A.MON_4  
+					, A.MON_5  
+					, A.MON_6  
+					, A.MON_7  
+					, A.MON_8  
+					, A.MON_9  
+					, A.MON_10 
+					, A.MON_11 
+					, A.MON_12 
+				    , A.TOT_AMT
+			   FROM (
+					 SELECT A.GOAL_YEAR
+							, A.SALES_PR_CD
+							, A.SALES_PR_NM
+							, A.GUBUN
+							, A.SORT
+							, A.MON_1
+							, A.MON_2
+							, A.MON_3
+							, A.MON_4
+							, A.MON_5
+							, A.MON_6
+							, A.MON_7
+							, A.MON_8
+							, A.MON_9
+							, A.MON_10
+							, A.MON_11
+							, A.MON_12
+							, A.TOT_AMT
+					   FROM	(SELECT	A.GOAL_YEAR
+									, A.SALES_PR_CD
+									, A.SALES_PR_NM
+									, A.GUBUN
+									, A.SORT
+									, IFNULL(A.MON_1,0)  AS MON_1
+									, IFNULL(A.MON_2,0)  AS MON_2
+									, IFNULL(A.MON_3,0)  AS MON_3
+									, IFNULL(A.MON_4,0)  AS MON_4
+									, IFNULL(A.MON_5,0)  AS MON_5
+									, IFNULL(A.MON_6,0)  AS MON_6
+									, IFNULL(A.MON_7,0)  AS MON_7
+									, IFNULL(A.MON_8,0)  AS MON_8
+									, IFNULL(A.MON_9,0)  AS MON_9
+									, IFNULL(A.MON_10,0) AS MON_10
+									, IFNULL(A.MON_11,0) AS MON_11
+									, IFNULL(A.MON_12,0) AS MON_12
+									, IFNULL(A.TOT_AMT,0) AS TOT_AMT
+							  FROM	(
+									SELECT	A.GOAL_YEAR
+											, A.SALES_PR_CD
+											, A.SALES_PR_NM
+											, '1' AS SORT
+											, '전년매출액' AS GUBUN
+											, SUM(IFNULL(B.MON_1,0))  AS MON_1
+											, SUM(IFNULL(B.MON_2,0))  AS MON_2
+											, SUM(IFNULL(B.MON_3,0))  AS MON_3
+											, SUM(IFNULL(B.MON_4,0))  AS MON_4
+											, SUM(IFNULL(B.MON_5,0))  AS MON_5
+											, SUM(IFNULL(B.MON_6,0))  AS MON_6
+											, SUM(IFNULL(B.MON_7,0))  AS MON_7
+											, SUM(IFNULL(B.MON_8,0))  AS MON_8
+											, SUM(IFNULL(B.MON_9,0))  AS MON_9
+											, SUM(IFNULL(B.MON_10,0)) AS MON_10
+											, SUM(IFNULL(B.MON_11,0)) AS MON_11
+											, SUM(IFNULL(B.MON_12,0)) AS MON_12
+											, SUM(IFNULL(B.TOT_AMT,0)) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN SALES_AMT_PREV AS B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+									 GROUP BY A.GOAL_YEAR, A.SALES_PR_CD, A.SALES_PR_NM
+								   UNION ALL
+									SELECT	GOAL_YEAR
+											, SALES_PR_CD
+											, SALES_PR_NM
+											, '2' AS SORT					
+											, '목표액' AS GUBUN
+											, MON_1
+											, MON_2
+											, MON_3
+											, MON_4
+											, MON_5
+											, MON_6
+											, MON_7
+											, MON_8
+											, MON_9
+											, MON_10
+											, MON_11
+											, MON_12
+											, TOT_AMT
+									  FROM	GOAL_AMT
+								  UNION ALL
+									SELECT	A.GOAL_YEAR
+											, A.SALES_PR_CD
+											, A.SALES_PR_NM
+											, '3' AS SORT
+											, '매출액' AS GUBUN
+											, SUM(IFNULL(B.MON_1,0))  AS MON_1
+											, SUM(IFNULL(B.MON_2,0))  AS MON_2
+											, SUM(IFNULL(B.MON_3,0))  AS MON_3
+											, SUM(IFNULL(B.MON_4,0))  AS MON_4
+											, SUM(IFNULL(B.MON_5,0))  AS MON_5
+											, SUM(IFNULL(B.MON_6,0))  AS MON_6
+											, SUM(IFNULL(B.MON_7,0))  AS MON_7
+											, SUM(IFNULL(B.MON_8,0))  AS MON_8
+											, SUM(IFNULL(B.MON_9,0))  AS MON_9
+											, SUM(IFNULL(B.MON_10,0)) AS MON_10
+											, SUM(IFNULL(B.MON_11,0)) AS MON_11
+											, SUM(IFNULL(B.MON_12,0)) AS MON_12
+											, SUM(IFNULL(B.TOT_AMT,0)) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN 
+													(SELECT GOAL_YEAR
+															, SALES_PR_CD
+															, SUM(MON_1) AS MON_1
+															, SUM(MON_2) AS MON_2
+															, SUM(MON_3) AS MON_3
+															, SUM(MON_4) AS MON_4
+															, SUM(MON_5) AS MON_5
+															, SUM(MON_6) AS MON_6
+															, SUM(MON_7) AS MON_7
+															, SUM(MON_8) AS MON_8
+															, SUM(MON_9) AS MON_9
+															, SUM(MON_10) AS MON_10
+															, SUM(MON_11) AS MON_11
+															, SUM(MON_12) AS MON_12
+															, SUM(TOT_AMT) AS TOT_AMT
+													   FROM SALES_AMT
+													  GROUP BY GOAL_YEAR, SALES_PR_CD
+													) AS B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+									 GROUP BY A.GOAL_YEAR, A.SALES_PR_CD, A.SALES_PR_NM
+								   UNION ALL
+									SELECT	A.GOAL_YEAR
+											, A.SALES_PR_CD
+											, A.SALES_PR_NM
+											, '4' AS SORT
+											, '이익금액' AS GUBUN
+											, SUM(IFNULL(B.MON_1,0))  AS MON_1
+											, SUM(IFNULL(B.MON_2,0))  AS MON_2
+											, SUM(IFNULL(B.MON_3,0))  AS MON_3
+											, SUM(IFNULL(B.MON_4,0))  AS MON_4
+											, SUM(IFNULL(B.MON_5,0))  AS MON_5
+											, SUM(IFNULL(B.MON_6,0))  AS MON_6
+											, SUM(IFNULL(B.MON_7,0))  AS MON_7
+											, SUM(IFNULL(B.MON_8,0))  AS MON_8
+											, SUM(IFNULL(B.MON_9,0))  AS MON_9
+											, SUM(IFNULL(B.MON_10,0)) AS MON_10
+											, SUM(IFNULL(B.MON_11,0)) AS MON_11
+											, SUM(IFNULL(B.MON_12,0)) AS MON_12
+											, SUM(IFNULL(B.MON_1,0)) + SUM(IFNULL(B.MON_2,0)) + SUM(IFNULL(B.MON_3,0)) + SUM(IFNULL(B.MON_4,0)) + SUM(IFNULL(B.MON_5,0))
+											+ SUM(IFNULL(B.MON_6,0)) + SUM(IFNULL(B.MON_7,0)) + SUM(IFNULL(B.MON_8,0)) + SUM(IFNULL(B.MON_9,0)) + SUM(IFNULL(B.MON_10,0))
+											+ SUM(IFNULL(B.MON_11,0)) + SUM(IFNULL(B.MON_12,0)) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN 
+				                					(SELECT A.GOAL_YEAR
+				                							, A.SALES_PR_CD
+				                							, SUM(IFNULL(A.MON_1,0) -  (IFNULL(A.MON_QTY_1,0)  * IFNULL(B.MON_1,C.COST))) AS MON_1
+				                							, SUM(IFNULL(A.MON_2,0) -  (IFNULL(A.MON_QTY_2,0)  * IFNULL(B.MON_2,C.COST))) AS MON_2
+				                							, SUM(IFNULL(A.MON_3,0) -  (IFNULL(A.MON_QTY_3,0)  * IFNULL(B.MON_3,C.COST))) AS MON_3
+				                							, SUM(IFNULL(A.MON_4,0) -  (IFNULL(A.MON_QTY_4,0)  * IFNULL(B.MON_4,C.COST))) AS MON_4
+				                							, SUM(IFNULL(A.MON_5,0) -  (IFNULL(A.MON_QTY_5,0)  * IFNULL(B.MON_5,C.COST))) AS MON_5
+				                							, SUM(IFNULL(A.MON_6,0) -  (IFNULL(A.MON_QTY_6,0)  * IFNULL(B.MON_6,C.COST))) AS MON_6
+				                							, SUM(IFNULL(A.MON_7,0) -  (IFNULL(A.MON_QTY_7,0)  * IFNULL(B.MON_7,C.COST))) AS MON_7
+				                							, SUM(IFNULL(A.MON_8,0) -  (IFNULL(A.MON_QTY_8,0)  * IFNULL(B.MON_8,C.COST))) AS MON_8
+				                							, SUM(IFNULL(A.MON_9,0) -  (IFNULL(A.MON_QTY_9,0)  * IFNULL(B.MON_9,C.COST))) AS MON_9
+				                							, SUM(IFNULL(A.MON_10,0) - (IFNULL(A.MON_QTY_10,0) * IFNULL(B.MON_10,C.COST))) AS MON_10
+				                							, SUM(IFNULL(A.MON_11,0) - (IFNULL(A.MON_QTY_11,0) * IFNULL(B.MON_11,C.COST))) AS MON_11
+				                							, SUM(IFNULL(A.MON_12,0) - (IFNULL(A.MON_QTY_12,0) * IFNULL(B.MON_12,C.COST))) AS MON_12
+				                					   FROM SALES_AMT AS A 
+				                					        LEFT OUTER JOIN BUY_COST AS B
+				                					            ON B.GOAL_YEAR = A.GOAL_YEAR
+				                					           AND B.PRDT_CD = A.PRDT_CD
+															, TFM_PRDT_MST C
+													  WHERE A.PRDT_CD = C.PRDT_CD
+													  GROUP BY A.GOAL_YEAR, A.SALES_PR_CD
+													) B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+									 GROUP BY A.GOAL_YEAR, A.SALES_PR_CD, A.SALES_PR_NM
+								   UNION ALL
+									SELECT	A.GOAL_YEAR
+											, A.SALES_PR_CD
+											, A.SALES_PR_NM
+											, '5' AS SORT
+											, '달성율' AS GUBUN
+											, ROUND(CASE WHEN IFNULL(A.MON_1,0)  = 0 THEN 0 ELSE IFNULL(B.MON_1,0)  / IFNULL(A.MON_1,0)  * 100 END ,1) AS MON_1
+											, ROUND(CASE WHEN IFNULL(A.MON_2,0)  = 0 THEN 0 ELSE IFNULL(B.MON_2,0)  / IFNULL(A.MON_2,0)  * 100 END ,1) AS MON_2
+											, ROUND(CASE WHEN IFNULL(A.MON_3,0)  = 0 THEN 0 ELSE IFNULL(B.MON_3,0)  / IFNULL(A.MON_3,0)  * 100 END ,1) AS MON_3
+											, ROUND(CASE WHEN IFNULL(A.MON_4,0)  = 0 THEN 0 ELSE IFNULL(B.MON_4,0)  / IFNULL(A.MON_4,0)  * 100 END ,1) AS MON_4
+											, ROUND(CASE WHEN IFNULL(A.MON_5,0)  = 0 THEN 0 ELSE IFNULL(B.MON_5,0)  / IFNULL(A.MON_5,0)  * 100 END ,1) AS MON_5
+											, ROUND(CASE WHEN IFNULL(A.MON_6,0)  = 0 THEN 0 ELSE IFNULL(B.MON_6,0)  / IFNULL(A.MON_6,0)  * 100 END ,1) AS MON_6
+											, ROUND(CASE WHEN IFNULL(A.MON_7,0)  = 0 THEN 0 ELSE IFNULL(B.MON_7,0)  / IFNULL(A.MON_7,0)  * 100 END ,1) AS MON_7
+											, ROUND(CASE WHEN IFNULL(A.MON_8,0)  = 0 THEN 0 ELSE IFNULL(B.MON_8,0)  / IFNULL(A.MON_8,0)  * 100 END ,1) AS MON_8
+											, ROUND(CASE WHEN IFNULL(A.MON_9,0)  = 0 THEN 0 ELSE IFNULL(B.MON_9,0)  / IFNULL(A.MON_9,0)  * 100 END ,1) AS MON_9
+											, ROUND(CASE WHEN IFNULL(A.MON_10,0) = 0 THEN 0 ELSE IFNULL(B.MON_10,0) / IFNULL(A.MON_10,0) * 100 END ,1) AS MON_10
+											, ROUND(CASE WHEN IFNULL(A.MON_11,0) = 0 THEN 0 ELSE IFNULL(B.MON_11,0) / IFNULL(A.MON_11,0) * 100 END ,1) AS MON_11
+											, ROUND(CASE WHEN IFNULL(A.MON_12,0) = 0 THEN 0 ELSE IFNULL(B.MON_12,0) / IFNULL(A.MON_12,0) * 100 END ,1) AS MON_12
+											, ROUND(CASE WHEN IFNULL(A.TOT_AMT,0) = 0 THEN 0 ELSE IFNULL(B.TOT_AMT,0) / IFNULL(A.TOT_AMT,0) * 100 END ,1) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN 
+													(SELECT GOAL_YEAR
+															, SALES_PR_CD
+															, SUM(MON_1) AS MON_1
+															, SUM(MON_2) AS MON_2
+															, SUM(MON_3) AS MON_3
+															, SUM(MON_4) AS MON_4
+															, SUM(MON_5) AS MON_5
+															, SUM(MON_6) AS MON_6
+															, SUM(MON_7) AS MON_7
+															, SUM(MON_8) AS MON_8
+															, SUM(MON_9) AS MON_9
+															, SUM(MON_10) AS MON_10
+															, SUM(MON_11) AS MON_11
+															, SUM(MON_12) AS MON_12
+															, SUM(TOT_AMT) AS TOT_AMT
+													   FROM SALES_AMT
+													  GROUP BY GOAL_YEAR, SALES_PR_CD
+													) AS B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+								   ) A
+							 ) A
+				    UNION ALL
+				      SELECT A.GOAL_YEAR
+							, A.SALES_PR_CD
+							, A.SALES_PR_NM
+							, A.GUBUN
+							, A.SORT
+							, A.MON_1
+							, A.MON_2
+							, A.MON_3
+							, A.MON_4
+							, A.MON_5
+							, A.MON_6
+							, A.MON_7
+							, A.MON_8
+							, A.MON_9
+							, A.MON_10
+							, A.MON_11
+							, A.MON_12
+							, A.TOT_AMT
+					   FROM	(SELECT	A.GOAL_YEAR
+									, '99999' SALES_PR_CD
+									, '합계' SALES_PR_NM
+									, A.GUBUN
+									, A.SORT
+									, IFNULL(A.MON_1,0)  AS MON_1
+									, IFNULL(A.MON_2,0)  AS MON_2
+									, IFNULL(A.MON_3,0)  AS MON_3
+									, IFNULL(A.MON_4,0)  AS MON_4
+									, IFNULL(A.MON_5,0)  AS MON_5
+									, IFNULL(A.MON_6,0)  AS MON_6
+									, IFNULL(A.MON_7,0)  AS MON_7
+									, IFNULL(A.MON_8,0)  AS MON_8
+									, IFNULL(A.MON_9,0)  AS MON_9
+									, IFNULL(A.MON_10,0) AS MON_10
+									, IFNULL(A.MON_11,0) AS MON_11
+									, IFNULL(A.MON_12,0) AS MON_12
+									, IFNULL(A.TOT_AMT,0) AS TOT_AMT
+							  FROM	(
+									SELECT	A.GOAL_YEAR
+											, '1' AS SORT
+											, '전년매출액' AS GUBUN
+											, SUM(IFNULL(B.MON_1,0))  AS MON_1
+											, SUM(IFNULL(B.MON_2,0))  AS MON_2
+											, SUM(IFNULL(B.MON_3,0))  AS MON_3
+											, SUM(IFNULL(B.MON_4,0))  AS MON_4
+											, SUM(IFNULL(B.MON_5,0))  AS MON_5
+											, SUM(IFNULL(B.MON_6,0))  AS MON_6
+											, SUM(IFNULL(B.MON_7,0))  AS MON_7
+											, SUM(IFNULL(B.MON_8,0))  AS MON_8
+											, SUM(IFNULL(B.MON_9,0))  AS MON_9
+											, SUM(IFNULL(B.MON_10,0)) AS MON_10
+											, SUM(IFNULL(B.MON_11,0)) AS MON_11
+											, SUM(IFNULL(B.MON_12,0)) AS MON_12
+											, SUM(IFNULL(B.TOT_AMT,0)) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN SALES_AMT_PREV AS B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+									 GROUP BY A.GOAL_YEAR
+								   UNION ALL
+									SELECT	GOAL_YEAR
+											, '2' AS SORT					
+											, '목표액' AS GUBUN
+											, SUM(MON_1)  AS MON_1
+											, SUM(MON_2)  AS MON_2
+											, SUM(MON_3)  AS MON_3
+											, SUM(MON_4)  AS MON_4
+											, SUM(MON_5)  AS MON_5
+											, SUM(MON_6)  AS MON_6
+											, SUM(MON_7)  AS MON_7
+											, SUM(MON_8)  AS MON_8
+											, SUM(MON_9)  AS MON_9
+											, SUM(MON_10) AS MON_10
+											, SUM(MON_11) AS MON_11
+											, SUM(MON_12) AS MON_12
+											, SUM(TOT_AMT) AS TOT_AMT
+									  FROM	GOAL_AMT
+									 GROUP  BY GOAL_YEAR
+								  UNION ALL
+									SELECT	A.GOAL_YEAR
+											, '3' AS SORT
+											, '매출액' AS GUBUN
+											, SUM(IFNULL(B.MON_1,0))  AS MON_1
+											, SUM(IFNULL(B.MON_2,0))  AS MON_2
+											, SUM(IFNULL(B.MON_3,0))  AS MON_3
+											, SUM(IFNULL(B.MON_4,0))  AS MON_4
+											, SUM(IFNULL(B.MON_5,0))  AS MON_5
+											, SUM(IFNULL(B.MON_6,0))  AS MON_6
+											, SUM(IFNULL(B.MON_7,0))  AS MON_7
+											, SUM(IFNULL(B.MON_8,0))  AS MON_8
+											, SUM(IFNULL(B.MON_9,0))  AS MON_9
+											, SUM(IFNULL(B.MON_10,0)) AS MON_10
+											, SUM(IFNULL(B.MON_11,0)) AS MON_11
+											, SUM(IFNULL(B.MON_12,0)) AS MON_12
+											, SUM(IFNULL(B.TOT_AMT,0)) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN 
+													(SELECT GOAL_YEAR
+															, SALES_PR_CD
+															, SUM(MON_1) AS MON_1
+															, SUM(MON_2) AS MON_2
+															, SUM(MON_3) AS MON_3
+															, SUM(MON_4) AS MON_4
+															, SUM(MON_5) AS MON_5
+															, SUM(MON_6) AS MON_6
+															, SUM(MON_7) AS MON_7
+															, SUM(MON_8) AS MON_8
+															, SUM(MON_9) AS MON_9
+															, SUM(MON_10) AS MON_10
+															, SUM(MON_11) AS MON_11
+															, SUM(MON_12) AS MON_12
+															, SUM(TOT_AMT) AS TOT_AMT
+													   FROM SALES_AMT
+													  GROUP BY GOAL_YEAR, SALES_PR_CD
+													) AS B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+									 GROUP BY A.GOAL_YEAR
+								   UNION ALL
+									SELECT	A.GOAL_YEAR
+											, '4' AS SORT
+											, '이익금액' AS GUBUN
+											, SUM(IFNULL(B.MON_1,0))  AS MON_1
+											, SUM(IFNULL(B.MON_2,0))  AS MON_2
+											, SUM(IFNULL(B.MON_3,0))  AS MON_3
+											, SUM(IFNULL(B.MON_4,0))  AS MON_4
+											, SUM(IFNULL(B.MON_5,0))  AS MON_5
+											, SUM(IFNULL(B.MON_6,0))  AS MON_6
+											, SUM(IFNULL(B.MON_7,0))  AS MON_7
+											, SUM(IFNULL(B.MON_8,0))  AS MON_8
+											, SUM(IFNULL(B.MON_9,0))  AS MON_9
+											, SUM(IFNULL(B.MON_10,0)) AS MON_10
+											, SUM(IFNULL(B.MON_11,0)) AS MON_11
+											, SUM(IFNULL(B.MON_12,0)) AS MON_12
+											, SUM(IFNULL(B.MON_1,0)) + SUM(IFNULL(B.MON_2,0)) + SUM(IFNULL(B.MON_3,0)) + SUM(IFNULL(B.MON_4,0)) + SUM(IFNULL(B.MON_5,0))
+											+ SUM(IFNULL(B.MON_6,0)) + SUM(IFNULL(B.MON_7,0)) + SUM(IFNULL(B.MON_8,0)) + SUM(IFNULL(B.MON_9,0)) + SUM(IFNULL(B.MON_10,0))
+											+ SUM(IFNULL(B.MON_11,0)) + SUM(IFNULL(B.MON_12,0)) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN 
+				                					(SELECT A.GOAL_YEAR
+				                							, A.SALES_PR_CD
+				                							, SUM(IFNULL(A.MON_1,0) -  (IFNULL(A.MON_QTY_1,0)  * IFNULL(B.MON_1,C.COST))) AS MON_1
+				                							, SUM(IFNULL(A.MON_2,0) -  (IFNULL(A.MON_QTY_2,0)  * IFNULL(B.MON_2,C.COST))) AS MON_2
+				                							, SUM(IFNULL(A.MON_3,0) -  (IFNULL(A.MON_QTY_3,0)  * IFNULL(B.MON_3,C.COST))) AS MON_3
+				                							, SUM(IFNULL(A.MON_4,0) -  (IFNULL(A.MON_QTY_4,0)  * IFNULL(B.MON_4,C.COST))) AS MON_4
+				                							, SUM(IFNULL(A.MON_5,0) -  (IFNULL(A.MON_QTY_5,0)  * IFNULL(B.MON_5,C.COST))) AS MON_5
+				                							, SUM(IFNULL(A.MON_6,0) -  (IFNULL(A.MON_QTY_6,0)  * IFNULL(B.MON_6,C.COST))) AS MON_6
+				                							, SUM(IFNULL(A.MON_7,0) -  (IFNULL(A.MON_QTY_7,0)  * IFNULL(B.MON_7,C.COST))) AS MON_7
+				                							, SUM(IFNULL(A.MON_8,0) -  (IFNULL(A.MON_QTY_8,0)  * IFNULL(B.MON_8,C.COST))) AS MON_8
+				                							, SUM(IFNULL(A.MON_9,0) -  (IFNULL(A.MON_QTY_9,0)  * IFNULL(B.MON_9,C.COST))) AS MON_9
+				                							, SUM(IFNULL(A.MON_10,0) - (IFNULL(A.MON_QTY_10,0) * IFNULL(B.MON_10,C.COST))) AS MON_10
+				                							, SUM(IFNULL(A.MON_11,0) - (IFNULL(A.MON_QTY_11,0) * IFNULL(B.MON_11,C.COST))) AS MON_11
+				                							, SUM(IFNULL(A.MON_12,0) - (IFNULL(A.MON_QTY_12,0) * IFNULL(B.MON_12,C.COST))) AS MON_12
+				                					   FROM SALES_AMT AS A 
+				                					        LEFT OUTER JOIN BUY_COST AS B
+				                					            ON B.GOAL_YEAR = A.GOAL_YEAR
+				                					           AND B.PRDT_CD = A.PRDT_CD
+															, TFM_PRDT_MST C
+													  WHERE A.PRDT_CD = C.PRDT_CD
+													  GROUP BY A.GOAL_YEAR, A.SALES_PR_CD
+													) B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+									 GROUP BY A.GOAL_YEAR
+								   UNION ALL
+									SELECT	A.GOAL_YEAR
+											, '5' AS SORT
+											, '달성율' AS GUBUN
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_1,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_1,0))  / SUM(IFNULL(A.MON_1,0))  * 100 END ,1) AS MON_1
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_2,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_2,0))  / SUM(IFNULL(A.MON_2,0))  * 100 END ,1) AS MON_2
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_3,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_3,0))  / SUM(IFNULL(A.MON_3,0))  * 100 END ,1) AS MON_3
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_4,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_4,0))  / SUM(IFNULL(A.MON_4,0))  * 100 END ,1) AS MON_4
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_5,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_5,0))  / SUM(IFNULL(A.MON_5,0))  * 100 END ,1) AS MON_5
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_6,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_6,0))  / SUM(IFNULL(A.MON_6,0))  * 100 END ,1) AS MON_6
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_7,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_7,0))  / SUM(IFNULL(A.MON_7,0))  * 100 END ,1) AS MON_7
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_8,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_8,0))  / SUM(IFNULL(A.MON_8,0))  * 100 END ,1) AS MON_8
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_9,0))  = 0 THEN 0 ELSE SUM(IFNULL(B.MON_9,0))  / SUM(IFNULL(A.MON_9,0))  * 100 END ,1) AS MON_9
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_10,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_10,0)) / SUM(IFNULL(A.MON_10,0)) * 100 END ,1) AS MON_10
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_11,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_11,0)) / SUM(IFNULL(A.MON_11,0)) * 100 END ,1) AS MON_11
+											, ROUND(CASE WHEN SUM(IFNULL(A.MON_12,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.MON_12,0)) / SUM(IFNULL(A.MON_12,0)) * 100 END ,1) AS MON_12
+											, ROUND(CASE WHEN SUM(IFNULL(A.TOT_AMT,0)) = 0 THEN 0 ELSE SUM(IFNULL(B.TOT_AMT,0)) / SUM(IFNULL(A.TOT_AMT,0)) * 100 END ,1) AS TOT_AMT
+									  FROM	GOAL_AMT AS A 
+												LEFT OUTER JOIN 
+													(SELECT GOAL_YEAR
+															, SALES_PR_CD
+															, SUM(MON_1) AS MON_1
+															, SUM(MON_2) AS MON_2
+															, SUM(MON_3) AS MON_3
+															, SUM(MON_4) AS MON_4
+															, SUM(MON_5) AS MON_5
+															, SUM(MON_6) AS MON_6
+															, SUM(MON_7) AS MON_7
+															, SUM(MON_8) AS MON_8
+															, SUM(MON_9) AS MON_9
+															, SUM(MON_10) AS MON_10
+															, SUM(MON_11) AS MON_11
+															, SUM(MON_12) AS MON_12
+															, SUM(TOT_AMT) AS TOT_AMT
+													   FROM SALES_AMT
+													  GROUP BY GOAL_YEAR, SALES_PR_CD
+													) AS B
+												  ON A.GOAL_YEAR = B.GOAL_YEAR
+												  AND A.SALES_PR_CD = B.SALES_PR_CD
+									 GROUP  BY A.GOAL_YEAR
+								   ) A
+							 ) A
+					    ) A
+			ORDER BY A.SALES_PR_CD, A.SORT
+	</select>	
+	
+</mapper>
+

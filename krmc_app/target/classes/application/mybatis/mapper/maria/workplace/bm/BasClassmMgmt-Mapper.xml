@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.bm.service.impl.ClassmMgmtMapper">
+
+	
+	<!-- 중분류코드 조회 리스트 검색조건-->
+	<sql id="selectClassmMgmtList_Where">
+		/*ClassmMgmtMapper.selectClassmMgmtList_Where*/
+		<where>
+			<if test='mCd != null and mCd != ""'>				<!-- 중분류코드  --> 
+				AND TPCM.M_CD LIKE CONCAT('%',#{mCd},'%')
+			</if>	
+			<if test='mNm != null and mNm != ""'>				<!-- 중분류코드명  --> 
+				AND TPCM.M_NM LIKE CONCAT('%',#{mNm},'%')
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 중분류코드 조회  카운터 -->
+	<select id="selectClassmMgmtListCount" parameterType="com.doppio.workplace.bm.service.ClassmMgmtVo" resultType="int">
+		/* ClassmMgmtMapper.selectClassmMgmtListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM KRMC.TFM_PRDT_CLASS2_MST AS TPCM
+		<include refid="selectClassmMgmtList_Where"/>
+	</select>
+	
+	
+	<!-- 중분류코드 조회 -->
+	<select id="selectClassmMgmtList" parameterType="com.doppio.workplace.bm.service.ClassmMgmtVo" resultType="com.doppio.workplace.bm.service.ClassmMgmtVo">
+	/*ClassmMgmtMapper.selectClassmMgmtList*/	
+		      SELECT TPCM.M_CD
+               , TPCM.M_NM
+               , TPCM.USE_YN
+               , TM_1.USER_NM AS REG_NM
+               , TPCM.REG_DT
+               , TM_1.USER_NM AS MOD_NM
+               , TPCM.MOD_DT
+		  FROM KRMC.TFM_PRDT_CLASS2_MST AS TPCM
+			LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_1
+		         ON TPCM.REG_ID = TM_1.USER_ID 
+		      LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_2
+		         ON TPCM.MOD_ID = TM_2.USER_ID
+		 <include refid="selectClassmMgmtList_Where"/>
+	</select>
+	
+		<!-- 중분류코드 조회(상세조회 ) -->
+	<select id="selectClassmMgmtData" parameterType="com.doppio.workplace.bm.service.ClassmMgmtVo" resultType="com.doppio.workplace.bm.service.ClassmMgmtVo">
+	/*ClassmMgmtMapper.selectClassmMgmtData*/	
+	         SELECT TPCM.M_CD
+               , TPCM.M_NM
+               , TPCM.USE_YN
+               , TM_1.USER_NM AS REG_NM
+               , TPCM.REG_DT
+               , TM_1.USER_NM AS MOD_NM
+               , TPCM.MOD_DT
+		  FROM KRMC.TFM_PRDT_CLASS2_MST AS TPCM
+				LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_1
+		         ON TPCM.REG_ID = TM_1.USER_ID 
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_2
+		         ON TPCM.MOD_ID = TM_2.USER_ID
+		<where>
+			AND TPCM.M_CD = #{mCd}
+		</where>	
+	</select>
+
+
+	<!-- 중분류코드 업데이트 -->
+	<insert id="updateClassmMgmt" parameterType="com.doppio.workplace.bm.service.ClassmMgmtVo">
+	/*ClassmMgmtMapper.updateClassmMgmt*/	
+        UPDATE TFM_PRDT_CLASS2_MST
+           SET 	M_CD                = #{mCd}
+               , M_NM           	= #{mNm}
+               , USE_YN             = #{useYn}
+               , MOD_ID             = #{modId, jdbcType=VARCHAR}
+               , MOD_DT             = NOW()
+         WHERE M_CD = #{mCd}
+	</insert>
+
+	
+	<!-- 중분류코드 등록 -->
+	<insert id="insertClassmMgmt" parameterType="com.doppio.workplace.bm.service.ClassmMgmtVo">
+	/*ClassmMgmtMapper.insertClassmMgmt*/	
+		INSERT INTO KRMC.TFM_PRDT_CLASS2_MST
+			(M_CD, M_NM, USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT)
+		VALUES
+			(
+				#{mCd}
+			    , #{mNm}
+			    , #{useYn}
+			    , #{regId, jdbcType=VARCHAR}
+			    , NOW()
+			    , #{modId, jdbcType=VARCHAR}
+			    , NOW()
+			)
+			ON DUPLICATE KEY UPDATE
+				M_NM = #{mNm}
+				, USE_YN = #{useYn}
+				, MOD_ID = #{modId}
+				, MOD_DT = NOW()
+
+	</insert>
+	
+	<!-- 중분류코드 삭제 -->
+	<insert id="deleteClassmMgmt" parameterType="com.doppio.workplace.bm.service.ClassmMgmtVo">
+	/*ClassmMgmtMapper.deleteClassmMgmt*/	
+	      DELETE FROM KRMC.TFM_PRDT_CLASS2_MST
+			WHERE M_CD = #{mCd}
+		
+	</insert>
+
+	
+</mapper>

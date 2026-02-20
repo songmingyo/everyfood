@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusRtnListMapper">
+
+
+	<!-- 조회 -->
+	<select id="selectCusRtnList" parameterType="com.doppio.workplace.sm.service.CusRtnListVo" resultType="com.doppio.workplace.sm.service.CusRtnListVo">
+	/*CusRtnListMapper.selectCusRtnList*/	
+		SELECT
+		       TSR.RTN_DT
+	   	       , TSR.SALES_SLIP_NO
+		       , TWM.WH_NM
+		       , TSAI.SALES_NM
+		       , TSR.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD		       
+		       , TCD.DTL_NM as RTN_CLASS_NM
+		       , TSR.PRICE
+		       , TSR.RTN_QTY
+		       , TSR.PURE_AMT
+		       , TSR.VAT_AMT
+		       , TSR.TOT_AMT
+		       , TSRK.REMARKS_1 AS REMARKS 
+		       , TM.USER_NM AS REG_ID
+		       , TSR.REG_DT
+	      FROM TSH_SALES_RETURN AS TSR
+		      
+		       LEFT OUTER JOIN TFM_WH_MST AS TWM
+			       ON TWM.WH_CD = TSR.WH_CD	
+	          
+	           LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+	               ON TCD.DTL_CD = TSR.RTN_CLASS
+                  AND TCD.COM_CD = 'M012'
+		      
+		       LEFT OUTER JOIN TFM_SALES_ADD_INFO AS TSAI
+		           ON TSAI.SALES_CD = TSR.SALES_CD
+		      
+		       LEFT OUTER JOIN TFM_PRDT_MST TPM
+		           ON TPM.PRDT_CD = TSR.PRDT_CD
+		      
+		       LEFT OUTER JOIN TSH_SALES_REMARK AS TSRK
+		           ON TSRK.SALES_SLIP_NO = TSR.SALES_SLIP_NO
+		          AND TSRK.SALES_SEQ = TSR.SALES_SEQ
+		          
+		       LEFT OUTER JOIN TCM_MEMBER AS TM
+		           ON TM.USER_ID = TSR.REG_ID
+		           
+		       JOIN TFM_SALES_HQ_CLASS AS TSHC
+			       ON TSHC.SALES_CD = TSR.SALES_CD
+		         
+         WHERE TSR.RTN_DT BETWEEN #{startDt} AND #{endDt}
+           AND TSR.RTN_QTY != 0
+	     <if test='whCd != null and whCd != ""'> 
+		   AND TSR.WH_CD = #{whCd}
+   		 </if>
+   	   	 <if test='rtnClass != null and rtnClass != ""'> 
+		   AND TSR.RTN_CLASS = #{rtnClass}
+   		 </if>
+   		 <if test='hqClass == "10"'>
+		    AND TSHC.HQ_CD = #{salesCd} 
+	      </if>
+	      <if test='hqClass == "20"'>
+		    AND TSHC.SALES_CD = #{salesCd} 
+	      </if>
+   		 <if test='prdtCd != null and prdtCd != ""'> 
+		   AND TSR.PRDT_CD LIKE CONCAT('%',#{prdtCd},'%')
+   		 </if>
+   		    
+   		 
+         ORDER BY TSR.RTN_DT
+	</select>
+
+
+	<!-- 엑셀 다운로드  -->
+	<select id="selectCusRtnListExcelDown" parameterType="com.doppio.workplace.sm.service.CusRtnListVo" resultType="java.util.HashMap">
+	/*CusRtnListMapper.selectCusRtnListExcelDown*/	
+		SELECT
+		       TSR.RTN_DT
+	   	       , TSR.SALES_SLIP_NO
+		       , TWM.WH_NM
+		       , TSAI.SALES_NM
+		       , TSR.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD		       
+		       , TCD.DTL_NM as RTN_CLASS_NM
+		       , TSR.PRICE
+		       , TSR.RTN_QTY
+		       , TSR.PURE_AMT
+		       , TSR.VAT_AMT
+		       , TSR.TOT_AMT
+		       , TSRK.REMARKS_1 AS REMARKS 
+		       , TM.USER_NM AS REG_ID
+		       , TSR.REG_DT
+	      FROM TSH_SALES_RETURN AS TSR
+		      
+		       LEFT OUTER JOIN TFM_WH_MST AS TWM
+			       ON TWM.WH_CD = TSR.WH_CD	
+	          
+	           LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+	               ON TCD.DTL_CD = TSR.RTN_CLASS
+                  AND TCD.COM_CD = 'M012'
+		      
+		       LEFT OUTER JOIN TFM_SALES_ADD_INFO AS TSAI
+		           ON TSAI.SALES_CD = TSR.SALES_CD
+		      
+		       LEFT OUTER JOIN TFM_PRDT_MST TPM
+		           ON TPM.PRDT_CD = TSR.PRDT_CD
+		      
+		       LEFT OUTER JOIN TSH_SALES_REMARK AS TSRK
+		           ON TSRK.SALES_SLIP_NO = TSR.SALES_SLIP_NO
+		          AND TSRK.SALES_SEQ = TSR.SALES_SEQ
+		          
+		       LEFT OUTER JOIN TCM_MEMBER AS TM
+		           ON TM.USER_ID = TSR.REG_ID
+		           
+		       JOIN TFM_SALES_HQ_CLASS AS TSHC
+			       ON TSHC.SALES_CD = TSR.SALES_CD
+		         
+         WHERE TSR.RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+           AND TSR.RTN_QTY != 0
+	     <if test='whCd != null and whCd != ""'> 
+		   AND TSR.WH_CD = #{whCd}
+   		 </if>
+   	   	 <if test='rtnClass != null and rtnClass != ""'> 
+		   AND TSR.RTN_CLASS = #{rtnClass}
+   		 </if>
+   		 <if test='hqClass == "10"'>
+		   AND TSHC.HQ_CD = #{salesCd} 
+	     </if>
+	     <if test='hqClass == "20"'>
+		   AND TSHC.SALES_CD = #{salesCd} 
+	     </if>
+   		 <if test='prdtCd != null and prdtCd != ""'> 
+		   AND TSR.PRDT_CD = #{prdtCd}
+   		 </if>
+   		 
+         ORDER BY TSR.RTN_DT
+	</select>
+
+</mapper>

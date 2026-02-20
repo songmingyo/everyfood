@@ -1,0 +1,114 @@
+ 	#jsn-page {
+		min-width: 960px;
+	}
+	#jsn-header-top,f
+	#jsn-header-bottom-inner,
+	#jsn-content,
+	#jsn-promo-inner,
+	#jsn-pos-content-top,
+	#jsn-pos-promo_inner,
+	#jsn-pos-content-bottom-over,
+	#jsn-content-bottom-inner,
+	#jsn-footer-inner {
+		width: 960px;
+	}
+	#jsn-pos-promo-left {
+		float: left;
+		width: 23%;
+		left: -100%;
+	}
+	#jsn-pos-promo {
+		width: 100%;
+		left: 0;
+	}
+	#jsn-pos-promo-right {
+		float: right;
+		width: 23%;
+	}
+
+		#jsn-pos-promo-left {
+			left: auto;
+			display: auto;
+		}
+	
+	#jsn-leftsidecontent {
+		float: left;
+		width: 23%;
+		left: -100%;
+	}
+	#jsn-maincontent {
+		float: left;
+		width: 100%;
+		left: 0;
+	}
+	#jsn-rightsidecontent {
+		float: right;
+		width: 23%;
+	}
+
+	#jsn-pos-innerleft {
+		float: left;
+		width: 28%;
+		left: -100%;
+	}
+	#mainbody-content-inner {
+		float: left;
+		width: 100%;
+		left: 0;
+	}
+	#jsn-pos-innerright {
+		float: right;
+		width: 28%;
+	}
+
+		div.jsn-modulecontainer ul.menu-mainmenu ul li {
+			width: 201px;
+		}
+		div.jsn-modulecontainer ul.menu-mainmenu ul {
+			width: 202px;
+		}
+		div.jsn-modulecontainer ul.menu-mainmenu ul ul {
+		
+				margin-left: 202px;
+				margin-left: 200px\9;
+			
+		}
+		#jsn-pos-toolbar div.jsn-modulecontainer ul.menu-mainmenu ul ul {
+			
+				margin-right: 202px;
+				margin-right: 200px\9;
+				margin-left : auto
+		}
+	
+		div.jsn-modulecontainer ul.menu-sidemenu ul,
+		div.jsn-modulecontainer ul.menu-sidemenu ul li {
+			width: 200px;
+		}
+		div.jsn-modulecontainer ul.menu-sidemenu > li > ul {
+			right: -202px;
+			right: -200px\9;
+		}
+		body.jsn-direction-rtl div.jsn-modulecontainer ul.menu-sidemenu > li > ul {
+			left: -202px;
+			left: -200px\9;
+			right: auto;
+		}
+		div.jsn-modulecontainer ul.menu-sidemenu ul ul {
+		
+				margin-left: 202px;
+				margin-left: 200px\9;
+			
+		}
+	
+		.text-box,
+		.text-box-highlight,
+		.text-box-highlight:hover,
+		div[class*="box-"] div.jsn-modulecontainer_inner,
+		div[class*="solid-"] div.jsn-modulecontainfer_inner {
+			behavior: url(/resources/plugins/jsn/PIE.htc);
+		}
+		.link-button {
+			zoom: 1;
+			position: relative;
+			behavior: url(/resources/plugins/jsn/PIE.htc);
+		}

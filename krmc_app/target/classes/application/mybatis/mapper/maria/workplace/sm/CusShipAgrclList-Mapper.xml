@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusShipAgrclListMapper">
+
+	<!-- 매출처출고현황(농산물)  조회 -->
+	<select id="selectCusShipAgrclList" parameterType="com.doppio.workplace.sm.service.CusShipAgrclListVo" resultType="com.doppio.workplace.sm.service.CusShipAgrclListVo">
+	/*CusShipAgrclListMapper.selectCusShipAgrclList*/	
+
+		SELECT A.YEARMON 
+			   , A.DT
+			   , A.SALES_SLIP_NO
+			   , A.SALES_CD
+			   , B.SALES_NM
+			   , A.PRDT_CD
+			   , C.PRDT_NM
+			   , C.PRDT_STD
+			   , A.QTY
+			   , A.GUBUN
+			   , D.DTL_NM AS SALES_CLASS_NM
+			   , TWM.WH_NM
+			   , F.CAR_NM
+--			   , G.DTL_NM  AS ORD_UNIT_NM
+				, TCD_3.DTL_NM	AS ORD_UNIT_NM
+			   , C.LACK_NO_1
+			   , K.DTL_NM  AS SAVE_KIND
+	      FROM (SELECT SUBSTRING(A.SALES_DT,1,6) AS YEARMON
+					   , A.SALES_DT AS DT
+					   , A.SALES_SLIP_NO
+					   , A.SALES_CD
+					   , A.PRDT_CD
+					   , A.PRICE
+					   , A.SALES_QTY AS QTY
+					   , '정상' AS GUBUN
+					   , A.WH_CD
+			      FROM TSH_SALES_DLV AS A
+			     WHERE A.SALES_DT BETWEEN #{startDt} AND #{endDt}
+				 <if test='prdtCd != null and prdtCd != ""'>	<!-- 품목코드 --> 
+				   AND A.PRDT_CD = #{prdtCd}
+		  	     </if>
+	          UNION ALL
+	            SELECT SUBSTRING(A.FREE_DT,1,6) AS YEARMON
+					   , A.FREE_DT AS DT
+					   , A.SALES_SLIP_NO
+					   , A.SALES_CD
+					   , A.PRDT_CD
+					   , 0 AS PRICE
+					   , A.FREE_QTY AS QTY
+					   , TCD.DTL_NM AS GUBUN
+					   , A.WH_CD
+			      FROM TSH_SALES_FREE AS A
+			           LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+			               ON TCD.DTL_CD = A.FREE_CLASS
+			              AND TCD.COM_CD = 'M016'
+			     WHERE A.FREE_DT BETWEEN #{startDt} AND #{endDt}
+				 <if test='prdtCd != null and prdtCd != ""'> 
+				   AND A.PRDT_CD = #{prdtCd}
+		  	     </if>
+		      UNION ALL
+			    SELECT SUBSTRING(A.RTN_DT,1,6) AS YEARMON
+					   , A.RTN_DT as DT
+					   , A.SALES_SLIP_NO
+					   , A.SALES_CD
+					   , A.PRDT_CD
+					   , A.PRICE
+					   , A.RTN_QTY*-1 as QTY
+					   , '반품' AS GUBUN
+					   , A.WH_CD
+			      FROM TSH_SALES_RETURN AS A
+			     WHERE A.RTN_DT BETWEEN #{startDt} AND #{endDt}
+	   	         <if test='prdtCd != null and prdtCd != ""'> 
+			       AND A.PRDT_CD = #{prdtCd}
+  	             </if>
+		       ) AS A
+		       
+		       LEFT OUTER JOIN TFM_WH_MST AS TWM
+			       ON TWM.WH_CD = A.WH_CD
+			       
+		       JOIN TFM_SALES_ADD_INFO AS B
+		           ON B.SALES_CD = A.SALES_CD
+		           
+		       LEFT OUTER JOIN TCM_CODE_DTL AS D
+                   ON B.SALES_CLASS = D.DTL_CD
+                  AND D.COM_CD = 'M013'
+                  
+               LEFT OUTER JOIN TCM_CODE_DTL AS G
+	       	       ON B.DLV_DT_CLASS = G.DTL_CD
+                  AND G.COM_CD = 'M006'
+                  
+         	   LEFT OUTER JOIN TCM_CODE_DTL AS K
+	               ON B.SALES_CLASS = K.DTL_CD
+               	  AND K.COM_CD = 'M001'
+               	  
+	           LEFT OUTER JOIN TFM_DLVR_MST AS F
+	               ON B.CAR_CD = F.CAR_CD
+	               
+		       JOIN TFM_PRDT_MST AS C
+		           ON C.PRDT_CD = A.PRDT_CD
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD_3
+                    ON C.ORD_UNIT = TCD_3.DTL_CD
+                   AND TCD_3.COM_CD = 'M006'     
+		           
+         WHERE A.QTY != 0
+	         <if test='salesCd != null and salesCd != ""'> 
+	           AND C.M_CD LIKE CASE WHEN #{salesCd}='20058' THEN '15-01%'
+	                                WHEN #{salesCd}='20920' THEN '15-09%'
+	                                WHEN #{salesCd}='21254' THEN '25-06%'
+	                                ELSE '%'
+	                           END
+	  	     </if>
+         
+	     ORDER BY A.DT, A.SALES_SLIP_NO , A.SALES_CD, A.PRDT_CD
+
+	</select>
+
+	<!-- 매출처출고현황(농산물) 엑셀 -->
+	<select id="selectCusShipAgrclListExcelDown" parameterType="com.doppio.workplace.sm.service.CusShipAgrclListVo" resultType="java.util.HashMap">
+	/*CusShipAgrclListMapper.selectCusShipAgrclListExcelDown*/	
+		SELECT A.DT
+			   , D.DTL_NM AS SALES_CLASS_NM
+			   , TWM.WH_NM
+			   , C.LACK_NO_1
+			   , K.DTL_NM  AS SAVE_KIND
+			   , F.CAR_NM
+			   , B.SALES_NM
+			   , A.SALES_SLIP_NO 
+			   , A.PRDT_CD
+			   , C.PRDT_NM
+			   , C.PRDT_STD
+  			   , TCD_3.DTL_NM	AS ORD_UNIT_NM
+			   , A.QTY
+			   , A.GUBUN
+	      FROM (SELECT SUBSTRING(A.SALES_DT,1,6) AS YEARMON
+					   , A.SALES_DT AS DT
+					   , A.SALES_SLIP_NO
+					   , A.SALES_CD
+					   , A.PRDT_CD
+					   , A.PRICE
+					   , A.SALES_QTY AS QTY
+					   , '정상' AS GUBUN
+					   , A.WH_CD
+			      FROM TSH_SALES_DLV AS A
+			     WHERE A.SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+				 <if test='prdtCd != null and prdtCd != ""'>	<!-- 품목코드 --> 
+				   AND A.PRDT_CD = #{prdtCd}
+		  	     </if>
+	          UNION ALL
+	            SELECT SUBSTRING(A.FREE_DT,1,6) AS YEARMON
+					   , A.FREE_DT AS DT
+					   , A.SALES_SLIP_NO
+					   , A.SALES_CD
+					   , A.PRDT_CD
+					   , 0 AS PRICE
+					   , A.FREE_QTY AS QTY
+					   , TCD.DTL_NM AS GUBUN
+					   , A.WH_CD
+			      FROM TSH_SALES_FREE AS A
+			           LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+			               ON TCD.DTL_CD = A.FREE_CLASS
+			              AND TCD.COM_CD = 'M016'
+			     WHERE A.FREE_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+				 <if test='prdtCd != null and prdtCd != ""'> 
+				   AND A.PRDT_CD = #{prdtCd}
+		  	     </if>
+		      UNION ALL
+			    SELECT SUBSTRING(A.RTN_DT,1,6) AS YEARMON
+					   , A.RTN_DT as DT
+					   , A.SALES_SLIP_NO
+					   , A.SALES_CD
+					   , A.PRDT_CD
+					   , A.PRICE
+					   , A.RTN_QTY*-1 as QTY
+					   , '반품' AS GUBUN
+					   , A.WH_CD
+			      FROM TSH_SALES_RETURN AS A
+			     WHERE A.RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+	   	         <if test='prdtCd != null and prdtCd != ""'> 
+			       AND A.PRDT_CD = #{prdtCd}
+  	             </if>
+		       ) AS A
+		       
+		       LEFT OUTER JOIN TFM_WH_MST AS TWM
+			       ON TWM.WH_CD = A.WH_CD
+			       
+		       JOIN TFM_SALES_ADD_INFO AS B
+		           ON B.SALES_CD = A.SALES_CD
+		           
+		       LEFT OUTER JOIN TCM_CODE_DTL AS D
+                   ON B.SALES_CLASS = D.DTL_CD
+                  AND D.COM_CD = 'M013'
+                  
+               LEFT OUTER JOIN TCM_CODE_DTL AS G
+	       	       ON B.DLV_DT_CLASS = G.DTL_CD
+                  AND G.COM_CD = 'M006'
+                  
+         	   LEFT OUTER JOIN TCM_CODE_DTL AS K
+	               ON B.SALES_CLASS = K.DTL_CD
+               	  AND K.COM_CD = 'M001'
+               	  
+	           LEFT OUTER JOIN TFM_DLVR_MST AS F
+	               ON B.CAR_CD = F.CAR_CD
+	               
+		       JOIN TFM_PRDT_MST AS C
+		           ON C.PRDT_CD = A.PRDT_CD
+		         LEFT OUTER JOIN TCM_CODE_DTL AS TCD_3
+                    ON C.ORD_UNIT = TCD_3.DTL_CD
+                   AND TCD_3.COM_CD = 'M006'      
+		           
+		           
+         WHERE A.QTY != 0
+	         <if test='salesCd != null and salesCd != ""'> 
+	           AND C.M_CD LIKE CASE WHEN #{salesCd}='20058' THEN '15-01%'
+	                                WHEN #{salesCd}='20920' THEN '15-09%'
+	                                WHEN #{salesCd}='21254' THEN '25-06%'
+	                                ELSE '%'
+	                           END
+	  	     </if>
+         
+	     ORDER BY A.DT, A.SALES_SLIP_NO , A.SALES_CD, A.PRDT_CD
+	</select>
+
+	<!-- 매출처출고현황(농산물) 출력-->
+	<select id="selectCusShipAgrcPrintList" parameterType="com.doppio.workplace.sm.service.CusShipAgrclListVo" resultType="com.doppio.workplace.sm.service.CusShipAgrclListVo">
+		/*CusShipAgrclListMapper.selectCusShipAgrcPrintList*/	
+
+	</select>
+
+</mapper>

@@ -1,0 +1,762 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.br.service.impl.BuyRcptListMapper">
+
+	
+	
+	<!-- 매입현황 조회 -->
+	<select id="selectBuyRcptList" parameterType="com.doppio.workplace.br.service.BuyRcptListVo" resultType="com.doppio.workplace.br.service.BuyRcptListVo">
+	/*BuyRcptListMapper.selectBuyRcptList*/	
+		<if test='taxYn == "1" or taxYn == "2"'>
+			SELECT A.YEARMON, A.BUY_DT, A.BUY_CD, TBM.BUY_NM, A.PRDT_CD, TPM.PRDT_NM
+				   , TPM.PRDT_STD, A.ORD_DT, A.COST, A.BUY_QTY, A.PURE_AMT, A.VAT_AMT, A.TOT_AMT
+				   , A.TERM_VAL, A.REMARKS, TPM.EXPRT_DT, TPM.LACK_NO_1, TWM.WH_NM, TPM.BUY_PRDT_CD
+			  FROM (SELECT '1' AS SORT
+					       , SUBSTRING(TPR.BUY_DT,1,6) AS YEARMON
+					       , TPR.BUY_DT
+					       , TPR.BUY_CD
+					       , TPR.PRDT_CD
+					       , TPR.ORD_DT			
+					       , TPR.COST
+					       , TPR.BUY_QTY
+					       , TPR.PURE_AMT
+					       , TPR.VAT_AMT
+					       , TPR.TOT_AMT
+					       , TPR.TERM_VAL
+					       , TPR.REMARKS
+					       , TPR.WH_CD
+					  FROM TBH_PRDT_RCPT AS TPR
+						   
+				     WHERE TPR.BUY_DT BETWEEN #{startDt} AND #{endDt}
+				       AND TPR.BUY_CONF_YN = 'Y'
+					 <if test='whCd != null and whCd != ""'> 
+					   AND TPR.WH_CD = #{whCd}
+					 </if>
+					 <if test='prdtCd != null and prdtCd != ""'> 
+					  AND TPR.PRDT_CD = #{prdtCd}
+					 </if>	
+					 <if test='buyCd != null and buyCd != ""'> 
+					   AND TPR.BUY_CD = #{buyCd}
+					 </if>
+				  UNION ALL
+					SELECT '2' AS SORT
+					       , SUBSTRING(TPR.RTN_DT,1,6) AS YEARMON
+					       , TPR.RTN_DT AS BUY_DT
+					       , TPR.BUY_CD
+					       , TPR.PRDT_CD
+					       , '' AS ORD_DT			
+					       , TPR.COST
+					       , TPR.RTN_QTY*-1 AS BUY_QTY
+					       , TPR.PURE_AMT*-1 AS PURE_AMT
+					       , TPR.VAT_AMT*-1 AS VAT_AMT
+					       , TPR.TOT_AMT*-1 AS TOT_AMT
+					       , TPR.TERM_VAL
+					       , TPR.REMARKS
+					       , TPR.WH_CD
+					  FROM TBH_PRDT_RETURN AS TPR
+						   
+				     WHERE TPR.RTN_DT BETWEEN #{startDt} AND #{endDt}
+					 <if test='whCd != null and whCd != ""'> 
+					   AND TPR.WH_CD = #{whCd}
+					 </if>
+					 <if test='prdtCd != null and prdtCd != ""'> 
+					  AND TPR.PRDT_CD = #{prdtCd}
+					 </if>	
+					 <if test='buyCd != null and buyCd != ""'> 
+					   AND TPR.BUY_CD = #{buyCd}
+					 </if>	
+					 
+				   ) AS A
+						
+				   LEFT OUTER JOIN TFM_WH_MST AS TWM
+				       ON TWM.WH_CD = A.WH_CD
+				       
+				   JOIN TFM_BUY_MST AS TBM
+				       ON TBM.BUY_CD = A.BUY_CD
+				       
+				   JOIN TFM_PRDT_MST AS TPM
+				       ON TPM.PRDT_CD = A.PRDT_CD
+			WHERE A.BUY_QTY != 0
+			  AND TPM.TAX_YN = #{taxYn}
+			<if test='lCd != null and lCd != ""'> 
+			  AND TPM.L_CD = #{lCd}
+		    </if>
+		    <if test='mCd != null and mCd != ""'> 
+		      AND TPM.M_CD = #{mCd}
+		    </if>
+            ORDER BY A.BUY_DT, A.BUY_CD, A.SORT, A.PRDT_CD
+		</if>
+		<if test='taxYn == "3"'>
+			SELECT SUBSTRING(TPR.RTN_DT,1,6) AS YEARMON
+				   , TPR.RTN_DT AS BUY_DT
+				   , TPR.BUY_CD
+				   , TBM.BUY_NM
+				   , TPR.PRDT_CD
+				   , TPM.PRDT_NM
+				   , TPM.PRDT_STD			
+				   , TPR.COST
+				   , TPR.RTN_QTY*-1 AS BUY_QTY
+				   , TPR.PURE_AMT*-1 AS PURE_AMT
+				   , TPR.VAT_AMT*-1 AS VAT_AMT
+				   , TPR.TOT_AMT*-1 AS TOT_AMT
+				   , TPR.TERM_VAL
+				   , TPR.REMARKS
+				   , TPM.EXPRT_DT
+				   , TPM.LACK_NO_1
+				   , TWM.WH_NM
+				   , TPM.BUY_PRDT_CD
+			  FROM TBH_PRDT_RETURN AS TPR
+			  
+				   LEFT OUTER JOIN TFM_WH_MST TWM
+				       ON TWM.WH_CD = TPR.WH_CD
+				       
+				   JOIN TFM_BUY_MST AS TBM
+					   ON TBM.BUY_CD = TPR.BUY_CD
+					   
+				   JOIN TFM_PRDT_MST AS TPM
+					   ON TPM.PRDT_CD = TPR.PRDT_CD
+					   
+			 WHERE TPR.RTN_DT BETWEEN #{startDt} AND #{endDt}
+			   AND TPR.RTN_QTY != 0
+			 <if test='whCd != null and whCd != ""'> 
+			   AND TPR.WH_CD = #{whCd}
+			 </if>
+			 <if test='prdtCd != null and prdtCd != ""'> 
+			   AND TPM.PRDT_CD = #{prdtCd}
+			 </if>	
+			 <if test='buyCd != null and buyCd != ""'> 
+			   AND TPR.BUY_CD = #{buyCd}
+			 </if>	
+			 <if test='lCd != null and lCd != ""'> 
+			   AND TPM.L_CD = #{lCd}
+			 </if>
+			 <if test='mCd != null and mCd != ""'> 
+			   AND TPM.M_CD = #{mCd}
+			 </if>
+			 ORDER BY TPR.RTN_DT, TBM.BUY_NM, TPR.PRDT_CD
+		</if>
+		<if test='taxYn == null or taxYn == ""'>
+			SELECT A.YEARMON, A.BUY_DT, A.BUY_CD, TBM.BUY_NM, A.PRDT_CD, TPM.PRDT_NM
+				   , TPM.PRDT_STD, A.ORD_DT, A.COST, A.BUY_QTY, A.PURE_AMT, A.VAT_AMT, A.TOT_AMT
+				   , A.TERM_VAL, A.REMARKS, TPM.EXPRT_DT, TPM.LACK_NO_1, TWM.WH_NM, TPM.BUY_PRDT_CD
+			  FROM (SELECT '1' AS SORT
+					       , SUBSTRING(TPR.BUY_DT,1,6) AS YEARMON
+					       , TPR.BUY_DT
+					       , TPR.BUY_CD
+					       , TPR.PRDT_CD
+					       , TPR.ORD_DT			
+					       , TPR.COST
+					       , TPR.BUY_QTY
+					       , TPR.PURE_AMT
+					       , TPR.VAT_AMT
+					       , TPR.TOT_AMT
+					       , TPR.TERM_VAL
+					       , TPR.REMARKS
+					       , TPR.WH_CD
+					  FROM TBH_PRDT_RCPT AS TPR
+						   
+				     WHERE TPR.BUY_DT BETWEEN #{startDt} AND #{endDt}
+				       AND TPR.BUY_CONF_YN = 'Y'
+					 <if test='whCd != null and whCd != ""'> 
+					   AND TPR.WH_CD = #{whCd}
+					 </if>
+					 <if test='prdtCd != null and prdtCd != ""'> 
+					  AND TPR.PRDT_CD = #{prdtCd}
+					 </if>	
+					 <if test='buyCd != null and buyCd != ""'> 
+					   AND TPR.BUY_CD = #{buyCd}
+					 </if>
+				  UNION ALL
+					SELECT '2' AS SORT
+					       , SUBSTRING(TPR.RTN_DT,1,6) AS YEARMON
+					       , TPR.RTN_DT AS BUY_DT
+					       , TPR.BUY_CD		
+					       , TPR.PRDT_CD
+					       , '' AS ORD_DT			
+					       , TPR.COST
+					       , TPR.RTN_QTY*-1 AS BUY_QTY
+					       , TPR.PURE_AMT*-1 AS PURE_AMT
+					       , TPR.VAT_AMT*-1 AS VAT_AMT
+					       , TPR.TOT_AMT*-1 AS TOT_AMT
+					       , TPR.TERM_VAL
+					       , TPR.REMARKS
+					       , TPR.WH_CD
+					  FROM TBH_PRDT_RETURN AS TPR
+						   
+				     WHERE TPR.RTN_DT BETWEEN #{startDt} AND #{endDt}
+					 <if test='whCd != null and whCd != ""'> 
+					   AND TPR.WH_CD = #{whCd}
+					 </if>
+					 <if test='prdtCd != null and prdtCd != ""'> 
+					  AND TPR.PRDT_CD = #{prdtCd}
+					 </if>	
+					 <if test='buyCd != null and buyCd != ""'> 
+					   AND TPR.BUY_CD = #{buyCd}
+					 </if>	
+					 
+				   ) AS A
+						
+				   LEFT OUTER JOIN TFM_WH_MST AS TWM
+				       ON TWM.WH_CD = A.WH_CD
+				       
+				   JOIN TFM_BUY_MST AS TBM
+				       ON TBM.BUY_CD = A.BUY_CD
+				       
+				   JOIN TFM_PRDT_MST AS TPM
+				       ON TPM.PRDT_CD = A.PRDT_CD
+				       
+		    WHERE A.BUY_QTY != 0
+		    <if test='lCd != null and lCd != ""'> 
+			  AND TPM.L_CD = #{lCd}
+		    </if>
+		    <if test='mCd != null and mCd != ""'> 
+		      AND TPM.M_CD = #{mCd}
+		    </if>
+            ORDER BY A.BUY_DT, A.BUY_CD, A.SORT, A.PRDT_CD
+		</if>
+	</select>
+			
+
+	<!-- 매입처 입고 다운로드 -->
+	<select id="selectBuyRcptListExcelDown" parameterType="com.doppio.workplace.br.service.BuyRcptListVo" resultType="java.util.HashMap">
+	/*BuyRcptListMapper.selectBuyRcptListExcelDown*/	
+		<if test='taxYn == "1" or taxYn == "2"'>
+			SELECT  TBM.BUY_NM
+				, 	TPM.LACK_NO_1
+				, 	TWM.WH_NM
+				, 	A.PRDT_CD
+				, 	TPM.PRDT_NM
+				, 	A.BUY_DT
+				, 	TPM.PRDT_STD
+				, 	A.COST, A.BUY_QTY
+				, 	A.PURE_AMT
+				, 	A.VAT_AMT
+				, 	A.TOT_AMT
+				, 	A.ORD_DT
+				, 	TPM.EXPRT_DT
+				, 	A.TERM_VAL
+				, 	IFNULL(A.REMARKS, '')	AS REMARKS
+				, 	TPM.BUY_PRDT_CD
+			  FROM (SELECT '1' AS SORT
+					       , SUBSTRING(TPR.BUY_DT,1,6) AS YEARMON
+					       , TPR.BUY_DT
+					       , TPR.BUY_CD
+					       , TPR.PRDT_CD
+					       , TPR.ORD_DT			
+					       , TPR.COST
+					       , TPR.BUY_QTY
+					       , TPR.PURE_AMT
+					       , TPR.VAT_AMT
+					       , TPR.TOT_AMT
+					       , TPR.TERM_VAL
+					       , IFNULL(TPR.REMARKS, '')	AS REMARKS
+					       , TPR.WH_CD
+					  FROM TBH_PRDT_RCPT AS TPR
+						   
+				     WHERE TPR.BUY_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+				       AND TPR.BUY_CONF_YN = 'Y'
+					 <if test='whCd != null and whCd != ""'> 
+					   AND TPR.WH_CD = #{whCd}
+					 </if>
+					 <if test='prdtCd != null and prdtCd != ""'> 
+					  AND TPR.PRDT_CD = #{prdtCd}
+					 </if>	
+					 <if test='buyCd != null and buyCd != ""'> 
+					   AND TPR.BUY_CD = #{buyCd}
+					 </if>
+				  UNION ALL
+					SELECT '2' AS SORT
+					       , SUBSTRING(TPR.RTN_DT,1,6) AS YEARMON
+					       , TPR.RTN_DT AS BUY_DT
+					       , TPR.BUY_CD
+					       , TPR.PRDT_CD
+					       , '' AS ORD_DT			
+					       , TPR.COST
+					       , TPR.RTN_QTY*-1 AS BUY_QTY
+					       , TPR.PURE_AMT*-1 AS PURE_AMT
+					       , TPR.VAT_AMT*-1 AS VAT_AMT
+					       , TPR.TOT_AMT*-1 AS TOT_AMT
+					       , TPR.TERM_VAL
+					       , IFNULL(TPR.REMARKS, '')	AS REMARKS
+					       , TPR.WH_CD
+					  FROM TBH_PRDT_RETURN AS TPR
+						   
+				     WHERE TPR.RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+					 <if test='whCd != null and whCd != ""'> 
+					   AND TPR.WH_CD = #{whCd}
+					 </if>
+					 <if test='prdtCd != null and prdtCd != ""'> 
+					  AND TPR.PRDT_CD = #{prdtCd}
+					 </if>	
+					 <if test='buyCd != null and buyCd != ""'> 
+					   AND TPR.BUY_CD = #{buyCd}
+					 </if>	
+					 
+				   ) AS A
+						
+				   LEFT OUTER JOIN TFM_WH_MST AS TWM
+				       ON TWM.WH_CD = A.WH_CD
+				       
+				   JOIN TFM_BUY_MST AS TBM
+				       ON TBM.BUY_CD = A.BUY_CD
+				       
+				   JOIN TFM_PRDT_MST AS TPM
+				       ON TPM.PRDT_CD = A.PRDT_CD
+			WHERE A.BUY_QTY != 0
+			  AND TPM.TAX_YN = #{taxYn}
+			<if test='lCd != null and lCd != ""'> 
+			  AND TPM.L_CD = #{lCd}
+		    </if>
+		    <if test='mCd != null and mCd != ""'> 
+		      AND TPM.M_CD = #{mCd}
+		    </if>
+            ORDER BY A.BUY_DT, A.BUY_CD, A.SORT, A.PRDT_CD
+		</if>
+		<if test='taxYn == "3"'>
+			SELECT TBM.BUY_NM, TPM.LACK_NO_1, TWM.WH_NM, TPR.PRDT_CD, TPM.PRDT_NM, TPR.RTN_DT AS BUY_DT
+			       , TPM.PRDT_STD, TPR.COST
+			       , TPR.RTN_QTY*-1 AS BUY_QTY
+			       , TPR.PURE_AMT*-1 AS PURE_AMT
+			       , TPR.VAT_AMT*-1 AS VAT_AMT
+			       , TPR.TOT_AMT*-1 AS TOT_AMT
+			       , "" AS ORD_DT, TPM.EXPRT_DT, TPR.TERM_VAL, IFNULL(TPR.REMARKS, '')	AS REMARKS,  TPM.BUY_PRDT_CD
+			  FROM TBH_PRDT_RETURN AS TPR
+			  
+				   LEFT OUTER JOIN TFM_WH_MST TWM
+				       ON TWM.WH_CD = TPR.WH_CD
+				       
+				   JOIN TFM_BUY_MST AS TBM
+					   ON TBM.BUY_CD = TPR.BUY_CD
+					   
+				   JOIN TFM_PRDT_MST AS TPM
+					   ON TPM.PRDT_CD = TPR.PRDT_CD
+					   
+			 WHERE TPR.RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+			   AND TPR.RTN_QTY != 0
+			 <if test='whCd != null and whCd != ""'> 
+			   AND TPR.WH_CD = #{whCd}
+			 </if>
+			 <if test='prdtCd != null and prdtCd != ""'> 
+			   AND TPM.PRDT_CD = #{prdtCd}
+			 </if>	
+			 <if test='buyCd != null and buyCd != ""'> 
+			   AND TPR.BUY_CD = #{buyCd}
+			 </if>	
+			 <if test='lCd != null and lCd != ""'> 
+			   AND TPM.L_CD = #{lCd}
+			 </if>
+			 <if test='mCd != null and mCd != ""'> 
+			   AND TPM.M_CD = #{mCd}
+			 </if>
+			 ORDER BY TPR.RTN_DT, TBM.BUY_NM, TPR.PRDT_CD
+		</if>
+		<if test='taxYn == null or taxYn == ""'>
+			SELECT TBM.BUY_NM, TPM.LACK_NO_1, TWM.WH_NM, A.PRDT_CD, TPM.PRDT_NM, A.BUY_DT
+			       , TPM.PRDT_STD, A.COST, A.BUY_QTY, A.PURE_AMT, A.VAT_AMT, A.TOT_AMT, A.ORD_DT
+				   , TPM.EXPRT_DT, A.TERM_VAL, IFNULL(A.REMARKS, '')	AS REMARKS,  TPM.BUY_PRDT_CD
+			  FROM (SELECT '1' AS SORT
+					       , SUBSTRING(TPR.BUY_DT,1,6) AS YEARMON
+					       , TPR.BUY_DT
+					       , TPR.BUY_CD
+					       , TPR.PRDT_CD
+					       , TPR.ORD_DT			
+					       , TPR.COST
+					       , TPR.BUY_QTY
+					       , TPR.PURE_AMT
+					       , TPR.VAT_AMT
+					       , TPR.TOT_AMT
+					       , TPR.TERM_VAL
+					       , IFNULL(TPR.REMARKS, '')	AS REMARKS
+					       , TPR.WH_CD
+					  FROM TBH_PRDT_RCPT AS TPR
+						   
+				     WHERE TPR.BUY_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+				       AND TPR.BUY_CONF_YN = 'Y'
+					 <if test='whCd != null and whCd != ""'> 
+					   AND TPR.WH_CD = #{whCd}
+					 </if>
+					 <if test='prdtCd != null and prdtCd != ""'> 
+					  AND TPR.PRDT_CD = #{prdtCd}
+					 </if>	
+					 <if test='buyCd != null and buyCd != ""'> 
+					   AND TPR.BUY_CD = #{buyCd}
+					 </if>
+				  UNION ALL
+					SELECT '2' AS SORT
+					       , SUBSTRING(TPR.RTN_DT,1,6) AS YEARMON
+					       , TPR.RTN_DT AS BUY_DT
+					       , TPR.BUY_CD		
+					       , TPR.PRDT_CD
+					       , '' AS ORD_DT			
+					       , TPR.COST
+					       , TPR.RTN_QTY*-1 AS BUY_QTY
+					       , TPR.PURE_AMT*-1 AS PURE_AMT
+					       , TPR.VAT_AMT*-1 AS VAT_AMT
+					       , TPR.TOT_AMT*-1 AS TOT_AMT
+					       , TPR.TERM_VAL
+					       , IFNULL(TPR.REMARKS, '')	AS REMARKS
+					       , TPR.WH_CD
+					  FROM TBH_PRDT_RETURN AS TPR
+						   
+				     WHERE TPR.RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+					 <if test='whCd != null and whCd != ""'> 
+					   AND TPR.WH_CD = #{whCd}
+					 </if>
+					 <if test='prdtCd != null and prdtCd != ""'> 
+					  AND TPR.PRDT_CD = #{prdtCd}
+					 </if>	
+					 <if test='buyCd != null and buyCd != ""'> 
+					   AND TPR.BUY_CD = #{buyCd}
+					 </if>	
+					 
+				   ) AS A
+						
+				   LEFT OUTER JOIN TFM_WH_MST AS TWM
+				       ON TWM.WH_CD = A.WH_CD
+				       
+				   JOIN TFM_BUY_MST AS TBM
+				       ON TBM.BUY_CD = A.BUY_CD
+				       
+				   JOIN TFM_PRDT_MST AS TPM
+				       ON TPM.PRDT_CD = A.PRDT_CD
+		    WHERE A.BUY_QTY != 0
+		    <if test='lCd != null and lCd != ""'> 
+			  AND TPM.L_CD = #{lCd}
+		    </if>
+		    <if test='mCd != null and mCd != ""'> 
+		      AND TPM.M_CD = #{mCd}
+		    </if>
+            ORDER BY A.BUY_DT, A.BUY_CD, A.SORT, A.PRDT_CD
+		</if>
+	</select>
+	
+	<!-- 매입처입고 출력 조회 -->
+	<select id="selectBuyRcptPrintList" parameterType="com.doppio.workplace.br.service.BuyRcptListVo" resultType="com.doppio.workplace.br.service.BuyRcptListVo">
+	/*BuyRcptListMapper.selectBuyRcptPrintList*/	
+	<choose>
+		<when test="taxYn eq 0">
+		      SELECT
+		              #{startDt} AS BUY_START_DT
+		            , #{endDt} AS BUY_END_DT
+		            , #{buyNm} AS BUY_NM_SEARCH
+		            , #{prdtNm} AS PRDT_NM_SEARCH
+					, TPR.RTN_DT
+					, B.BUY_NM
+					, TPR.PRDT_CD
+					, C.PRDT_NM AS PRDT_NM
+					, C.PRDT_STD AS PRDT_STD						
+					, '' AS REQ_DT									-- 발주일자			
+					, TPR.COST AS COST						-- 원가
+					, TPR.RTN_QTY*-1 AS RTN_QTY						-- 낱개 수량
+					, TPR.PURE_AMT*-1 AS PURE_AMT						-- 공급가
+					, TPR.VAT_AMT*-1 AS VAT_AMT				-- 부가세
+					, TPR.TOT_AMT*-1 AS TOT_AMT				-- 합계
+					, '' as TERM_VAL								-- 유효기간
+					, TPR.REMARKS as REMARKS						-- 비고
+					, C.EXPRT_DT AS EXPRT_DT
+					, C.LACK_NO_1 AS LACK_NO_1
+					, D.WH_NM AS WH_NM
+					, C.BUY_PRDT_CD AS BUY_PRDT_CD
+			FROM	TBH_PRDT_RETURN A
+					LEFT OUTER JOIN TFM_WH_MST D
+						ON TPR.WH_CD = D.WH_CD
+					, TFM_BUY_MST B, TFM_PRDT_MST C
+			WHERE	TPR.BUY_CD = B.BUY_CD
+			AND		TPR.PRDT_CD = C.PRDT_CD
+			AND		TPR.RTN_DT  BETWEEN DATE_FORMAT(#{startDt},'%Y%m%d') AND  DATE_FORMAT(#{endDt},'%Y%m%d')
+			AND		TPR.RTN_QTY != 0
+			 <if test='whCd != null and whCd != ""'>			<!-- 창고코드  --> 
+				AND TPR.WH_CD LIKE #{whCd}
+			</if>
+			<if test='prdtNm != null and prdtNm != ""'>			<!-- 상품명  --> 
+				AND C.PRDT_NM LIKE #{prdtNm}
+			</if>	
+			<if test='prdtCd != null and prdtCd != ""'>			<!-- 상품코드  --> 
+				AND C.PRDT_CD LIKE #{prdtCd}
+			</if>	
+			<if test='buyCd != null and buyCd != ""'>			<!-- 매입처코드  --> 
+				AND TPR.BUY_CD LIKE #{buyCd}
+			</if>	
+			<if test='buyNm != null and buyNm != ""'>			<!-- 매입처명  --> 
+				AND B.BUY_NM LIKE #{buyNm}
+			</if>
+			<if test='lCd != null and lCd != ""'>	<!-- 대분류  --> 
+				AND C.L_CD LIKE #{lCd}
+			</if>
+			<if test='mCd != null and mCd != ""'>	<!-- 중분류  --> 
+				AND C.M_CD LIKE #{mCd}
+			</if>
+			ORDER BY TPR.RTN_DT, B.BUY_NM, TPR.PRDT_CD
+			</when>
+		<when test="taxYn eq 1 or taxYn eq 2">
+				SELECT	 
+						  #{startDt} AS BUY_START_DT
+		            	, #{endDt} AS BUY_END_DT
+		            	, #{buyNm} AS BUY_NM_SEARCH
+		           	    , #{prdtNm} AS PRDT_NM_SEARCH
+				        , RTN_DT AS RTN_DT
+						, BUY_NM AS BUY_NM
+						, PRDT_CD AS PRDT_CD
+						, PRDT_NM AS PRDT_NM
+						, PRDT_STD AS PRDT_STD
+						, REQ_DT AS REQ_DT
+						, COST AS COST
+						, RTN_QTY AS RTN_QTY
+						, PURE_AMT AS PURE_AMT
+						, VAT_AMT AS VAT_AMT
+						, TOT_AMT AS TOT_AMT
+						, TERM_VAL AS TERM_VAL
+						, REMARKS AS REMARKS
+						, GUBUN AS GUBUN
+						, EXPRT_DT AS EXPRT_DT
+						, LACK_NO_1 AS LACK_NO_1
+						, WH_NM AS WH_NM
+						, BUY_PRDT_CD AS BUY_PRDT_CD
+				FROM	(
+						SELECT
+								'1' AS SORT
+								, SUBSTRING(TPR.BUY_DT,1,6) AS YEARMON
+								, TPR.BUY_DT AS RTN_DT							-- 입고일자
+								, TPR.BUY_CD AS BUY_CD			-- 매입처코드
+								, B.BUY_NM AS BUY_NM			
+								, TPR.PRDT_CD AS PRDT_CD					-- 자재코드
+								, C.PRDT_NM AS PRDT_NM
+								, C.PRDT_STD AS PRDT_STD						
+								, TPR.ORD_DT AS ORD_DT					-- 발주일자			
+								, TPR.COST AS COST						-- 원가
+								, TPR.ORD_QTY AS RTN_QTY						-- 낱개 수량
+								, TPR.PURE_AMT AS PURE_AMT						-- 공급가
+								, TPR.VAT_AMT AS VAT_AMT				-- 부가세
+								, TPR.TOT_AMT AS TOT_AMT				-- 합계
+								, TPR.TERM_VAL AS TERM_VAL				-- 유효기간
+								, TPR.REMARKS AS REMARKS						-- 비고
+								, '정상' AS GUBUN
+								, C.EXPRT_DT AS EXPRT_DT
+								, C.LACK_NO_1 AS LACK_NO_1
+								, D.WH_NM AS WH_NM
+								, C.BUY_PRDT_CD AS BUY_PRDT_CD
+						FROM	TBH_PRDT_RCPT A
+								LEFT OUTER JOIN TFM_WH_MST D
+									ON TPR.WH_CD = D.WH_CD
+								, TFM_BUY_MST B, TFM_PRDT_MST C
+						WHERE	TPR.BUY_CD = B.BUY_CD
+						AND		TPR.PRDT_CD = C.PRDT_CD
+						AND		TPR.BUY_DT  BETWEEN DATE_FORMAT(#{startDt},'%Y%m%d') AND  DATE_FORMAT(#{endDt},'%Y%m%d')
+						AND		C.TAX_YN = #{taxYn}
+						AND		TPR.ORD_QTY != 0
+						AND		TPR.USE_YN = '1'
+					 <if test='whCd != null and whCd != ""'>			<!-- 창고코드  --> 
+						AND TPR.WH_CD LIKE #{whCd}
+					 </if>
+					 <if test='prdtNm != null and prdtNm != ""'>			<!-- 상품명  --> 
+						AND C.PRDT_NM LIKE #{prdtNm}
+					 </if>	
+					 <if test='prdtCd != null and prdtCd != ""'>			<!-- 상품코드  --> 
+						AND C.PRDT_CD LIKE #{prdtCd}
+					 </if>	
+					 <if test='buyCd != null and buyCd != ""'>			<!-- 매입처코드  --> 
+						AND TPR.BUY_CD LIKE #{buyCd}
+					 </if>	
+					 <if test='buyNm != null and buyNm != ""'>			<!-- 매입처명  --> 
+						AND B.BUY_NM LIKE #{buyNm}
+					 </if>
+					 <if test='lCd != null and lCd != ""'>	<!-- 대분류  --> 
+						AND C.L_CD LIKE #{lCd}
+					 </if>
+					 <if test='mCd != null and mCd != ""'>	<!-- 중분류  --> 
+						AND C.M_CD LIKE #{mCd}
+					</if>
+					UNION ALL
+						SELECT
+								'2' AS SORT
+								, SUBSTRING(TPR.RTN_DT,1,6) AS YEARMON
+								, TPR.RTN_DT AS RTN_DT							-- 입고일자
+								, TPR.BUY_CD AS BUY_CD			-- 매입처코드
+								, B.BUY_NM AS BUY_NM			
+								, TPR.PRDT_CD AS PRDT_CD					-- 자재코드
+								, C.PRDT_NM AS PRDT_NM
+								, C.PRDT_STD AS PRDT_STD						
+								, '' as REQ_DT					-- 발주일자			
+								, TPR.COST AS COST						-- 원가
+								, TPR.RTN_QTY*-1 AS RTN_QTY						-- 낱개 수량
+								, TPR.PURE_AMT*-1 AS PURE_AMT						-- 공급가
+								, TPR.VAT_AMT*-1 AS VAT_AMT				-- 부가세
+								, TPR.TOT_AMT*-1 AS TOT_AMT				-- 합계
+								, '' AS TERM_VAL				-- 유효기간
+								, TPR.REMARKS AS REMARKS						-- 비고
+								, '반품' AS GUBUN
+								, C.EXPRT_DT AS EXPRT_DT
+								, C.LACK_NO_1 AS LACK_NO_1
+								, D.WH_NM AS WH_NM
+								, C.BUY_PRDT_CD AS BUY_PRDT_CD
+						FROM	TBH_PRDT_RETURN A
+								LEFT OUTER JOIN TFM_WH_MST D
+									ON TPR.WH_CD = D.WH_CD
+								, TFM_BUY_MST B, TFM_PRDT_MST C
+						WHERE	TPR.BUY_CD = B.BUY_CD
+						AND		TPR.PRDT_CD = C.PRDT_CD
+						AND		TPR.RTN_DT BETWEEN DATE_FORMAT(#{startDt},'%Y%m%d') AND  DATE_FORMAT(#{endDt},'%Y%m%d')
+						AND		C.TAX_YN = #{taxYn}
+						AND		TPR.RTN_QTY !=0
+					 <if test='whCd != null and whCd != ""'>			<!-- 창고코드  --> 
+						AND TPR.WH_CD LIKE #{whCd}
+					 </if>
+					 <if test='prdtNm != null and prdtNm != ""'>			<!-- 상품명  --> 
+						AND C.PRDT_NM LIKE #{prdtNm}
+					 </if>	
+					 <if test='prdtCd != null and prdtCd != ""'>			<!-- 상품코드  --> 
+						AND C.PRDT_CD LIKE #{prdtCd}
+					 </if>	
+					 <if test='buyCd != null and buyCd != ""'>			<!-- 매입처코드  --> 
+						AND TPR.BUY_CD LIKE #{buyCd}
+					 </if>	
+					 <if test='buyNm != null and buyNm != ""'>			<!-- 매입처명  --> 
+						AND B.BUY_NM LIKE #{buyNm}
+					 </if>
+					 <if test='lCd != null and lCd != ""'>	<!-- 대분류  --> 
+						AND C.L_CD LIKE #{lCd}
+					 </if>
+					 <if test='mCd != null and mCd != ""'>	<!-- 중분류  --> 
+						AND C.M_CD LIKE #{mCd}
+					</if>
+						) A
+					ORDER BY TPR.RTN_DT, TPR.BUY_NM, TPR.SORT, TPR.PRDT_CD
+						</when>
+			
+				<otherwise>
+				SELECT	  
+				  		  #{startDt} AS BUY_START_DT
+		            	, #{endDt} AS BUY_END_DT
+		            	, #{buyNm} AS BUY_NM_SEARCH
+		           	    , #{prdtNm} AS PRDT_NM_SEARCH
+						, RTN_DT
+						, BUY_NM
+						, PRDT_CD
+						, PRDT_NM
+						, PRDT_STD
+						, REQ_DT
+						, COST
+						, RTN_QTY
+						, PURE_AMT
+						, VAT_AMT
+						, TOT_AMT
+						, TERM_VAL
+						, REMARKS
+						, GUBUN
+						, EXPRT_DT
+						, LACK_NO_1
+						, WH_NM
+						, BUY_PRDT_CD
+				  FROM (
+						SELECT
+								'1' as SORT
+								, SUBSTRING(TPR.BUY_DT,1,6) AS YEARMON
+								, TPR.BUY_DT AS RTN_DT							-- 입고일자
+								, TPR.BUY_CD AS BUY_CD			-- 매입처코드
+								, B.BUY_NM AS BUY_NM			
+								, TPR.PRDT_CD AS PRDT_CD					-- 자재코드
+								, C.PRDT_NM AS PRDT_NM
+								, C.PRDT_STD AS PRDT_STD						
+								, '' AS REQ_DT					-- 발주일자			
+								, TPR.COST AS COST						-- 원가
+								, TPR.ORD_QTY*-1 as RTN_QTY						-- 낱개 수량
+								, TPR.PURE_AMT*-1 as PURE_AMT						-- 공급가
+								, TPR.VAT_AMT*-1 as VAT_AMT				-- 부가세
+								, TPR.TOT_AMT*-1 as TOT_AMT				-- 합계
+								, TPR.TERM_VAL AS TERM_VAL					-- 유효기간
+								, TPR.REMARKS AS REMARKS						-- 비고
+								, '정상' AS GUBUN
+								, C.EXPRT_DT AS EXPRT_DT
+								, C.LACK_NO_1 AS LACK_NO_1
+								, D.WH_NM AS WH_NM
+								, C.BUY_PRDT_CD AS BUY_PRDT_CD
+						FROM	TBH_PRDT_RCPT A
+								LEFT OUTER JOIN TFM_WH_MST D
+									ON TPR.WH_CD = D.WH_CD
+								, TFM_BUY_MST B, TFM_PRDT_MST C
+						WHERE	TPR.BUY_CD = B.BUY_CD
+						AND		TPR.PRDT_CD = C.PRDT_CD
+						AND		TPR.BUY_DT  BETWEEN DATE_FORMAT(#{startDt},'%Y%m%d') AND  DATE_FORMAT(#{endDt},'%Y%m%d')
+						AND		TPR.ORD_QTY != 0
+						AND		TPR.USE_YN = '1'
+						 <if test='whCd != null and whCd != ""'>			<!-- 창고코드  --> 
+						AND TPR.WH_CD LIKE #{whCd}
+					 </if>
+					 <if test='prdtNm != null and prdtNm != ""'>			<!-- 상품명  --> 
+						AND C.PRDT_NM LIKE #{prdtNm}
+					 </if>	
+					 <if test='prdtCd != null and prdtCd != ""'>			<!-- 상품코드  --> 
+						AND C.PRDT_CD LIKE #{prdtCd}
+					 </if>	
+					 <if test='buyCd != null and buyCd != ""'>			<!-- 매입처코드  --> 
+						AND TPR.BUY_CD LIKE #{buyCd}
+					 </if>	
+					 <if test='buyNm != null and buyNm != ""'>			<!-- 매입처명  --> 
+						AND B.BUY_NM LIKE #{buyNm}
+					 </if>
+					 <if test='lCd != null and lCd != ""'>	<!-- 대분류  --> 
+						AND C.L_CD LIKE #{lCd}
+					 </if>
+					 <if test='mCd != null and mCd != ""'>	<!-- 중분류  --> 
+						AND C.M_CD LIKE #{mCd}
+					</if>
+					UNION ALL
+						SELECT
+								'2' as SORT
+								, SUBSTRING(TPR.RTN_DT,1,6) AS YEARMON
+								, TPR.RTN_DT AS RTN_DT							-- 입고일자
+								, TPR.BUY_CD AS BUY_CD			-- 매입처코드
+								, B.BUY_NM AS BUY_NM			
+								, TPR.PRDT_CD AS PRDT_CD					-- 자재코드
+								, C.PRDT_NM AS PRDT_NM
+								, C.PRDT_STD AS PRDT_STD						
+								, '' as REQ_DT					-- 발주일자			
+								, TPR.COST as COST						-- 원가
+								, TPR.RTN_QTY*-1 AS QTY						-- 낱개 수량
+								, TPR.PURE_AMT*-1 AS AMT						-- 공급가
+								, TPR.VAT_AMT*-1 AS VAT_AMT				-- 부가세
+								, TPR.TOT_AMT*-1 AS TOT_AMT				-- 합계
+								, '' AS TERM_VAL				-- 유효기간
+								, TPR.REMARKS AS REMARKS						-- 비고
+								, '반품' AS GUBUN
+								, C.EXPRT_DT AS EXPRT_DT
+								, C.LACK_NO_1 AS LACK_NO_1
+								, D.WH_NM AS WH_NM
+								, C.BUY_PRDT_CD AS BUY_PRDT_CD
+						FROM	TBH_PRDT_RETURN A
+								LEFT OUTER JOIN TFM_WH_MST D
+									ON TPR.WH_CD = D.WH_CD
+								, TFM_BUY_MST B, TFM_PRDT_MST C
+						WHERE	TPR.BUY_CD = B.BUY_CD
+						AND		TPR.PRDT_CD = C.PRDT_CD
+						AND		TPR.RTN_DT  BETWEEN DATE_FORMAT(#{startDt},'%Y%m%d') AND  DATE_FORMAT(#{endDt},'%Y%m%d')
+						AND		TPR.RTN_QTY != 0
+						 <if test='whCd != null and whCd != ""'>			<!-- 창고코드  --> 
+						AND TPR.WH_CD LIKE #{whCd}
+					 </if>
+					 <if test='prdtNm != null and prdtNm != ""'>			<!-- 상품명  --> 
+						AND C.PRDT_NM LIKE #{prdtNm}
+					 </if>	
+					 <if test='prdtCd != null and prdtCd != ""'>			<!-- 상품코드  --> 
+						AND C.PRDT_CD LIKE #{prdtCd}
+					 </if>	
+					 <if test='buyCd != null and buyCd != ""'>			<!-- 매입처코드  --> 
+						AND TPR.BUY_CD LIKE #{buyCd}
+					 </if>	
+					 <if test='buyNm != null and buyNm != ""'>			<!-- 매입처명  --> 
+						AND B.BUY_NM LIKE #{buyNm}
+					 </if>
+					 <if test='lCd != null and lCd != ""'>	<!-- 대분류  --> 
+						AND C.L_CD LIKE #{lCd}
+					 </if>
+					 <if test='mCd != null and mCd != ""'>	<!-- 중분류  --> 
+						AND C.M_CD LIKE #{mCd}
+					</if>
+						) A
+					ORDER BY TPR.RTN_DT, TPR.BUY_NM, TPR.SORT, TPR.PRDT_CD
+					</otherwise>
+					</choose>
+</select>
+
+
+</mapper>

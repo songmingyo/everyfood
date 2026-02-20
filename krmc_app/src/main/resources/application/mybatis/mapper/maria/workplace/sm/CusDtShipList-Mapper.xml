@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusDtShipListMapper">
+
+	
+	<!-- 매출처일자별출고현황 조회 -->
+	<select id="selectCusDtShipList" parameterType="com.doppio.workplace.sm.service.CusDtShipListVo" resultType="com.doppio.workplace.sm.service.CusDtShipListVo">
+	/*CusDtShipListMapper.selectCusDtShipList*/	
+		SELECT TSAI.SALES_NM
+			   , A.SALES_DT
+			   , TWM.WH_NM
+			   , SUM(A.PURE_AMT) AS PURE_AMT
+			   , SUM(A.VAT_AMT) AS VAT_AMT
+			   , SUM(A.TOT_AMT) AS TOT_AMT			   
+		  FROM (SELECT SALES_DT AS SALES_DT
+		               , WH_CD
+		               , SALES_CD
+				       , SUM(PURE_AMT) AS PURE_AMT
+				       , SUM(VAT_AMT) AS VAT_AMT
+				       , SUM(TOT_AMT) AS TOT_AMT
+			      FROM TSH_SALES_DLV
+				 WHERE SALES_DT BETWEEN #{startDt} AND #{endDt}
+				 <if test='whCd != null and whCd != ""'> 
+				   AND WH_CD = #{whCd}
+   				 </if>	
+				 GROUP BY ORD_DT, WH_CD, SALES_CD
+			  UNION ALL
+				SELECT RTN_DT AS SALES_DT
+				       , WH_CD
+				       , SALES_CD
+					   , SUM(PURE_AMT)*-1 AS PURE_AMT
+					   , SUM(VAT_AMT)*-1 AS VAT_AMT
+					   , SUM(TOT_AMT)*-1 AS TOT_AMT
+			      FROM TSH_SALES_RETURN
+			     WHERE RTN_DT BETWEEN #{startDt} AND #{endDt}
+				 <if test='whCd != null and whCd != ""'> 
+				   AND WH_CD = #{whCd}
+   				 </if>	
+				 GROUP BY RTN_DT, WH_CD, SALES_CD
+			   ) AS A
+			   
+			   JOIN TFM_WH_MST AS TWM
+			       ON TWM.WH_CD = A.WH_CD
+			   
+			   JOIN
+                   (SELECT CASE WHEN #{hqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                           , SALES_CD
+                      FROM V_SALES_HQ_CD
+                     WHERE HQ_CLASS = #{hqClass}
+                     <if test='salesCd != null and salesCd != ""'> 
+                       AND HQ_CD = #{salesCd}
+                     </if>
+                   ) AS VSHD
+                   ON VSHD.SALES_CD = A.SALES_CD
+                   
+               JOIN TFM_SALES_ADD_INFO AS TSAI
+                   ON TSAI.SALES_CD = VSHD.HQ_CD
+                   
+		 GROUP BY TSAI.SALES_NM
+			      , A.SALES_DT
+			      , TWM.WH_NM
+		 ORDER BY A.SALES_DT, TSAI.SALES_NM
+
+	</select>
+
+	<!-- 매출처일자별출고현황 조회 -->
+	<select id="selectCusDtShipListExcelDown" parameterType="com.doppio.workplace.sm.service.CusDtShipListVo" resultType="java.util.HashMap">
+	/*CusDtShipListMapper.selectCusDtShipListExcelDown*/	
+		SELECT TSAI.SALES_NM
+			   , A.SALES_DT
+			   , TWM.WH_NM
+			   , SUM(A.PURE_AMT) AS PURE_AMT
+			   , SUM(A.VAT_AMT) AS VAT_AMT
+			   , SUM(A.TOT_AMT) AS TOT_AMT			   
+		  FROM (SELECT SALES_DT AS SALES_DT
+		               , WH_CD
+		               , SALES_CD
+				       , SUM(PURE_AMT) AS PURE_AMT
+				       , SUM(VAT_AMT) AS VAT_AMT
+				       , SUM(TOT_AMT) AS TOT_AMT
+			      FROM TSH_SALES_DLV
+				 WHERE SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+				 <if test='whCd != null and whCd != ""'> 
+				   AND WH_CD = #{whCd}
+   				 </if>	
+				 GROUP BY ORD_DT, WH_CD, SALES_CD
+			  UNION ALL
+				SELECT RTN_DT AS SALES_DT
+				       , WH_CD
+				       , SALES_CD
+					   , SUM(PURE_AMT)*-1 AS PURE_AMT
+					   , SUM(VAT_AMT)*-1 AS VAT_AMT
+					   , SUM(TOT_AMT)*-1 AS TOT_AMT
+			      FROM TSH_SALES_RETURN
+			     WHERE RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+				 <if test='whCd != null and whCd != ""'> 
+				   AND WH_CD = #{whCd}
+   				 </if>	
+				 GROUP BY RTN_DT, WH_CD, SALES_CD
+			   ) AS A
+			   
+			   JOIN TFM_WH_MST AS TWM
+			       ON TWM.WH_CD = A.WH_CD
+			   
+			   JOIN
+                   (SELECT CASE WHEN #{hqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                           , SALES_CD
+                      FROM V_SALES_HQ_CD
+                     WHERE HQ_CLASS = #{hqClass}
+                     <if test='salesCd != null and salesCd != ""'> 
+                       AND HQ_CD = #{salesCd}
+                     </if>
+                   ) AS VSHD
+                   ON VSHD.SALES_CD = A.SALES_CD
+                   
+               JOIN TFM_SALES_ADD_INFO AS TSAI
+                   ON TSAI.SALES_CD = VSHD.HQ_CD
+                   
+		 GROUP BY TSAI.SALES_NM
+			      , A.SALES_DT
+			      , TWM.WH_NM
+		 ORDER BY A.SALES_DT, TSAI.SALES_NM
+	</select>
+
+
+</mapper>

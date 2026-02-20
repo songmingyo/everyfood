@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusRtnRegMapper">
+
+	  
+	
+	<!-- 매출처반품등록 마스터 조회 -->
+	<select id="selectCusRtnRegList" parameterType="com.doppio.workplace.sm.service.CusRtnRegVo" resultType="com.doppio.workplace.sm.service.CusRtnRegVo">
+	/*cusRtnRegMapper.selectCusRtnRegList*/	
+		SELECT TSR.SALES_SLIP_NO
+		       , TSR.RTN_DT
+		       , TSR.SALES_CD
+		       , TSAI.SALES_NM
+    	       , SUM(TSR.PURE_AMT)  AS PURE_AMT
+    	       , SUM(TSR.VAT_AMT)   AS VAT_AMT
+    	       , SUM(TSR.TOT_AMT)   AS TOT_AMT
+    	       
+          FROM TSH_SALES_RETURN AS TSR
+      	       
+      	       LEFT OUTER JOIN TFM_SALES_ADD_INFO AS TSAI 
+    	          ON TSAI.SALES_CD = TSR.SALES_CD
+    	       
+         WHERE TSR.RTN_DT = #{searchRtnDt}
+           AND TSR.RTN_QTY != 0 
+		 <if test='searchSalesCd != null and searchSalesCd != ""'> 
+			AND  TSR.SALES_CD = #{searchSalesCd} 
+		 </if>
+		 <if test='searchRtnClass != null and searchRtnClass != ""'> 
+			AND  TSR.RTN_CLASS	 = #{searchRtnClass} 
+		 </if>
+         GROUP BY TSR.SALES_SLIP_NO
+		          , TSR.RTN_DT
+		          , TSR.SALES_CD
+		          , TSAI.SALES_NM
+	</select>
+	
+	<!--  매출처 반품등록 상품 상세  조회  -->
+	<select id="selectCusRtnRegDetailList" parameterType="com.doppio.workplace.sm.service.CusRtnRegVo" resultType="com.doppio.workplace.sm.service.CusRtnRegVo">
+	/*cusRtnRegMapper.selectCusRtnRegDetailList*/	
+	    SELECT TSR.SALES_SLIP_NO
+	           , TSR.SALES_SEQ
+		  	   , TSR.RTN_DT
+			   , TSR.SALES_CD
+		  	   , TSR.PRDT_CD
+		  	   , TPM.PRDT_NM 
+		  	   , TPM.PRDT_STD
+		  	   , TCD.DTL_NM AS ORD_UNIT
+		  	   , TSR.RTN_QTY
+		  	   , IFNULL(TSR.BOX_QTY,'') AS BOX_QTY
+		  	   , TSR.PRICE
+		  	   , TSR.PURE_AMT
+    	  	   , TSR.VAT_AMT
+    	  	   , TSR.TOT_AMT
+    	  	   , TSR.WH_CD
+    	  	   , TWM.WH_NM 
+    	  	   , TSR_R.REMARKS_1
+    	  	   , TSR_R.REMARKS_2
+    	  	   , TM_1.USER_NM AS REG_NM
+    	  	   , TM_2.USER_NM AS MOD_NM
+    	  	   
+    	  	   , TSR.REG_DT
+    	  	   , DATE_FORMAT(TSR.MOD_DT,'%Y-%m-%d %T') as MOD_DT
+    	  	   
+    	  	   , TSPM.VAT_YN
+			   , TPM.QTY_BOX
+			   , TPM.STD_YN
+			   
+	      FROM TSH_SALES_RETURN AS TSR
+	      
+		       LEFT OUTER JOIN TFM_WH_MST AS TWM
+		         ON TSR.WH_CD = TWM.WH_CD
+		         
+		       LEFT OUTER JOIN TSH_SALES_REMARK AS TSR_R
+		         ON TSR_R.SALES_SLIP_NO = TSR.SALES_SLIP_NO
+		        AND TSR_R.SALES_SEQ = TSR.SALES_SEQ
+		        
+		       LEFT OUTER JOIN TFM_PRDT_MST AS TPM
+		         ON TSR.PRDT_CD  = TPM.PRDT_CD
+		         
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+    	         ON TCD.DTL_CD = TPM.ORD_UNIT
+    	        AND TCD.COM_CD = 'M006'
+    	        
+    	       LEFT OUTER JOIN TSM_SALES_PRDT_MST AS TSPM
+    	         ON TSPM.SALES_CD = TSR.SALES_CD
+    	        AND TSPM.PRDT_CD = TSR.PRDT_CD
+    	        
+    	       LEFT OUTER JOIN TCM_MEMBER AS TM_1
+    	         ON TM_1.USER_ID = TSR.REG_ID
+    	         
+    	       LEFT OUTER JOIN TCM_MEMBER AS TM_2
+    	         ON TM_2.USER_ID = TSR.MOD_ID
+    	       
+    	 WHERE TSR.SALES_SLIP_NO = #{salesSlipNo}
+    	   AND TSR.RTN_QTY != 0
+	</select>
+	
+	<!-- 매출처반품등록 마스터 하나의 품목만 조회 -->
+	<select id="selectCusRtnRegPrdtAdd" parameterType="com.doppio.workplace.sm.service.CusRtnRegVo" resultType="com.doppio.workplace.sm.service.CusRtnRegVo">
+	/* cusRtnRegMapper.selectCusRtnRegPrdtAdd */	
+		SELECT TSPM.SALES_CD
+		       , TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD_1.DTL_NM AS ORD_UNIT
+		       , TPM.QTY_BOX
+		       , TPM.STD_YN
+		       , TSPM.VAT_YN 
+		       , TSPM.PRICE
+		  FROM TSM_SALES_PRDT_MST AS TSPM
+		  
+		       JOIN TFM_PRDT_MST AS TPM
+		           ON TSPM.PRDT_CD = TPM.PRDT_CD
+		           
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_1
+		           ON TCD_1.DTL_CD = TPM.ORD_UNIT 
+		          AND TCD_1.COM_CD = 'M006'
+         WHERE TSPM.SALES_CD = #{searchSalesCd}
+         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+		   AND TSPM.PRDT_CD = #{searchPrdtCd}
+		 </if>
+	</select>
+	
+	
+	<!-- 전표번호 생성 기존 전표번호가 없으면 무조건 신규 생성	-->
+     <insert id="insertRtnSlipNoNew" parameterType="com.doppio.workplace.sm.service.CusRtnRegVo">
+     /*cusRtnRegMapper.insertRtnSlipNoNew*/
+	      <selectKey resultType="string" keyProperty="salesSlipNo" order="BEFORE">
+	     	    SELECT CONCAT(#{rtnDt}, '-', LPAD(CAST(RIGHT(IFNULL(MAX(SALES_SLIP_NO),'0000'),4) AS DECIMAL)+1, 4, 0)) AS SALES_SLIP_NO
+         	  	  FROM TSH_DAY_SLIPNO
+             	 WHERE SALES_SLIP_DT = #{rtnDt}	
+		</selectKey>
+	     	INSERT IGNORE INTO TSH_DAY_SLIPNO
+	     	(
+	     		SALES_SLIP_DT
+				, SALES_SLIP_NO
+				, REG_DT
+		 	)
+		 	VALUES
+		 	(
+		 		#{rtnDt}	
+		 		, #{salesSlipNo}
+		 		, NOW()
+		 	)
+	</insert>
+
+	
+	<!--  전표번호 생성 및 조회 
+		(25개이상인 경우 신규 전표번호 생성 하고 Insert/전표번호 반환,  25이하인경우 전표번호 INSERT 무시(IGNORE), 조회된 전표번호 반환  )  
+	-->
+     <insert id="insertRtnSlipNo" parameterType="com.doppio.workplace.sm.service.CusRtnRegVo">
+     /*cusRtnRegMapper.insertRtnSlipNo*/
+	      <selectKey resultType="string" keyProperty="salesSlipNo" order="BEFORE">
+	     	    SELECT CASE WHEN S.SALES_SLIP_NO IS NOT NULL AND SALES_SEQ BETWEEN 1 AND 24
+			       		    THEN S.SALES_SLIP_NO   -- 기존 전표사용 
+			       		    ELSE ( SELECT CONCAT(#{rtnDt}, '-', LPAD(CAST(RIGHT(IFNULL(MAX(SALES_SLIP_NO),'0000'),4) AS DECIMAL)+1, 4, 0)) AS SALES_SLIP_NO
+         	  				         FROM TSH_DAY_SLIPNO
+             				        WHERE SALES_SLIP_DT = #{rtnDt}	
+             				     ) 	 			 -- 신규 전표생성 
+			       		    END AS SALES_SLIP_NO
+			     FROM ( SELECT TSV.SALES_SLIP_NO, COUNT(*) AS SALES_SEQ
+						  FROM TSH_SALES_RETURN AS TSV
+						 WHERE TSV.SALES_SLIP_NO = #{salesSlipNo}
+			          ) S
+		</selectKey>
+	     	INSERT IGNORE INTO TSH_DAY_SLIPNO
+	     	(
+	     		SALES_SLIP_DT
+				, SALES_SLIP_NO
+				, REG_DT
+		 	)
+		 	VALUES
+		 	(
+		 		#{rtnDt}	
+		 		, #{salesSlipNo}
+		 		, NOW()
+		 	)
+	</insert>
+	   
+	<!-- 매출처 반품 데이터 저장   -->
+	<insert id="insertSalesRtnReg" parameterType="com.doppio.workplace.sm.service.CusRtnRegVo">
+	/*cusRtnRegMapper.insertSalesRtnReg*/
+	<selectKey resultType="string" keyProperty="salesSeq" order="BEFORE">
+	 	SELECT IFNULL( MAX(SALES_SEQ),0)+1 AS SALES_SEQ 
+	 	  FROM TSH_SALES_RETURN
+	 	 WHERE SALES_SLIP_NO = #{salesSlipNo} 
+	 </selectKey>
+		INSERT INTO TSH_SALES_RETURN
+	    	(SALES_SLIP_NO, SALES_SEQ, RTN_DT, SALES_CD
+	    	 , PRDT_CD, RTN_CLASS, WH_CD
+             , PRICE, RTN_QTY, BOX_QTY
+             , PURE_AMT, VAT_AMT, TOT_AMT
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT
+			)
+		VALUES
+			(#{salesSlipNo}, #{salesSeq}, #{rtnDt}, #{salesCd}
+			 , #{prdtCd}, #{rtnClass}, #{whCd}
+			 , #{price}, #{rtnQty}, #{boxQty}
+			 , #{pureAmt}, #{vatAmt}, #{totAmt}
+			 , #{useYn}, #{workId}, NOW(), #{workId}, NOW()
+			)
+	</insert>
+		
+	<!-- 매출처 반품 데이터 수정 처리    -->
+	<update id="updateSalesRtnReg" parameterType="com.doppio.workplace.sm.service.CusRtnRegVo">
+	/*cusRtnRegMapper.updateSalesRtnReg*/
+		UPDATE TSH_SALES_RETURN
+		   SET RTN_QTY   	= #{rtnQty}
+			   , BOX_QTY	= #{boxQty}
+			   , PURE_AMT  	= #{pureAmt}
+			   , VAT_AMT	= #{vatAmt}
+			   , TOT_AMT    = #{totAmt}
+			   , USE_YN     = #{useYn}
+			   , MOD_ID   	= #{workId}
+			   , MOD_DT   	= NOW() 
+	     WHERE SALES_SLIP_NO  =  #{salesSlipNo}
+	       AND SALES_SEQ      =  #{salesSeq}
+	</update>
+	
+	<!-- 매출처 전표별 비고 Count   -->
+	<select id="selectSalesRemarksListCount" parameterType="com.doppio.workplace.sm.service.CusRtnRegVo" resultType="int">
+	/*cusRtnRegMapper.selectSalesRemarksListCount*/
+		SELECT COUNT(*)
+		  FROM TSH_SALES_REMARK AS TSR
+	     WHERE TSR.SALES_SLIP_NO =  #{salesSlipNo}
+	       AND TSR.SALES_SEQ     =  #{salesSeq}
+	</select>
+	
+	
+	<!-- 매출처 전표별 비고 저장   -->
+	<insert id="insertSalesRemarks" parameterType="com.doppio.workplace.sm.service.CusRtnRegVo">
+	/*cusRtnRegMapper.insertSalesRemarks*/
+		INSERT INTO TSH_SALES_REMARK
+	    	(SALES_SLIP_NO, SALES_SEQ, REMARKS_1, REMARKS_2
+             , REG_ID, REG_DT
+			)
+		VALUES
+			(#{salesSlipNo}, #{salesSeq}, #{remarks1}, #{remarks2}
+			 , #{workId}, NOW()
+			)
+	</insert>
+		
+	<!-- 매출처 전표별 비고 수정 처리    -->
+	<update id="updateSalesRemarks" parameterType="com.doppio.workplace.sm.service.CusRtnRegVo">
+	/*cusRtnRegMapper."updateSalesRemarks"*/
+		UPDATE TSH_SALES_REMARK
+		   SET REMARKS_1 	= #{remarks1}
+		       , REMARKS_2 	= #{remarks2}
+			   , REG_ID   	= #{workId}
+			   , REG_DT   	= NOW()
+	     WHERE SALES_SLIP_NO  =  #{salesSlipNo}
+	</update>
+	
+	
+	
+	<!-- 반품 거래명세표 조회 -->
+	<select id="selectRtnPrintList" parameterType="com.doppio.workplace.sm.service.CusRtnRegVo" resultType="com.doppio.workplace.sm.service.CusRtnRegVo">
+	/*CusShipRegMapper.selectRtnPrintList*/
+		SELECT TSR_1.SALES_SLIP_NO
+			   , TSM.BSNS_NUM
+			   , TSAI.SALES_NM
+			   , TSM.BOSS_NM
+			   
+			   , CONCAT( (CASE WHEN IFNULL(TSM.DLV_ADDR_1,'') = '' THEN TSM.ADDR_1 ELSE TSM.DLV_ADDR_1 END) , ' ', (CASE WHEN IFNULL(TSM.DLV_ADDR_2,'') = '' THEN TSM.ADDR_2 ELSE TSM.DLV_ADDR_2 END) ) AS ADDR
+			   
+			   , CASE WHEN IFNULL(TSM.TEL_NO,'')='' THEN CONCAT('TEL : ', TSM.CENTER_PR_TEL, ' / FAX : ', TSM.FAX_NO) ELSE CONCAT(TSM.TEL_NO, ' / FAX : ', TSM.FAX_NO) END AS TEL_NO
+			   
+			   , IFNULL(TSR_2.REMARKS_1,'') AS REMARKS_1	
+			   
+			   , TSR_1.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TCD.DTL_NM AS ORD_UNIT_NM
+			   , CASE WHEN #{chTail}='Y' THEN 0 ELSE IFNULL(TSR_1.PRICE,0) END AS PRT_PRICE
+			   
+			   , CASE WHEN MOD(TSR_1.RTN_QTY,1) = 0 THEN FORMAT(TSR_1.RTN_QTY * -1,0) ELSE FORMAT(TSR_1.RTN_QTY * -1,2) END AS SALES_QTY
+			   
+			   , CASE WHEN #{chTail}='Y' THEN 0 ELSE IFNULL(TSR_1.PURE_AMT,0) END * -1 AS PRT_PURE_AMT
+			   , CASE WHEN #{chTail}='Y' THEN 0 ELSE IFNULL(TSR_1.VAT_AMT,0) END * -1 AS PRT_VAT_AMT
+			   , TSR_1.BOX_QTY
+			   
+			   , CONCAT(TDM.CAR_NM, ' ', TDM.DRV_SNM) AS DRV_SNM
+			   , TDM.MTEL_NO AS DRV_M_TEL_NO
+			   , TSPM.SALES_PR_NM
+			   , TSPM.M_TEL_NO AS SALES_M_TEL_NO
+			   
+			   , CASE WHEN #{chTail}='Y' THEN 0 ELSE IFNULL(A.BAL_AMT,0) END AS BAL_AMT
+			   
+			   , CASE WHEN #{chTail}='Y' THEN 0 ELSE SUM(CASE WHEN TSR_1.VAT_AMT > 0 THEN PURE_AMT END) OVER (PARTITION BY 1) END * -1 AS SUM_PURE_AMT_TAX_Y
+			   , CASE WHEN #{chTail}='Y' THEN 0 ELSE SUM(CASE WHEN TSR_1.VAT_AMT > 0 THEN VAT_AMT END) OVER (PARTITION BY 1) END * -1 AS SUM_VAT_AMT_TAX_Y
+			   , CASE WHEN #{chTail}='Y' THEN 0 ELSE SUM(CASE WHEN TSR_1.VAT_AMT > 0 THEN TOT_AMT END) OVER (PARTITION BY 1) END * -1 AS SUM_TOT_AMT_TAX_Y
+			   
+			   , CASE WHEN #{chTail}='Y' THEN 0 ELSE SUM(CASE WHEN TSR_1.VAT_AMT = 0 THEN PURE_AMT END) OVER (PARTITION BY 1) END * -1 AS SUM_PURE_AMT_TAX_N
+			   , CASE WHEN #{chTail}='Y' THEN 0 ELSE SUM(CASE WHEN TSR_1.VAT_AMT = 0 THEN VAT_AMT END) OVER (PARTITION BY 1) END * -1 AS SUM_VAT_AMT_TAX_N
+			   , CASE WHEN #{chTail}='Y' THEN 0 ELSE SUM(CASE WHEN TSR_1.VAT_AMT = 0 THEN TOT_AMT END) OVER (PARTITION BY 1) END * -1 AS SUM_TOT_AMT_TAX_N
+			   
+			   , CASE WHEN #{chTail}='Y' THEN 0 ELSE SUM(TSR_1.TOT_AMT) OVER (PARTITION BY 1) END * -1 AS SUM_YN_TOT_AMT
+			   , CASE WHEN #{chTail}='Y' THEN 0 ELSE IFNULL(A.DAY_SALES_AMT,0) END AS DAY_SALES_AMT
+			   
+			   , CASE WHEN #{chTail}='Y' THEN 0 ELSE SUM(TSR_1.TOT_AMT) OVER (PARTITION BY 1) END * -1 AS SUM_TOT_AMT			   
+			   
+		  FROM TSH_SALES_RETURN AS TSR_1
+		       
+		       LEFT OUTER JOIN TSH_SALES_REMARK AS TSR_2
+		           ON TSR_2.SALES_SLIP_NO = TSR_1.SALES_SLIP_NO
+		          AND TSR_2.SALES_SEQ = TSR_1.SALES_SEQ
+		          
+		       JOIN TFM_PRDT_MST AS TPM 
+			       ON TSR_1.PRDT_CD  = TPM.PRDT_CD
+			   
+			   LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+			       ON TCD.COM_CD = 'M006'
+			      AND TCD.DTL_CD = TPM.ORD_UNIT
+			  
+			   JOIN TFM_SALES_MST AS TSM
+			       ON TSM.SALES_CD = TSR_1.SALES_CD
+			  
+			   JOIN TFM_SALES_ADD_INFO AS TSAI
+			       ON TSAI.SALES_CD = TSR_1.SALES_CD
+			       
+			   LEFT OUTER JOIN TFM_DLVR_MST AS TDM
+			       ON TDM.CAR_CD = TSAI.CAR_CD
+			       
+			   LEFT OUTER JOIN TFM_SALES_PR_MST AS TSPM
+			       ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+			   
+			   LEFT OUTER JOIN
+			       (SELECT A.SALES_CD
+			               , SUM(A.BAL_AMT) + SUM(A.SALES_AMT) - SUM(A.SETL_AMT) AS BAL_AMT
+			               , SUM(A.DAY_SALES_AMT) AS DAY_SALES_AMT
+			          FROM 
+		        	       (SELECT A.SALES_CD
+                                   , 0 AS BAL_AMT
+                                   , SUM(A.SALES_AMT) AS SALES_AMT
+                                   , 0 AS SETL_AMT
+                                   , SUM(A.DAY_SALES_AMT) AS DAY_SALES_AMT
+                              FROM (SELECT SALES_CD
+                                           , SUM(TOT_AMT) AS SALES_AMT
+                                           , SUM(CASE WHEN SALES_DT=#{rtnDts} THEN TOT_AMT END) AS DAY_SALES_AMT
+                                      FROM TSH_SALES_DLV
+                                     WHERE SALES_DT BETWEEN CONCAT(LEFT(#{rtnDts},6),'01') AND #{rtnDts}
+                                       AND SALES_CD = #{salesCds}
+                                     GROUP BY SALES_CD
+                                  UNION ALL
+                                    SELECT SALES_CD
+                                           , SUM(TOT_AMT)*-1 AS SALES_AMT
+                                           , SUM(CASE WHEN RTN_DT=#{rtnDts} THEN TOT_AMT END)*-1 AS DAY_SALES_AMT
+                                      FROM TSH_SALES_RETURN
+                                     WHERE RTN_DT BETWEEN CONCAT(LEFT(#{rtnDts},6),'01') AND #{rtnDts}
+                                       AND SALES_CD = #{salesCds}
+                                     GROUP BY SALES_CD
+                                   ) AS A
+                                  GROUP BY A.SALES_CD
+                         UNION ALL
+                           SELECT A.SALES_CD
+                                  , SUM(A.BAL_AMT) AS BAL_AMT
+                                  , 0 AS SALES_AMT
+                                  , SUM(A.SETL_AMT) AS SETL_AMT
+                                  , 0 AS DAY_SALES_AMT
+                             FROM (SELECT SALES_CD
+                                          , SUM(BAL_AMT) AS BAL_AMT
+                                          , 0 AS SETL_AMT
+                                     FROM TMH_MON_SALES_PAYMENT
+                                    WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(#{rtnDts}, INTERVAL -1 MONTH),'%Y%m')
+                                      AND SALES_CD = #{salesCds}
+                                    GROUP BY SALES_CD
+                                 UNION ALL
+                                   SELECT SALES_CD
+                                          , 0 AS BAL_AMT
+                                          , SUM(SETL_AMT) AS SETL_AMT
+                                     FROM TSH_SALES_DEP
+                                    WHERE DEP_DT BETWEEN CONCAT(LEFT(#{rtnDts},6),'01') AND #{rtnDts}
+                                      AND SALES_CD = #{salesCds}
+                                    GROUP BY SALES_CD
+                                  ) AS A
+                            GROUP BY A.SALES_CD
+                          ) AS A
+                    GROUP BY A.SALES_CD
+			      ) AS A
+			      ON A.SALES_CD = TSAI.SALES_CD
+		 WHERE TSR_1.SALES_SLIP_NO = #{salesSlipNos}
+           AND TSR_1.RTN_QTY != 0
+	</select>
+	
+	
+</mapper>

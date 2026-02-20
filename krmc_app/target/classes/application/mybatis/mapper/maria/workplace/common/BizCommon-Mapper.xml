@@ -1,0 +1,810 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.common.service.impl.BizCommonMapper">
+
+	
+	
+	<!-- 매입처조회(공통) MAP -->
+	<resultMap id="commonBuyMstMap"   type="com.doppio.workplace.bm.service.BuyMgmtVo">
+		<result column="BUY_CD"				property="buyCd"			/>	<!-- 매입처코드 			-->
+		<result column="BUY_NM" 			property="buyNm"			/>	<!-- 매입처명 				-->
+		<result column="BUY_S_NM" 			property="buySNm"			/>	<!-- 매입처명 약어 			-->
+		<result column="BSNS_NUM" 			property="bsnsNum"			/>	<!-- 사업자번호 			-->
+		<result column="BOSS_NM" 			property="bossNm"			/>	<!-- 대표자명 				-->
+		<result column="BUSI_CON" 			property="busiCon"			/>	<!-- 업태 				-->
+		<result column="BUSI_TYPE" 			property="busiType"			/>	<!-- 업종 				-->
+		<result column="TEL_NO" 			property="telNo"			/>	<!-- 회사대표전화번호		-->
+		<result column="FAX_NO" 			property="faxNo"			/>	<!-- FAX번호 				-->
+		<result column="SALES_PR_NM" 		property="salesPrNm"		/>	<!-- 영업담당자 			-->
+		<result column="SALES_PR_HP" 		property="salesPrHp"		/>	<!-- 영업담당자 휴대폰 		-->
+		<result column="ZIP_CD" 			property="zipCd"			/>	<!-- 우편번호 				-->
+		<result column="ADDR_1" 			property="addr1"			/>	<!-- 주소 				-->
+		<result column="ADDR_2" 			property="addr2"			/>	<!-- 주소 상세 			-->
+		
+		<result column="CORP_NUM"			property="corpNum"			/>	<!-- 법인번호 				-->
+		<result column="CLOSE_PR_NM"		property="closePrNm"		/>	<!-- 마감담당자 			-->
+		<result column="CLOSE_PR_HP"		property="closePrHp"		/>	<!-- 마감담당자 휴대폰 		-->
+		<result column="CENTER_PR_HP"		property="centerPrHp"		/>	<!-- 물류센터 담당자 휴대폰 	-->
+		<result column="CENTER_FAX"			property="centerFax"		/>	<!-- 물류센터 FAX 			-->
+		<result column="CENTER_ZIP_CD"		property="centerZipCd"		/>	<!-- 센터 우편번호 			-->
+		<result column="CENTER_ZIP_ADDR"	property="centerZipAddr"	/>	<!-- 센터 주소 			-->
+		<result column="CENTER_DTL_ADDR"	property="centerDtlAddr"	/>	<!-- 센터 주소 상세 		-->
+		<result column="EMAIL"				property="email"			/>	<!-- 이메일 				-->
+		<result column="SETL_CON"			property="setlCon"			/>	<!-- 결제조건 				-->
+		<result column="SETL_DT"			property="setlDt"			/>	<!-- 결제일자 				-->
+		<result column="BANK_DEP"			property="bankDep"			/>	<!-- 은행예금주 			-->
+		<result column="BANK_NM"			property="bankNm"			/>	<!-- 은행예금주 			-->
+		<result column="BANK_ACC_NUM"		property="bankAccNum"		/>	<!-- 은행계좌번호 			-->
+		<result column="SUBSIDY_YN"			property="subsidyYn"		/>	<!-- 장려금유무 			-->
+		<result column="REM_FEE_CLASS"		property="remFeeClass"		/>	<!-- 송금수수료구분 		-->
+		<result column="CR_PUR_YN"			property="crPurYn"			/>	<!-- 외상매입여부 			-->
+		<result column="START_DT"			property="startDt"			/>	<!-- 거래시작일 			-->
+		<result column="USE_YN"				property="useYn"			/>	<!-- 사용유무 				-->
+		
+		<result column="REG_ID" 			property="regId"			/>	<!-- 생성자아이디							-->
+		<result column="REG_DT" 			property="regDt"			/>	<!-- 생성일시(yyyy-mm-dd h24:im:ss)		-->
+		<result column="MOD_ID" 			property="modId"			/>	<!-- 수정자아이디 							-->
+		<result column="MOD_DT" 			property="modDt"			/>	<!-- 수정일시(yyyy-mm-dd h24:im:ss)		-->
+		  
+	</resultMap>	
+	
+	<!-- 배송차량 (공통) MAP -->
+	<resultMap id="commonDlvrMstMap"   type="com.doppio.workplace.bm.service.DlvrMasterVo">
+		<result column="CAR_CD"				property="carCd"			/>	<!-- 배송차코드 			-->
+	    <result column="CAR_NM"				property="carNm"			/>	<!-- 배송차명				-->
+	    <result column="CAR_NUM"			property="carNum"			/>	<!-- 배송차번호			-->
+	    <result column="DRV_SNM"			property="drvSnm"			/>	<!-- 배송기사				-->
+	    <result column="MTEL_NO"			property="mtelNo"			/>	<!-- 휴대폰번호			-->
+	    <result column="CAR_TYPE"			property="carType"			/>	<!-- 차량유형				-->
+	    <result column="START_DT"			property="startDt"			/>	<!-- 시작일자				-->
+	    <result column="END_DT"				property="endDt"			/>	<!-- 종료일자				-->
+	    <result column="USE_YN"				property="useYn"			/>	<!-- 사용유무				-->
+	    <result column="SALES_CD"			property="salesCd"			/>	<!-- 매출처코드			-->
+	    <result column="SALES_NM"			property="salesNm"			/>	<!-- 매출처명				-->
+	    
+	    
+	    <result column="REG_ID" 			property="regId"			/>	<!-- 생성자아이디			-->
+		<result column="REG_DT" 			property="regDt"			/>	<!-- 생성일시(yyyy-mm-dd h24:im:ss)		-->
+		<result column="MOD_ID" 			property="modId"			/>	<!-- 수정자아이디 							-->
+		<result column="MOD_DT" 			property="modDt"			/>	<!-- 수정일시(yyyy-mm-dd h24:im:ss)		-->
+	</resultMap>
+	
+	
+	<!-- 배송차량 (공통) MAP -->
+	<resultMap id="commonSalesPrMstMap"   type="com.doppio.workplace.bm.service.EmpMasterVo">
+	    <result column="SALES_PR_CD"		property="salesPrCd"		/>	<!-- 영업사원코드			-->
+	 	<result column="SALES_PR_NM"		property="salesPrNm"		/>	<!-- 영업사원명			-->
+	 	<result column="POSITION"			property="position"			/>	<!-- 직급					-->
+	 	<result column="M_TEL_NO"			property="mtelNo"			/>	<!-- 휴대폰번호			-->
+	 	<result column="USE_YN"				property="useYn"			/>	<!-- 사용유무				-->
+	 	
+	 	<result column="REG_ID" 			property="regId"			/>	<!-- 생성자아이디			-->
+		<result column="REG_DT" 			property="regDt"			/>	<!-- 생성일시(yyyy-mm-dd h24:im:ss)		-->
+		<result column="MOD_ID" 			property="modId"			/>	<!-- 수정자아이디 							-->
+		<result column="MOD_DT" 			property="modDt"			/>	<!-- 수정일시(yyyy-mm-dd h24:im:ss)		-->
+	</resultMap>
+	
+	
+	
+	<!-- 매입처 조회 리스트 검색조건-->
+	<sql id="selectBuyMasterList_Where">
+		/*bizCommonMapper.selectBuyMasterList_Where*/
+			<if test='find_buyCd != null and find_buyCd != ""'>
+				AND TBM.BUY_CD  LIKE CONCAT('%', #{find_buyCd}, '%')
+			</if>
+			<if test='find_buyNm != null and find_buyNm != ""'>
+				AND TBM.BUY_NM   LIKE CONCAT('%', #{find_buyNm}, '%')
+			</if>
+			<if test='find_bsnsNum != null and find_bsnsNum != ""'>
+				AND TBM.BSNS_NUM   LIKE CONCAT('%', #{find_bsnsNum}, '%')
+			</if>
+			<if test='find_bossNm != null and find_bossNm != ""'>
+				AND TBM.BOSS_NM   LIKE CONCAT('%', #{find_bossNm}, '%')
+			</if>
+			<if test='find_busiCon != null and find_busiCon != ""'>
+				AND TBM.BUSI_CON  LIKE CONCAT('%', #{find_busiCon}, '%')
+			</if>
+			<if test='find_busiType != null and find_busiType != ""'>
+				AND TBM.BUSI_TYPE  LIKE CONCAT('%', #{find_busiType}, '%')
+			</if>
+			<if test='find_salesPrNm != null and find_salesPrNm != ""'>
+				AND TBM.SALES_PR_NM  LIKE CONCAT('%', #{find_salesPrNm}, '%')
+			</if>
+		AND TBM.USE_YN = 'Y'		
+	</sql>	
+	
+	
+	<!-- 차량정보 조회 리스트 검색조건-->
+	<sql id="selectDlvrMasterList_Where">
+		/*BizCommonMapper.selectDelivehicleList_Where*/
+		<where>
+			<if test='find_carCd != null and find_carCd != ""'>				<!-- 배송차코드 --> 
+				AND TDM.CAR_CD = #{find_carCd}
+			</if>
+			<if test='find_carNm != null and find_carNm != ""'>				<!-- 배송차명  --> 
+				AND TDM.CAR_NM LIKE CONCAT('%',#{find_carNm},'%')
+			</if>
+			<if test='find_carNum != null and find_carNum != ""'>			<!-- 배송차번호  --> 
+				AND TDM.CAR_NUM LIKE CONCAT('%',#{find_carNum},'%')
+			</if>
+			<if test='find_drvSnm != null and find_drvSnm != ""'>			<!-- 배송기사  --> 
+				AND TDM.DRV_SNM LIKE CONCAT('%',#{find_drvSnm},'%')
+			</if>
+
+			<if test='find_salesCd != null and find_salesCd != ""'>			 <!--매출처코드 --> 
+				 AND TSAI.SALES_CD  = #{find_salesCd}
+			</if>
+			<if test='find_salesNm != null and find_salesNm != ""'>			 <!--매출처코드 --> 
+				 AND TSAI.SALES_NM  LIKE CONCAT('%',#{find_salesNm},'%') 	 <!--매출처명 --> 
+			</if>
+		</where>
+	</sql>
+	
+	
+	<!-- 영업사원  조회 리스트 검색조건-->
+	<sql id="selectSalesPrMasterList_Where">
+		WHERE TSRM.USE_YN = 'Y'
+		<if test='find_salesPrCd != null and find_salesPrCd != ""'>			 <!--영업사원코드 --> 
+			AND TSRM.SALES_PR_CD	= #{find_salesPrCd}
+		</if>	
+		<if test='find_salesPrNm != null and find_salesPrNm != ""'>			 <!--영업사원명 --> 
+			AND TSRM.SALES_PR_NM	LIKE CONCAT('%',#{find_salesPrNm},'%')
+		</if>	
+		<if test='find_position != null and find_position != ""'>			 <!--직급  --> 
+			AND TSRM.POSITION LIKE CONCAT('%',#{find_position},'%')
+		</if>
+	</sql>
+	
+	
+
+	<!-- 매입처 조회  카운터 -->
+	<select id="selectBuyMasterListCount" parameterType="com.doppio.workplace.bm.service.BuyMgmtVo" resultType="int">
+		/* BizCommonMapper.selectBuyMasterListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM KRMC.TFM_BUY_MST TBM
+		  WHERE 1=1
+		<include refid="selectBuyMasterList_Where"/>
+	</select>
+	
+	
+	<!-- 매입처 조회   -->
+	<select id="selectBuyMasterList" parameterType="com.doppio.workplace.bm.service.BuyMgmtVo" resultMap="commonBuyMstMap">
+	/*BizCommonMapper.selectBuyMasterList*/
+	   SELECT  TBM.BUY_CD			
+			  ,TBM.BUY_NM			
+			  ,TBM.BUY_S_NM			
+			  ,TBM.BSNS_NUM			
+			  ,TBM.BOSS_NM			
+			  ,TBM.BUSI_CON			
+			  ,TBM.BUSI_TYPE		
+			  ,TBM.TEL_NO			
+			  ,TBM.FAX_NO
+			  ,TBM.CORP_NUM			
+			  ,TBM.SALES_PR_NM		
+			  ,TBM.SALES_PR_HP		
+			  ,TBM.CLOSE_PR_NM		
+			  ,TBM.CLOSE_PR_HP		
+			  ,TBM.CENTER_PR_HP		
+			  ,TBM.CENTER_FAX		
+			  ,TBM.ZIP_CD			
+			  ,TBM.ADDR_1
+			  ,TBM.ADDR_2
+			  ,TBM.CENTER_ZIP_CD
+			  ,TBM.CENTER_ZIP_ADDR
+			  ,TBM.CENTER_DTL_ADDR	
+			  ,TBM.EMAIL			
+			  ,TBM.SETL_CON
+			  ,TBM.SETL_DT
+			  ,TBM.BANK_DEP
+			  ,TBM.BANK_NM
+			  ,TBM.BANK_ACC_NUM		
+			  ,TBM.SUBSIDY_YN		
+			  ,TBM.REM_FEE_CLASS	
+			  ,TBM.CR_PUR_YN			
+			  ,TBM.START_DT			
+			  ,TBM.USE_YN	
+			  
+			  ,TBM.REG_ID
+			  ,TBM.REG_DT
+			  ,TBM.MOD_ID
+			  ,TBM.MOD_DT
+			
+		     , TMR.USER_NM  AS REG_USER_NM
+		     , TMR.USER_ID  AS REG_USER_ID
+		     , TMM.USER_NM  AS MOD_USER_NM
+		     , TMM.USER_ID  AS MOD_USER_ID
+		FROM KRMC.TFM_BUY_MST TBM 
+			 LEFT OUTER JOIN KRMC.TCM_MEMBER TMR ON TBM.REG_ID = TMR.MEMBER_CD 
+			 LEFT OUTER JOIN KRMC.TCM_MEMBER TMM ON TBM.MOD_ID = TMM.MEMBER_CD
+		WHERE 1=1	  
+		<include refid="selectBuyMasterList_Where"/>	
+		ORDER BY TBM.BUY_CD, TBM.BUY_NM	
+	</select>
+	
+
+	<!-- 매출처 조회   -->
+	<select id="selectSalesMasterList" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo" resultType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*BizCommonMapper.selectSalesMasterList*/
+		SELECT A.RNUM
+			   , A.TOTAL_COUNT 
+			   , A.HQ_CLASS
+		       , A.HQ_CLASS_NM
+			   , A.SALES_CD
+			   , A.SALES_NM
+			   , A.CRE_LIM
+			   , A.BAL_REC
+			   , A.ORD_DDLN_TM
+			   , A.ORD_DDLN_YN
+			   , A.HQ_CD
+			   , CASE WHEN 
+		    	   TIMESTAMPDIFF(minute,DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i')
+		      	   , CONCAT(DATE_FORMAT(NOW(), '%Y-%m-%d '), CASE WHEN A.ORD_DDLN_TM IS NULL OR A.ORD_DDLN_TM = ''  THEN '23:59' 
+		      	  												ELSE CONCAT(SUBSTRING(A.ORD_DDLN_TM,1,2),':',SUBSTRING(A.ORD_DDLN_TM,3,4))  END)
+		    	   ) <![CDATA[<]]>  0 THEN 'Y' ELSE  'N'
+	    	     END  AS TM_CLOSE_YN		-- 마감유무
+			   , A.PROFIT_CLASS
+			   , A.TEL_NO
+			   , A.USE_YN
+	      FROM (SELECT ROW_NUMBER () OVER ( ORDER BY TSAI.USE_YN DESC, TSAI.SALES_CD ) AS RNUM
+				       , COUNT(1) OVER() TOTAL_COUNT 
+		               , TSHC.HQ_CLASS
+		               , TCD.DTL_NM AS HQ_CLASS_NM
+		               , TSAI.SALES_CD
+				       , TSAI.SALES_NM
+				       , TSAI.CRE_LIM
+				       , IFNULL(A.BAL_AMT,0) + IFNULL(B.TOT_AMT,0) - IFNULL(C.SETL_AMT,0) AS BAL_REC
+				       , TSAI.ORD_DDLN_TM
+				       , TSAI.ORD_DDLN_YN
+				       , TSHC.HQ_CD
+				       , TSAI.PROFIT_CLASS
+				       , TSM.TEL_NO
+				       , TSAI.USE_YN
+			      FROM KRMC.TFM_SALES_ADD_INFO AS TSAI
+			      
+			           JOIN KRMC.TFM_SALES_HQ_CLASS AS TSHC
+			               ON TSAI.SALES_CD = TSHC.SALES_CD
+			               
+			     	   LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD
+			               ON TSHC.HQ_CLASS = TCD.DTL_CD
+			              AND TCD.COM_CD = 'M004'
+			              
+			           JOIN KRMC.TFM_SALES_MST AS TSM
+			               ON TSM.SALES_CD = TSAI.SALES_CD
+			               
+			           LEFT OUTER JOIN 
+		                   (SELECT SALES_CD
+		                           , BAL_AMT
+		                      FROM TMH_MON_SALES_PAYMENT
+		                     WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(NOW(), INTERVAL -1 month),'%Y%m')
+		                     GROUP BY SALES_CD
+		                   ) AS A
+		                       ON A.SALES_CD = TSAI.SALES_CD
+		               
+	                   LEFT OUTER JOIN 
+	                       (SELECT SALES_CD
+		                           , SUM(A.TOT_AMT) AS TOT_AMT
+	                    	  FROM (
+	                    	        SELECT SALES_CD
+		                                   , SUM(TOT_AMT) AS TOT_AMT 
+   		 	 	                  FROM TSH_SALES_DLV
+   			 	                 WHERE SALES_DT LIKE CONCAT(DATE_FORMAT(NOW(),'%Y%m'), '%')
+   			 	                 GROUP BY SALES_CD
+   			 	               UNION ALL
+   			 	                SELECT SALES_CD
+		                                   , SUM(TOT_AMT)*-1 AS TOT_AMT 
+   		 	 	                  FROM TSH_SALES_RETURN
+   			 	              	 WHERE RTN_DT LIKE CONCAT(DATE_FORMAT(NOW(),'%Y%m'), '%')
+   			 	              	 GROUP BY SALES_CD
+   			 	               ) AS A
+   			 	         GROUP BY SALES_CD
+   			            ) AS B
+   			                ON B.SALES_CD = TSAI.SALES_CD
+   				       
+	      	            LEFT OUTER JOIN
+	      	                (SELECT SALES_CD
+		                            , SUM(SETL_AMT) AS SETL_AMT
+		                       FROM TSH_SALES_DEP
+		                      WHERE DEP_DT LIKE CONCAT(DATE_FORMAT(NOW(),'%Y%m'),'%')
+		                      GROUP BY SALES_CD
+		                    ) AS C
+		                        ON C.SALES_CD = TSAI.SALES_CD
+			               
+			   <where>
+				 <if test='find_salesCd != null and find_salesCd != ""'>
+				   AND TSAI.SALES_CD  =  #{find_salesCd}
+				 </if>
+				 <if test='find_salesNm != null and find_salesNm != ""'>
+				   AND TSAI.SALES_NM   LIKE CONCAT('%', #{find_salesNm}, '%')
+				 </if>
+				 <if test='searchSalesTaxYn != null and searchSalesTaxYn != ""'>
+				   AND TSAI.TAX_YN = #{searchSalesTaxYn}
+				 </if>
+				 <if test='searchUseYn != null and searchUseYn != ""'>
+				   AND TSAI.USE_YN = #{searchUseYn}
+				 </if>
+				 <if test='searchHqClass != null and searchHqClass != ""'>
+				   AND TSHC.HQ_CLASS = #{searchHqClass}
+			     </if>
+		       </where>
+		    ) AS A
+		  ORDER BY A.RNUM
+	</select>
+	
+	<!-- 상품 조회 리스트 검색조건-->
+	<sql id="selectPrdtMasterList_Where">
+		/*bizCommonMapper.selectPrdtMasterList_Where*/
+		<where>
+				<if test='find_prdtCd != null and find_prdtCd != ""'>
+					AND TPM.PRDT_CD  = #{find_prdtCd}
+				</if>
+				<if test='find_prdtNm != null and find_prdtNm != ""'>
+					AND TPM.PRDT_NM   LIKE CONCAT('%', #{find_prdtNm}, '%')
+				</if>
+				<if test='find_buyCd != null and find_buyCd != ""'>
+					AND TPM.BUY_CD   = #{find_buyCd}
+				</if>
+				
+				<if test='find_buyCd != null and find_buyCd != ""'>
+					AND TPM.BUY_CD   = #{find_buyCd}
+				</if>
+				<if test='useYn != null and useYn != ""'>
+			        AND TPM.USE_YN = #{useYn}
+			    </if>			
+		</where>	
+	</sql>	
+	
+	<!-- 상품 조회  카운터 -->
+	<select id="selectPrdtMasterListCount" parameterType="com.doppio.workplace.bm.service.PrdtMgmtVo" resultType="int">
+		/* BizCommonMapper.selectPrdtMasterListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM KRMC.TFM_PRDT_MST AS TPM
+		<include refid="selectPrdtMasterList_Where"/>
+	</select>
+	
+	
+	<!-- 상품 조회   -->
+	<select id="selectPrdtMasterList" parameterType="com.doppio.workplace.bm.service.PrdtMgmtVo" resultType="com.doppio.workplace.bm.service.PrdtMgmtVo">
+	/*BizCommonMapper.selectPrdtMasterList*/
+	   SELECT TPM.PRDT_CD
+	          , TPM.PRDT_NM
+			  , TPM.PRDT_STD
+			  , TPM.ORD_UNIT
+			  , TCD.DTL_NM AS ORD_UNIT_NM
+			  , TPM.COST
+		FROM KRMC.TFM_PRDT_MST AS TPM
+		     JOIN TCM_CODE_DTL AS TCD
+		         ON TCD.DTL_CD = TPM.ORD_UNIT
+		        AND TCD.COM_CD = 'M006'       
+		<include refid="selectPrdtMasterList_Where"/>
+	   ORDER BY TPM.PRDT_CD
+	</select>
+	
+	
+	
+	
+	<!-- 배송차량 조회  카운터 -->
+	<select id="selectDlvrMasterListCount" parameterType="com.doppio.workplace.bm.service.DlvrMasterVo" resultType="int">
+		/* BizCommonMapper.selectDlvrMasterListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM KRMC.TFM_DLVR_MST TDM
+		  LEFT OUTER JOIN TFM_SALES_ADD_INFO TSAI   ON TSAI.CAR_CD  = TDM.CAR_CD
+		<include refid="selectDlvrMasterList_Where"/>
+	</select>
+	
+	
+	<!-- 배송차량 조회   -->
+	<select id="selectDlvrMasterList" parameterType="com.doppio.workplace.bm.service.DlvrMasterVo" resultMap="commonDlvrMstMap">
+	/* BizCommonMapper.selectDlvrMasterList */
+	 SELECT 
+		     TDM.CAR_CD
+	       , TDM.CAR_NM
+	       , TDM.CAR_NUM
+	       , TDM.DRV_SNM
+	       , TDM.MTEL_NO
+	       , TDM.CAR_TYPE
+	       , TDM.START_DT
+	       , TDM.END_DT
+	       , TDM.USE_YN
+	       , TDM.REG_ID
+	       , TDM.REG_DT
+	       , TSAI.SALES_NM 
+	       , TSAI.SALES_CD 
+	       , DATE_FORMAT(TDM.REG_DT,'%Y-%m-%d %T') as REG_DT
+	       , TDM.MOD_ID
+	       , DATE_FORMAT(TDM.MOD_DT,'%Y-%m-%d %T') as MOD_DT
+	  FROM KRMC.TFM_DLVR_MST TDM
+	   LEFT OUTER JOIN TFM_SALES_ADD_INFO TSAI   ON TSAI.CAR_CD  = TDM.CAR_CD
+ 	<include refid="selectDlvrMasterList_Where"/>
+ 	 ORDER BY TDM.CAR_NM
+	</select>
+	
+	
+	<!-- 영업사원 조회  카운터 -->
+	<select id="selectSalesPrMasterListCount" parameterType="com.doppio.workplace.bm.service.EmpMasterVo" resultType="int">
+		/* BizCommonMapper.selectSalesPrMasterListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM KRMC.TFM_SALES_PR_MST TSRM
+		<include refid="selectSalesPrMasterList_Where"/>
+	</select>
+	
+	<!-- 영업사원 조회   -->
+	<select id="selectSalesPrMasterList" parameterType="com.doppio.workplace.bm.service.EmpMasterVo" resultMap="commonSalesPrMstMap">
+	/* BizCommonMapper.selectSalesPrMasterList */
+	 SELECT TSRM.SALES_PR_CD
+	 		, TSRM.SALES_PR_NM
+	 		, TSRM.POSITION
+	 		, TSRM.M_TEL_NO
+	 		, TSRM.USE_YN
+	 		, TSRM.REG_ID
+			, TSRM.REG_DT
+			, TSRM.MOD_ID
+			, TSRM.MOD_DT
+	   FROM KRMC.TFM_SALES_PR_MST TSRM
+	   <include refid="selectSalesPrMasterList_Where"/>
+	  ORDER BY TSRM.SALES_PR_CD
+	</select>
+	
+	
+	<!-- 견적서 리스트 검색조건-->
+	<sql id="selectEstNumList_Where">
+		/*bizCommonMapper.selectEstNumList_Where*/
+		<where>
+			<if test='find_estNum != null and find_estNum != ""'>
+				AND TEH.EST_NUM LIKE CONCAT('%', #{find_estNum}, '%')
+			</if>
+			<if test='find_salesNm != null and find_salesNm != ""'>
+				AND TEH.SALES_NM LIKE CONCAT('%', #{find_salesNm}, '%')
+			</if>
+		</where>	
+	</sql>	
+	
+	<!-- 견적서 조회  카운터 -->
+	<select id="selectEstNumListCount" parameterType="com.doppio.workplace.sm.service.CusSalesEstRegVo" resultType="int">
+		/* BizCommonMapper.selectEstNumListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM KRMC.TSH_EST_HEAD AS TEH
+		<include refid="selectEstNumList_Where"/>
+	</select>
+	
+	<!-- 견적서 조회   -->
+	<select id="selectEstNumList" parameterType="com.doppio.workplace.sm.service.CusSalesEstRegVo" resultType="com.doppio.workplace.sm.service.CusSalesEstRegVo">
+	/* BizCommonMapper.selectEstNumList */
+	 SELECT TEH.EST_NUM
+	 		,TEH.SALES_NM
+	   FROM KRMC.TSH_EST_HEAD AS TEH
+	   <include refid="selectEstNumList_Where"/>
+	  ORDER BY TEH.EST_NUM DESC
+	</select>
+	
+	
+	<!--매출처 발주마감 검증  ORD_DDLN_TM,ORD_DDLN_CLOSE_YN -->
+	<select id="selectSalesOrderCloseCheck" parameterType="java.util.HashMap" resultType="java.util.HashMap"> 
+		/*BizCommonMapper.selectSalesOrderCloseCheck*/
+		SELECT TSAI.SALES_CD
+			   , TSAI.ORD_DDLN_TM  
+			   , CASE WHEN TSAI.ORD_DDLN_YN = 'N' THEN 'N' ELSE
+			           CASE WHEN
+			            	       TIMESTAMPDIFF(minute,DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i')
+			            	       , CONCAT(DATE_FORMAT(NOW(), '%Y-%m-%d '), CASE WHEN TSAI.ORD_DDLN_TM IS NULL OR TSAI.ORD_DDLN_TM = ''  THEN '23:59' 
+			            	  		  										      ELSE CONCAT(SUBSTRING(TSAI.ORD_DDLN_TM,1,2),':',SUBSTRING(TSAI.ORD_DDLN_TM,3,4))  END)
+			       	          ) <![CDATA[<]]>   0 THEN 'Y' ELSE  'N'
+			 	       END
+			 	  END AS ORD_DDLN_CLOSE_YN		-- 마감유무
+		  FROM TFM_SALES_ADD_INFO AS TSAI            -- 매출처 추가정보 관리	   
+	     WHERE TSAI.SALES_CD =	#{SALES_CD}
+	</select>
+	
+	<!-- 전표별 발주마감 여부 검증  -->
+	<select id="selectOrderSlipCloseCheck" parameterType="java.util.HashMap" resultType="java.util.HashMap"> 
+	/*BizCommonMapper.selectOrderSlipCloseCheck*/
+	 SELECT TSC.SALES_SLIP_NO
+	 	  , TSC.CLOSE_FLAG
+	 	  , TSC.REG_ID
+	 	  , TM.USER_NM  as REG_USER_NM
+	 	  , DATE_FORMAT(TSC.REG_DT,'%Y-%m-%d %T') as REG_DT
+       FROM TSH_SLIP_CLOSE TSC LEFT OUTER JOIN TCM_MEMBER TM ON TSC.REG_ID = TM.USER_ID  
+	  WHERE TSC.SALES_SLIP_NO	 = #{SALES_SLIP_NO}	
+	</select>
+	
+	
+	<!-- 매출처별 품목 조회   -->
+	<select id="selectSalesPrdtList" parameterType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo" resultType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo">
+	/*BizCommonMapper.selectSalesPrdtList*/
+	   SELECT DISTINCT 
+	          TPM.PRDT_CD
+	          , TPM.PRDT_NM
+	          , TPM.PRDT_STD
+	          , TSPM.PRICE				
+	          , TSPM.VAT_YN
+	          , TSPM.SALES_PRDT_CD_1	
+			  , TSPM.SALES_PRDT_CD_2	
+			  , TSPM.USE_YN
+			  , TPM.QTY_BOX
+			  , TPM.STD_YN
+			  , TCD.DTL_NM AS ORD_UNIT
+	     FROM TSM_SALES_PRDT_MST AS TSPM
+	     	  
+	     	  JOIN
+	          (SELECT DISTINCT SALES_CD
+	             FROM V_SALES_HQ_CD AS VSHC
+	            <where>
+	              <if test='find_prdtSalesCd != null and find_prdtSalesCd != ""'>
+	                  AND HQ_CLASS = (SELECT HQ_CLASS 
+	                                    FROM TFM_SALES_HQ_CLASS
+	                                   WHERE SALES_CD = #{find_prdtSalesCd}
+	                                 )	             
+				      AND (HQ_CD = #{find_prdtSalesCd} OR SALES_CD = #{find_prdtSalesCd})
+				  </if>
+	            </where>
+	          ) AS VSHC
+	            ON VSHC.SALES_CD = TSPM.SALES_CD
+	     
+		      JOIN TFM_PRDT_MST AS TPM
+		        ON TPM.PRDT_CD = TSPM.PRDT_CD
+		 
+		      LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		        ON TCD.COM_CD = 'M006'
+		       AND TCD.DTL_CD = TPM.ORD_UNIT
+		WHERE TPM.USE_YN = 'Y'
+			<if test='find_prdtNm != null and find_prdtNm != ""'> 
+				AND TPM.PRDT_NM LIKE CONCAT('%',#{find_prdtNm},'%')
+			</if>
+			<if test='find_prdtNmSales != null and find_prdtNmSales != ""'> 
+				AND TPM.PRDT_NM LIKE CONCAT('%',#{find_prdtNmSales},'%')
+			</if>
+		ORDER BY TPM.PRDT_CD
+	</select>
+	
+	<!-- 매출처 발주화면의 매출처별 품목 조회   -->
+	<select id="selectCurOrdRegSalesPrdtMaster" parameterType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo" resultType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo">
+	/*BizCommonMapper.selectCurOrdRegSalesPrdtMaster*/
+	   SELECT TPM.PRDT_CD
+	          , TPM.PRDT_NM
+	          , TPM.PRDT_STD
+	          , TCD.DTL_NM AS ORD_UNIT_NM
+	          , TSPM.PRICE
+	          <if test='find_userType != "S1"'> 
+			    , Z.STK_QTY
+			    , Z1.STK_QTY	AS STK_QTY1
+			  </if>
+	          , TBM.BUY_NM
+	          , TSPM.VAT_YN
+			  , TSPM.USE_YN
+	     FROM (SELECT DISTINCT PRDT_CD
+	                  , PRICE
+	                  , VAT_YN
+	                  , USE_YN
+	             FROM TSM_SALES_PRDT_MST
+	            WHERE SALES_CD = #{find_prdtSalesCd}
+	              AND USE_YN = 'Y'
+			  ) AS TSPM
+	          
+		      JOIN TFM_PRDT_MST AS TPM
+		          ON TPM.PRDT_CD = TSPM.PRDT_CD
+		          
+		      LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		          ON TCD.DTL_CD = TPM.ORD_UNIT
+		         AND TCD.COM_CD = 'M006'
+		         
+		      JOIN TFM_BUY_MST AS TBM
+		          ON TBM.BUY_CD = TPM.BUY_CD
+		      
+		      <if test='find_userType != "S1"'> 
+		        LEFT OUTER JOIN  
+			        (SELECT PRDT_CD
+		                    , SUM(STK_QTY) AS STK_QTY
+			           FROM V_WH_PRDT_STK_NEW
+			          WHERE WH_CD = '10001'
+			          GROUP BY PRDT_CD
+			        ) AS Z
+			            ON Z.PRDT_CD = TSPM.PRDT_CD
+			            
+			     LEFT OUTER JOIN  
+			        (SELECT PRDT_CD
+		                    , SUM(STK_QTY) AS STK_QTY
+			           FROM V_WH_PRDT_STK_NEW
+			          WHERE WH_CD = '10002'
+			          GROUP BY PRDT_CD
+			        ) AS Z1    
+			            ON Z1.PRDT_CD = TSPM.PRDT_CD        
+			            
+			   </if>
+		          
+		WHERE TPM.USE_YN = 'Y'
+		  <if test='find_prdtNm != null and find_prdtNm != ""'> 
+		    AND TPM.PRDT_NM LIKE CONCAT('%',#{find_prdtNm},'%')
+		  </if>
+		ORDER BY TPM.PRDT_CD
+	</select>
+	
+	<!-- 샘플 등록 화면의 품목 조회   -->
+	<select id="selectCurSampleRegPrdtMaster" parameterType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo" resultType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo">
+	/*BizCommonMapper.selectCurSampleRegPrdtMaster*/
+	   SELECT TPM.PRDT_CD
+	          , TPM.PRDT_NM
+	          , TPM.PRDT_STD
+	          , TCD.DTL_NM AS ORD_UNIT_NM
+	          , Z.STK_QTY
+	          , TBM.BUY_NM
+	     FROM TFM_PRDT_MST AS TPM
+		          
+		      LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		          ON TCD.DTL_CD = TPM.ORD_UNIT
+		         AND TCD.COM_CD = 'M006'
+		         
+		      JOIN TFM_BUY_MST AS TBM
+		          ON TBM.BUY_CD = TPM.BUY_CD
+		          
+		      LEFT OUTER JOIN  
+			   (SELECT PRDT_CD
+		               , SUM(STK_QTY) AS STK_QTY
+				  FROM V_WH_PRDT_STK_NEW
+			     WHERE WH_CD = '10001'
+		         GROUP BY PRDT_CD
+			   ) AS Z
+			       ON Z.PRDT_CD = TPM.PRDT_CD
+		          
+		<where>
+		  <if test='find_prdtNm != null and find_prdtNm != ""'> 
+		    AND TPM.PRDT_NM LIKE CONCAT('%',#{find_prdtNm},'%')
+		  </if>
+		  <if test='find_useYn != null and find_useYn != ""'> 
+		    AND TPM.USE_YN = #{find_useYn}
+		  </if>
+		</where>
+		
+		ORDER BY TPM.PRDT_CD
+	</select>
+	
+	<!-- 품목 재고 조회  -->
+	<select id="selectPrdtStkQty" parameterType="com.doppio.workplace.bm.service.PrdtMgmtVo" resultType="com.doppio.workplace.bm.service.PrdtMgmtVo">
+	/*BizCommonMapper.selectPrdtStkQty*/
+	 SELECT KRMC.FN_WH_PRDT_STK_QTY('10001',#{prdtCd}) AS HA_STK_QTY
+   		    , KRMC.FN_WH_PRDT_STK_QTY('10002',#{prdtCd}) AS YEO_STK_QTY
+	</select>
+	
+	
+	<!-- 매출처 추가 데이터(여신한도, 전월미수, 당월매출, 당월입금, 미수잔액) -->
+	<select id="selectSalesAddData" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo" resultType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*BizCommonMapper.selectSalesAddData*/
+		SELECT TSAI.SALES_CD
+			   , TSAI.CRE_LIM
+			   , CONCAT(TSAI.SETL_CON, ', ', TSAI.SETL_DT) AS SETL_DT
+			   , IFNULL(A.BAL_AMT,0) AS LAST_BAL_AMT
+			   , IFNULL(B.TOT_AMT,0) AS SALES_AMT
+			   , IFNULL(C.SETL_AMT,0) AS SETL_AMT
+			   , IFNULL(A.BAL_AMT,0) + IFNULL(B.TOT_AMT,0) - IFNULL(C.SETL_AMT,0) AS BAL_REC_AMT
+			   , TDM.CAR_NM
+			   
+	      FROM KRMC.TFM_SALES_ADD_INFO AS TSAI
+	      
+	           LEFT OUTER JOIN 
+		           (SELECT SALES_CD
+		                   , BAL_AMT
+		              FROM TMH_MON_SALES_PAYMENT
+		             WHERE YEAR_MON = DATE_FORMAT(DATE_ADD(NOW(), INTERVAL -1 month),'%Y%m')
+		               AND SALES_CD = #{salesCd}
+		             GROUP BY SALES_CD
+		           ) AS A
+		               ON A.SALES_CD = TSAI.SALES_CD
+		               
+	           LEFT OUTER JOIN 
+	               (SELECT SALES_CD
+		                   , SUM(A.TOT_AMT) AS TOT_AMT
+	           		  FROM (
+	           		        SELECT SALES_CD
+		                           , SUM(TOT_AMT) AS TOT_AMT 
+   		 			          FROM TSH_SALES_DLV
+   					         WHERE SALES_DT LIKE CONCAT(DATE_FORMAT(NOW(),'%Y%m'), '%')
+   					           AND SALES_CD = #{salesCd}
+   					         GROUP BY SALES_CD
+   					       UNION ALL
+   					        SELECT SALES_CD
+		                           , SUM(TOT_AMT)*-1 AS TOT_AMT 
+   		 			          FROM TSH_SALES_RETURN
+   					      	 WHERE RTN_DT  LIKE CONCAT(DATE_FORMAT(NOW(),'%Y%m'), '%')
+   					      	   AND SALES_CD = #{salesCd}
+   					      	 GROUP BY SALES_CD
+   					       ) AS A
+   					 GROUP BY SALES_CD
+   				   ) AS B
+   				       ON B.SALES_CD = TSAI.SALES_CD
+   				       
+	      	   LEFT OUTER JOIN
+	      	       (SELECT SALES_CD
+		                   , SUM(SETL_AMT) AS SETL_AMT
+		              FROM TSH_SALES_DEP
+		             WHERE DEP_DT LIKE CONCAT(DATE_FORMAT(NOW(),'%Y%m'),'%')
+		               AND SALES_CD = #{salesCd}
+		             GROUP BY SALES_CD
+		           ) AS C
+		               ON C.SALES_CD = TSAI.SALES_CD
+		       
+		       LEFT OUTER JOIN TFM_DLVR_MST AS TDM
+		           ON TDM.CAR_CD = TSAI.CAR_CD		           
+	    
+	     WHERE TSAI.SALES_CD = #{salesCd}
+	      
+	</select>
+	
+	
+	
+	<!-- 사용자 정보 조회(PLS계정) -->
+	<select id="selectPlsUserInfo"  parameterType="com.doppio.workplace.common.model.UserInfoVo" resultType="com.doppio.workplace.common.model.UserInfoVo">
+		/*BizCommonMapper.selectPlsUserInfo*/
+		  SELECT MEM.MEMBER_CD 											/*사용자 고유번호*/
+				,MEM.USER_ID 											/*아이디*/
+				,MEM.USER_NM 											/*사용자 명*/ 
+				,'N' LNKG_FLAG	/* SCM 계정연동 여부*/
+				,MEM.MEMBER_CD  AS SCM_MEMBER_CD						/* SCM 계정 고유번호*/
+				,MEM.USER_ID  AS SCM_USER_ID							/* SCM 계정 아이디*/
+				
+				,MEM.EMAIL 												/*이메일*/ 
+				,MEM.FORGOT_PWD_CODE 									/*비밀번호 변경페이지 접근키*/
+				,MEM.FORGOT_PWD_LST_DY  								/*비밀번호 변경페이지 접근키 유효일자*/
+				,MEM.USE_YN												/*사용여부*/
+				,MEM.GEN_DIVN_CD 										/*계정 생성구분코드[9007]*/
+				,MEM.TEL_NO												/*전화번호*/ 
+				,MEM.HP_NO 												/*핸드폰번호*/
+				,KRMC.FN_CODE_RTN('9007',MEM.GEN_DIVN_CD) AS GEN_DIVN_CD_NM 	/*계정 생성구분코드명[9007]*/
+				,TC.BMAN_NO 											/*사업자 번호*/ 
+				,TC.COMP_NM 											/*업체명*/
+				,TC.CEO_NM 												/*대표자명*/
+				,TC.DTL_ADDR 											/*상세주소*/
+				
+				,MEM.USER_TYPE 
+				,KRMC.FN_CODE_RTN('9001',MEM.USER_TYPE) AS USER_TYPE_NM
+		FROM KRMC.TCM_MEMBER MEM
+		LEFT OUTER JOIN KRMC.VCM_COMPINFO TC ON MEM.MASTER_ID = TC.MASTER_ID 
+		<where>
+			<if test='memberCd !=null and memberCd !=""'>
+				AND MEM.MEMBER_CD = #{memberCd}
+			</if>
+			<if test='genDivnCd !=null and genDivnCd !=""'>
+				AND MEM.GEN_DIVN_CD = #{genDivnCd}
+			</if>
+		</where>
+	</select>	
+	
+	
+	<!-- 비밀번호 update   -->
+	<update id="updateUserPwInfo" parameterType="com.doppio.workplace.common.model.UserInfoVo" >
+		/*BizCommonMapper.updateUserPwInfo*/
+		UPDATE KRMC.TCM_MEMBER
+		   SET USER_PW = #{userPw}
+		   	<choose>
+		   		<when test='forgotPwdCode!=null and forgotPwdCode !=""'>
+			   		,FORGOT_PWD_CODE = #{forgotPwdCode}
+			   	</when>
+			   	<otherwise>
+			   		,FORGOT_PWD_CODE = NULL
+			   	</otherwise>
+		   	</choose>
+		   	  ,FORGOT_PWD_LST_DY = NULL 
+		   	  ,PASS_CHG_YN = #{passChgYn}
+		   	  ,PASS_LAST_DY = DATE_FORMAT(NOW(),'%Y%m%d')
+		   	  ,PASS_FAIL_CNT =	#{passFailCnt}
+		   	  ,LOCK_YN = #{lockYn}
+		   	  ,MOD_DT = NOW()
+		   	  ,MOD_ID = #{workId}
+		 WHERE MEMBER_CD = #{memberCd}
+	</update>
+	
+	
+	
+	<!--사용자-비밀번호 다음에 변경   -->
+	<update id="updateUserPwLater" parameterType="com.doppio.workplace.common.model.UserInfoVo" >
+		/*BizCommonMapper.updateUserPwLater*/
+		UPDATE TCM_MEMBER
+		   SET FORGOT_PWD_CODE = NULL 
+		      ,PASS_CHG_YN = #{passChgYn}
+		   	  ,PASS_LAST_DY = DATE_FORMAT(DATE_ADD(NOW(),INTERVAL 90 DAY),'%Y%m%d') 
+		   	  ,PASS_FAIL_CNT =	#{passFailCnt}
+		   	  ,LOCK_YN = #{lockYn}
+		   	  ,MOD_DT = NOW()
+		   	  ,MOD_ID = #{workId}
+		 WHERE MEMBER_CD = #{memberCd} 
+	</update>
+	
+	
+</mapper>

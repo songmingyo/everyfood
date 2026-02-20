@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.common.service.impl.ImageLoadMapper">
+	
+	<!-- 해당 첨부파일 정보 조회 -->
+	<select id="selectCommonFileInfo" parameterType="com.doppio.common.model.AttachFileVo" resultType="com.doppio.common.model.AttachFileVo">
+	/*ImageLoadMapper.selectCommonFileInfo*/
+		SELECT 
+			AF.ATCH_FILE_ID AS atchFileId
+			, AF.SEQ AS seq
+			, AF.ORG_FILE_NM AS orgFileNm
+			, AF.SAVE_FILE_NM AS saveFileNm
+			, AF.FILE_KIND_CD AS fileKindCd
+			, AF.FILE_SIZE AS fileSize
+			, AF.FILE_PATH_NM AS filePathNm
+			, AF.FILE_TYPE_NM AS fileTypeNm
+			, DATE_FORMAT( AF.REG_DT, '%Y%m%d') AS regDt
+			, AF.REG_ID AS regId
+			, DATE_FORMAT( AF.MOD_DT, '%Y%m%d') AS modDt
+			, AF.MOD_ID AS modId
+		FROM 
+			TCM_ATTACH_FILE AF
+		WHERE 
+			AF.ATCH_FILE_ID = #{atchFileId}
+			AND AF.SEQ = #{seq}
+	</select>
+	
+	
+		<!-- 해당 첨부파일 정보 조회 -->
+	<select id="selectCommonFileInfoList" parameterType="com.doppio.common.model.AttachFileVo" resultType="com.doppio.common.model.AttachFileVo">
+		/*ImageLoadMapper.selectCommonFileInfoList*/
+			SELECT 
+				AF.ATCH_FILE_ID AS atchFileId
+				, AF.SEQ AS seq
+				, AF.ORG_FILE_NM AS orgFileNm
+				, AF.SAVE_FILE_NM AS saveFileNm
+				, AF.FILE_KIND_CD AS fileKindCd
+				, AF.FILE_SIZE AS fileSize
+				, AF.FILE_PATH_NM AS filePathNm
+				, AF.FILE_TYPE_NM AS fileTypeNm
+				, DATE_FORMAT( AF.REG_DT, '%Y%m%d') AS regDt
+				, AF.REG_ID AS regId
+				, DATE_FORMAT( AF.MOD_DT, '%Y%m%d') AS modDt
+				, AF.MOD_ID AS modId
+			FROM 
+				TCM_ATTACH_FILE AF
+			WHERE 
+				AF.ATCH_FILE_ID = #{atchFileId}
+	</select>
+	
+	
+</mapper>

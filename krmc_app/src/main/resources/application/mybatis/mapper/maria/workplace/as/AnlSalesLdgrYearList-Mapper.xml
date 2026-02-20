@@ -1,0 +1,841 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.AnlSalesLdgrYearListMapper">
+
+	<!-- 매출처원장(연간) 조회 -->
+	<select id="selectAnlSalesLdgrYearList" parameterType="com.doppio.workplace.as.service.AnlSalesLdgrYearListVo" resultType="com.doppio.workplace.as.service.AnlSalesLdgrYearListVo">
+	/*AnlSalesLdgrYearListMapper.selectAnlSalesLdgrYearList*/	
+        WITH SALES_HQ_CD AS (
+            SELECT CASE WHEN #{searchHqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                   , SALES_CD
+              FROM V_SALES_HQ_CD
+             WHERE HQ_CLASS = #{searchHqClass}
+             <if test='searchSalesCd != null and searchSalesCd != ""'> 
+               AND (HQ_CD = #{searchSalesCd} OR SALES_CD = #{searchSalesCd})
+             </if>
+        )
+        SELECT A.SALES_NM
+               , CASE WHEN A.SORT='1' THEN '전월잔액'
+                      WHEN A.SORT='2' THEN '매출'
+                      WHEN A.SORT='3' THEN '입금'
+                      WHEN A.SORT='4' THEN '현잔고'
+                      WHEN A.SORT='5' THEN '전월잔액'
+                      WHEN A.SORT='6' THEN '매출'
+                      WHEN A.SORT='7' THEN '입금'
+                      WHEN A.SORT='8' THEN '현잔고' END AS CLASS_NM
+               , SUM(IFNULL(A.MON_1,0)) AS MON1
+               , SUM(IFNULL(A.MON_2,0)) AS MON2
+               , SUM(IFNULL(A.MON_3,0)) AS MON3
+               , SUM(IFNULL(A.MON_4,0)) AS MON4
+               , SUM(IFNULL(A.MON_5,0)) AS MON5
+               , SUM(IFNULL(A.MON_6,0)) AS MON6
+               , SUM(IFNULL(A.MON_7,0)) AS MON7
+               , SUM(IFNULL(A.MON_8,0)) AS MON8
+               , SUM(IFNULL(A.MON_9,0)) AS MON9
+               , SUM(IFNULL(A.MON_10,0)) AS MON10
+               , SUM(IFNULL(A.MON_11,0)) AS MON11
+               , SUM(IFNULL(A.MON_12,0)) AS MON12
+               , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+               , A.SALES_PR_NM
+               , A.SALES_CLASS_NM
+          FROM (SELECT A.SORT
+                       , A.SALES_CD
+                       , TSAI.SALES_NM
+                       , A.MON_1  AS MON_1
+                       , A.MON_2  AS MON_2
+                       , A.MON_3  AS MON_3
+                       , A.MON_4  AS MON_4
+                       , A.MON_5  AS MON_5
+                       , A.MON_6  AS MON_6
+                       , A.MON_7  AS MON_7
+                       , A.MON_8  AS MON_8
+                       , A.MON_9  AS MON_9
+                       , A.MON_10 AS MON_10
+                       , A.MON_11 AS MON_11
+                       , A.MON_12 AS MON_12
+                       , A.TOT_AMT
+                       , TSPM.SALES_PR_NM
+                       , TCD.DTL_NM AS SALES_CLASS_NM
+                  FROM (
+                        SELECT '1' AS SORT
+                               , SHC.HQ_CD AS SALES_CD
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_12
+                               , SUM(TMS.LBAL_AMT) AS TOT_AMT
+                          FROM TMH_MON_SALES_PAYMENT AS TMS
+                                  
+                               JOIN SALES_HQ_CD AS SHC
+                                   ON SHC.SALES_CD = TMS.SALES_CD
+                                   
+	                     WHERE TMS.YEAR_MON BETWEEN #{searchYearMnSt} AND #{searchYearMnEt}
+                           AND TMS.LBAL_AMT != 0
+                         GROUP BY SHC.HQ_CD
+                          
+                      UNION ALL
+                      
+                        SELECT '2' AS SORT
+                               , SHC.HQ_CD AS SALES_CD
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(TMS.SALES_AMT,0)) AS TOT_AMT
+                          FROM TMH_MON_SALES_PAYMENT AS TMS
+                               
+                               JOIN SALES_HQ_CD AS SHC
+                                   ON SHC.SALES_CD = TMS.SALES_CD
+                                   
+                         WHERE TMS.YEAR_MON BETWEEN #{searchYearMnSt} AND #{searchYearMnEt}
+                           AND TMS.SALES_AMT != 0	                
+                         GROUP BY SHC.HQ_CD
+                         
+                      UNION ALL
+                     
+                        SELECT '3' AS SORT
+                               , SHC.HQ_CD AS SALES_CD
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='01' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='02' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='03' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='04' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='05' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='06' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='07' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='08' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='09' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='10' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='11' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='12' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(TSD.SETL_AMT,0)) AS TOT_AMT
+                          FROM TSH_SALES_DEP AS TSD
+                                   
+                               JOIN SALES_HQ_CD AS SHC
+                                   ON SHC.SALES_CD = TSD.SALES_CD
+                                   
+                         WHERE TSD.DEP_DT BETWEEN CONCAT(#{searchYearMnSt},'01') AND CONCAT(#{searchYearMnEt},'31')
+                           AND TSD.SETL_AMT != 0
+                         GROUP BY SHC.HQ_CD
+                         
+                      UNION ALL
+                     
+                        SELECT '4' AS SORT
+                               , SHC.HQ_CD AS SALES_CD
+                               , SUM(IFNULL(A.MON_1,0)) AS MON_1
+                               , SUM(IFNULL(A.MON_2,0)) AS MON_2
+                               , SUM(IFNULL(A.MON_3,0)) AS MON_3
+                               , SUM(IFNULL(A.MON_4,0)) AS MON_4
+                               , SUM(IFNULL(A.MON_5,0)) AS MON_5
+                               , SUM(IFNULL(A.MON_6,0)) AS MON_6
+                               , SUM(IFNULL(A.MON_7,0)) AS MON_7
+                               , SUM(IFNULL(A.MON_8,0)) AS MON_8
+                               , SUM(IFNULL(A.MON_9,0)) AS MON_9
+                               , SUM(IFNULL(A.MON_10,0)) AS MON_10
+                               , SUM(IFNULL(A.MON_11,0)) AS MON_11
+                               , SUM(IFNULL(A.MON_12,0)) AS MON_12
+                               , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+                          FROM (SELECT TMS.SALES_CD
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_1
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_2
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_3
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_4
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_5
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_6
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_7
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_8
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_9
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_10
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_11
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_12
+                                       , SUM(TMS.LBAL_AMT+TMS.SALES_AMT) AS TOT_AMT
+                                  FROM TMH_MON_SALES_PAYMENT AS TMS
+                                 WHERE TMS.YEAR_MON BETWEEN #{searchYearMnSt} AND #{searchYearMnEt}
+                                   AND (TMS.LBAL_AMT != 0 OR TMS.SALES_AMT != 0)
+                                 GROUP BY TMS.SALES_CD
+                              UNION ALL
+                                SELECT TSD.SALES_CD
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='01' THEN TSD.SETL_AMT*-1 END) AS MON_1
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='02' THEN TSD.SETL_AMT*-1 END) AS MON_2
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='03' THEN TSD.SETL_AMT*-1 END) AS MON_3
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='04' THEN TSD.SETL_AMT*-1 END) AS MON_4
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='05' THEN TSD.SETL_AMT*-1 END) AS MON_5
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='06' THEN TSD.SETL_AMT*-1 END) AS MON_6
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='07' THEN TSD.SETL_AMT*-1 END) AS MON_7
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='08' THEN TSD.SETL_AMT*-1 END) AS MON_8
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='09' THEN TSD.SETL_AMT*-1 END) AS MON_9
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='10' THEN TSD.SETL_AMT*-1 END) AS MON_10
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='11' THEN TSD.SETL_AMT*-1 END) AS MON_11
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='12' THEN TSD.SETL_AMT*-1 END) AS MON_12
+                                       , SUM(TSD.SETL_AMT)*-1 AS TOT_AMT
+                                  FROM TSH_SALES_DEP AS TSD
+                                 WHERE TSD.DEP_DT BETWEEN CONCAT(#{searchYearMnSt},'01') AND CONCAT(#{searchYearMnEt},'31')
+                                   AND TSD.SETL_AMT != 0
+                                 GROUP BY TSD.SALES_CD
+                               ) AS A
+                                  
+                               JOIN SALES_HQ_CD AS SHC
+                                   ON SHC.SALES_CD = A.SALES_CD
+	                   
+                         GROUP BY SHC.HQ_CD
+                       ) AS A
+                       
+                       JOIN TFM_SALES_ADD_INFO AS TSAI
+                           ON TSAI.SALES_CD = A.SALES_CD
+                  
+                       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                           ON TCD.DTL_CD = TSAI.SALES_CLASS
+                          AND TCD.COM_CD = 'M013'
+                       
+                       JOIN TFM_SALES_PR_MST AS TSPM
+                           ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+                  <where>
+                    <if test='searchSalesClass != null and searchSalesClass != ""'>
+	                  AND TSAI.SALES_CLASS = #{searchSalesClass}
+                    </if>
+                    <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+                      AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+                    </if>
+                  </where>
+                 
+              UNION ALL
+              
+                SELECT '5' AS SORT
+                       , '99999' AS SALES_CD
+                       , '전체계 :' AS SALES_NM
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(TMS.LBAL_AMT,0)) AS TOT_AMT
+                       , '' AS SALES_PR_NM
+                       , '' AS SALES_CLASS_NM
+                  FROM TMH_MON_SALES_PAYMENT AS TMS
+                  
+                       JOIN SALES_HQ_CD AS SHC
+                           ON SHC.SALES_CD = TMS.SALES_CD
+                  
+                       JOIN TFM_SALES_ADD_INFO AS TSAI
+                           ON TSAI.SALES_CD = SHC.SALES_CD
+                           
+                 WHERE TMS.YEAR_MON BETWEEN #{searchYearMnSt} AND #{searchYearMnEt}
+	               <if test='searchSalesClass != null and searchSalesClass != ""'>
+	                 AND TSAI.SALES_CLASS = #{searchSalesClass}
+                   </if>
+                   <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+                     AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+                   </if>
+              UNION ALL
+                SELECT '6' AS SORT
+                       , '99999' AS SALES_CD
+                       , '전체계 :' AS SALES_NM
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(TMS.SALES_AMT,0)) AS TOT_AMT
+                       , '' AS SALES_PR_NM
+                       , '' AS SALES_CLASS_NM
+                  FROM TMH_MON_SALES_PAYMENT AS TMS
+                  
+                       JOIN SALES_HQ_CD AS SHC
+                           ON SHC.SALES_CD = TMS.SALES_CD
+                  
+                       JOIN TFM_SALES_ADD_INFO AS TSAI
+                           ON TSAI.SALES_CD = SHC.SALES_CD
+                           
+                 WHERE TMS.YEAR_MON BETWEEN #{searchYearMnSt} AND #{searchYearMnEt}
+	               <if test='searchSalesClass != null and searchSalesClass != ""'>
+	                 AND TSAI.SALES_CLASS = #{searchSalesClass}
+                   </if>
+                   <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+                     AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+                   </if>
+             UNION ALL
+                SELECT '7' AS SORT
+                       , '99999' AS SALES_CD
+                       , '전체계 :' AS SALES_NM
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='01' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='02' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='03' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='04' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='05' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='06' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='07' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='08' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='09' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='10' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='11' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='12' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(TSD.SETL_AMT,0)) AS TOT_AMT
+                       , '' AS SALES_PR_NM
+                       , '' AS SALES_CLASS_NM
+                  FROM TSH_SALES_DEP AS TSD
+                  
+                       JOIN SALES_HQ_CD AS SHC
+                           ON SHC.SALES_CD = TSD.SALES_CD
+                  
+                       JOIN TFM_SALES_ADD_INFO AS TSAI
+                           ON TSAI.SALES_CD = SHC.SALES_CD
+                           
+                 WHERE TSD.DEP_DT BETWEEN CONCAT(#{searchYearMnSt},'01') AND CONCAT(#{searchYearMnEt},'31')
+	               <if test='searchSalesClass != null and searchSalesClass != ""'>
+	                 AND TSAI.SALES_CLASS = #{searchSalesClass}
+                   </if>
+                   <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+                     AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+                   </if>
+             UNION ALL
+                SELECT '8' AS SORT
+                       , '99999' AS SALES_CD
+                       , '전체계 :' AS SALES_NM
+                       , SUM(IFNULL(A.MON_1,0)) AS MON_1
+                       , SUM(IFNULL(A.MON_2,0)) AS MON_2
+                       , SUM(IFNULL(A.MON_3,0)) AS MON_3
+                       , SUM(IFNULL(A.MON_4,0)) AS MON_4
+                       , SUM(IFNULL(A.MON_5,0)) AS MON_5
+                       , SUM(IFNULL(A.MON_6,0)) AS MON_6
+                       , SUM(IFNULL(A.MON_7,0)) AS MON_7
+                       , SUM(IFNULL(A.MON_8,0)) AS MON_8
+                       , SUM(IFNULL(A.MON_9,0)) AS MON_9
+                       , SUM(IFNULL(A.MON_10,0)) AS MON_10
+                       , SUM(IFNULL(A.MON_11,0)) AS MON_11
+                       , SUM(IFNULL(A.MON_12,0)) AS MON_12
+                       , 0 AS TOT_AMT
+                       , '' AS SALES_PR_NM
+                       , '' AS SALES_CLASS_NM
+                  FROM (SELECT TMS.SALES_CD
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(TMS.LBAL_AMT,0)) AS TOT_AMT
+                          FROM TMH_MON_SALES_PAYMENT AS TMS
+                         WHERE TMS.YEAR_MON BETWEEN #{searchYearMnSt} AND #{searchYearMnEt}
+                         GROUP BY TMS.SALES_CD
+                      UNION ALL
+                        SELECT TMS.SALES_CD
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(TMS.SALES_AMT,0)) AS TOT_AMT
+                          FROM TMH_MON_SALES_PAYMENT AS TMS
+                         WHERE TMS.YEAR_MON BETWEEN #{searchYearMnSt} AND #{searchYearMnEt}
+                         GROUP BY TMS.SALES_CD
+                     UNION ALL
+                        SELECT TSD.SALES_CD
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='01' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='02' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='03' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='04' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='05' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='06' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='07' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='08' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='09' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='10' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='11' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='12' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_12
+                               , SUM(IFNULL(TSD.SETL_AMT,0))*-1 AS TOT_AMT
+                          FROM TSH_SALES_DEP AS TSD
+                         WHERE TSD.DEP_DT BETWEEN CONCAT(#{searchYearMnSt},'01') AND CONCAT(#{searchYearMnEt},'31')
+                         GROUP BY TSD.SALES_CD
+                       ) AS A
+                       
+                       JOIN SALES_HQ_CD AS SHC
+                           ON SHC.SALES_CD = A.SALES_CD
+                  
+                       JOIN TFM_SALES_ADD_INFO AS TSAI
+                           ON TSAI.SALES_CD = SHC.SALES_CD
+                 <where>
+	               <if test='searchSalesClass != null and searchSalesClass != ""'>
+	                 AND TSAI.SALES_CLASS = #{searchSalesClass}
+                   </if>
+                   <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+                     AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+                   </if>
+                 </where>
+               ) AS A
+         GROUP BY A.SALES_CD
+                  , A.SALES_NM
+                  , A.SORT
+                  , CASE WHEN A.SORT='1' THEN '전월잔액'
+                         WHEN A.SORT='2' THEN '매출'
+                         WHEN A.SORT='3' THEN '입금'
+                         WHEN A.SORT='4' THEN '현잔고'
+                         WHEN A.SORT='5' THEN '전월잔액'
+                         WHEN A.SORT='6' THEN '매출'
+                         WHEN A.SORT='7' THEN '입금'
+                         WHEN A.SORT='8' THEN '현잔고' END
+                  , A.SALES_PR_NM
+                  , A.SALES_CLASS_NM
+         ORDER BY A.SALES_CD, A.SORT
+
+	</select>
+
+	<!-- 매출처원장(연간) 액샐 -->
+	<select id="selectAnlSalesLdgrYearListExcelDown" parameterType="com.doppio.workplace.as.service.AnlSalesLdgrYearListVo" resultType="java.util.HashMap">
+	/*AnlSalesLdgrYearListMapper.selectAnlSalesLdgrYearListExcelDown*/
+        WITH SALES_HQ_CD AS (
+            SELECT CASE WHEN #{searchHqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                   , SALES_CD
+              FROM V_SALES_HQ_CD
+             WHERE HQ_CLASS = #{searchHqClass}
+             <if test='searchSalesCd != null and searchSalesCd != ""'> 
+               AND (HQ_CD = #{searchSalesCd} OR SALES_CD = #{searchSalesCd})
+             </if>
+        )
+        SELECT A.SALES_NM
+               , CASE WHEN A.SORT='1' THEN '전월잔액'
+                      WHEN A.SORT='2' THEN '매출'
+                      WHEN A.SORT='3' THEN '입금'
+                      WHEN A.SORT='4' THEN '현잔고'
+                      WHEN A.SORT='5' THEN '전월잔액'
+                      WHEN A.SORT='6' THEN '매출'
+                      WHEN A.SORT='7' THEN '입금'
+                      WHEN A.SORT='8' THEN '현잔고' END AS CLASS_NM
+               , SUM(IFNULL(A.MON_1,0)) AS MON1
+               , SUM(IFNULL(A.MON_2,0)) AS MON2
+               , SUM(IFNULL(A.MON_3,0)) AS MON3
+               , SUM(IFNULL(A.MON_4,0)) AS MON4
+               , SUM(IFNULL(A.MON_5,0)) AS MON5
+               , SUM(IFNULL(A.MON_6,0)) AS MON6
+               , SUM(IFNULL(A.MON_7,0)) AS MON7
+               , SUM(IFNULL(A.MON_8,0)) AS MON8
+               , SUM(IFNULL(A.MON_9,0)) AS MON9
+               , SUM(IFNULL(A.MON_10,0)) AS MON10
+               , SUM(IFNULL(A.MON_11,0)) AS MON11
+               , SUM(IFNULL(A.MON_12,0)) AS MON12
+               , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+               , A.SALES_PR_NM
+               , A.SALES_CLASS_NM
+          FROM (SELECT A.SORT
+                       , A.SALES_CD
+                       , TSAI.SALES_NM
+                       , A.MON_1  AS MON_1
+                       , A.MON_2  AS MON_2
+                       , A.MON_3  AS MON_3
+                       , A.MON_4  AS MON_4
+                       , A.MON_5  AS MON_5
+                       , A.MON_6  AS MON_6
+                       , A.MON_7  AS MON_7
+                       , A.MON_8  AS MON_8
+                       , A.MON_9  AS MON_9
+                       , A.MON_10 AS MON_10
+                       , A.MON_11 AS MON_11
+                       , A.MON_12 AS MON_12
+                       , A.TOT_AMT
+                       , TSPM.SALES_PR_NM
+                       , TCD.DTL_NM AS SALES_CLASS_NM
+                  FROM (
+                        SELECT '1' AS SORT
+                               , SHC.HQ_CD AS SALES_CD
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_12
+                               , SUM(TMS.LBAL_AMT) AS TOT_AMT
+                          FROM TMH_MON_SALES_PAYMENT AS TMS
+                                  
+                               JOIN SALES_HQ_CD AS SHC
+                                   ON SHC.SALES_CD = TMS.SALES_CD
+                                   
+	                     WHERE TMS.YEAR_MON BETWEEN REPLACE(#{searchYearMnSt},'-','') AND REPLACE(#{searchYearMnEt},'-','')
+                           AND TMS.LBAL_AMT != 0
+                         GROUP BY SHC.HQ_CD
+                          
+                      UNION ALL
+                      
+                        SELECT '2' AS SORT
+                               , SHC.HQ_CD AS SALES_CD
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(TMS.SALES_AMT,0)) AS TOT_AMT
+                          FROM TMH_MON_SALES_PAYMENT AS TMS
+                               
+                               JOIN SALES_HQ_CD AS SHC
+                                   ON SHC.SALES_CD = TMS.SALES_CD
+                                   
+                         WHERE TMS.YEAR_MON BETWEEN REPLACE(#{searchYearMnSt},'-','') AND REPLACE(#{searchYearMnEt},'-','')
+                           AND TMS.SALES_AMT != 0	                
+                         GROUP BY SHC.HQ_CD
+                         
+                      UNION ALL
+                     
+                        SELECT '3' AS SORT
+                               , SHC.HQ_CD AS SALES_CD
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='01' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='02' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='03' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='04' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='05' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='06' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='07' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='08' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='09' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='10' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='11' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='12' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(TSD.SETL_AMT,0)) AS TOT_AMT
+                          FROM TSH_SALES_DEP AS TSD
+                                   
+                               JOIN SALES_HQ_CD AS SHC
+                                   ON SHC.SALES_CD = TSD.SALES_CD
+                                   
+                         WHERE TSD.DEP_DT BETWEEN CONCAT(REPLACE(#{searchYearMnSt},'-',''),'01') AND CONCAT(REPLACE(#{searchYearMnEt},'-',''),'31')
+                           AND TSD.SETL_AMT != 0
+                         GROUP BY SHC.HQ_CD
+                         
+                      UNION ALL
+                     
+                        SELECT '4' AS SORT
+                               , SHC.HQ_CD AS SALES_CD
+                               , SUM(IFNULL(A.MON_1,0)) AS MON_1
+                               , SUM(IFNULL(A.MON_2,0)) AS MON_2
+                               , SUM(IFNULL(A.MON_3,0)) AS MON_3
+                               , SUM(IFNULL(A.MON_4,0)) AS MON_4
+                               , SUM(IFNULL(A.MON_5,0)) AS MON_5
+                               , SUM(IFNULL(A.MON_6,0)) AS MON_6
+                               , SUM(IFNULL(A.MON_7,0)) AS MON_7
+                               , SUM(IFNULL(A.MON_8,0)) AS MON_8
+                               , SUM(IFNULL(A.MON_9,0)) AS MON_9
+                               , SUM(IFNULL(A.MON_10,0)) AS MON_10
+                               , SUM(IFNULL(A.MON_11,0)) AS MON_11
+                               , SUM(IFNULL(A.MON_12,0)) AS MON_12
+                               , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+                          FROM (SELECT TMS.SALES_CD
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_1
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_2
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_3
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_4
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_5
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_6
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_7
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_8
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_9
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_10
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_11
+                                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN TMS.LBAL_AMT+TMS.SALES_AMT END) AS MON_12
+                                       , SUM(TMS.LBAL_AMT+TMS.SALES_AMT) AS TOT_AMT
+                                  FROM TMH_MON_SALES_PAYMENT AS TMS
+                                 WHERE TMS.YEAR_MON BETWEEN REPLACE(#{searchYearMnSt},'-','') AND REPLACE(#{searchYearMnEt},'-','')
+                                   AND (TMS.LBAL_AMT != 0 OR TMS.SALES_AMT != 0)
+                                 GROUP BY TMS.SALES_CD
+                              UNION ALL
+                                SELECT TSD.SALES_CD
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='01' THEN TSD.SETL_AMT*-1 END) AS MON_1
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='02' THEN TSD.SETL_AMT*-1 END) AS MON_2
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='03' THEN TSD.SETL_AMT*-1 END) AS MON_3
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='04' THEN TSD.SETL_AMT*-1 END) AS MON_4
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='05' THEN TSD.SETL_AMT*-1 END) AS MON_5
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='06' THEN TSD.SETL_AMT*-1 END) AS MON_6
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='07' THEN TSD.SETL_AMT*-1 END) AS MON_7
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='08' THEN TSD.SETL_AMT*-1 END) AS MON_8
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='09' THEN TSD.SETL_AMT*-1 END) AS MON_9
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='10' THEN TSD.SETL_AMT*-1 END) AS MON_10
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='11' THEN TSD.SETL_AMT*-1 END) AS MON_11
+                                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='12' THEN TSD.SETL_AMT*-1 END) AS MON_12
+                                       , SUM(TSD.SETL_AMT)*-1 AS TOT_AMT
+                                  FROM TSH_SALES_DEP AS TSD
+                                 WHERE TSD.DEP_DT BETWEEN CONCAT(REPLACE(#{searchYearMnSt},'-',''),'01') AND CONCAT(REPLACE(#{searchYearMnEt},'-',''),'31')
+                                   AND TSD.SETL_AMT != 0
+                                 GROUP BY TSD.SALES_CD
+                               ) AS A
+                                  
+                               JOIN SALES_HQ_CD AS SHC
+                                   ON SHC.SALES_CD = A.SALES_CD
+	                   
+                         GROUP BY SHC.HQ_CD
+                       ) AS A
+                       
+                       JOIN TFM_SALES_ADD_INFO AS TSAI
+                           ON TSAI.SALES_CD = A.SALES_CD
+                  
+                       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                           ON TCD.DTL_CD = TSAI.SALES_CLASS
+                          AND TCD.COM_CD = 'M013'
+                       
+                       JOIN TFM_SALES_PR_MST AS TSPM
+                           ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+                  <where>
+                    <if test='searchSalesClass != null and searchSalesClass != ""'>
+	                  AND TSAI.SALES_CLASS = #{searchSalesClass}
+                    </if>
+                    <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+                      AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+                    </if>
+                  </where>
+                 
+              UNION ALL
+              
+                SELECT '5' AS SORT
+                       , '99999' AS SALES_CD
+                       , '전체계 :' AS SALES_NM
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(TMS.LBAL_AMT,0)) AS TOT_AMT
+                       , '' AS SALES_PR_NM
+                       , '' AS SALES_CLASS_NM
+                  FROM TMH_MON_SALES_PAYMENT AS TMS
+                  
+                       JOIN SALES_HQ_CD AS SHC
+                           ON SHC.SALES_CD = TMS.SALES_CD
+                  
+                       JOIN TFM_SALES_ADD_INFO AS TSAI
+                           ON TSAI.SALES_CD = SHC.SALES_CD
+                           
+                 WHERE TMS.YEAR_MON BETWEEN REPLACE(#{searchYearMnSt},'-','') AND REPLACE(#{searchYearMnEt},'-','')
+	               <if test='searchSalesClass != null and searchSalesClass != ""'>
+	                 AND TSAI.SALES_CLASS = #{searchSalesClass}
+                   </if>
+                   <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+                     AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+                   </if>
+              UNION ALL
+                SELECT '6' AS SORT
+                       , '99999' AS SALES_CD
+                       , '전체계 :' AS SALES_NM
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(TMS.SALES_AMT,0)) AS TOT_AMT
+                       , '' AS SALES_PR_NM
+                       , '' AS SALES_CLASS_NM
+                  FROM TMH_MON_SALES_PAYMENT AS TMS
+                  
+                       JOIN SALES_HQ_CD AS SHC
+                           ON SHC.SALES_CD = TMS.SALES_CD
+                  
+                       JOIN TFM_SALES_ADD_INFO AS TSAI
+                           ON TSAI.SALES_CD = SHC.SALES_CD
+                           
+                 WHERE TMS.YEAR_MON BETWEEN REPLACE(#{searchYearMnSt},'-','') AND REPLACE(#{searchYearMnEt},'-','')
+	               <if test='searchSalesClass != null and searchSalesClass != ""'>
+	                 AND TSAI.SALES_CLASS = #{searchSalesClass}
+                   </if>
+                   <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+                     AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+                   </if>
+             UNION ALL
+                SELECT '7' AS SORT
+                       , '99999' AS SALES_CD
+                       , '전체계 :' AS SALES_NM
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='01' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_1
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='02' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_2
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='03' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_3
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='04' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_4
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='05' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_5
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='06' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_6
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='07' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_7
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='08' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_8
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='09' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_9
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='10' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_10
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='11' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_11
+                       , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='12' THEN IFNULL(TSD.SETL_AMT,0) END) AS MON_12
+                       , SUM(IFNULL(TSD.SETL_AMT,0)) AS TOT_AMT
+                       , '' AS SALES_PR_NM
+                       , '' AS SALES_CLASS_NM
+                  FROM TSH_SALES_DEP AS TSD
+                  
+                       JOIN SALES_HQ_CD AS SHC
+                           ON SHC.SALES_CD = TSD.SALES_CD
+                  
+                       JOIN TFM_SALES_ADD_INFO AS TSAI
+                           ON TSAI.SALES_CD = SHC.SALES_CD
+                           
+                 WHERE TSD.DEP_DT BETWEEN CONCAT(REPLACE(#{searchYearMnSt},'-',''),'01') AND CONCAT(REPLACE(#{searchYearMnEt},'-',''),'31')
+	               <if test='searchSalesClass != null and searchSalesClass != ""'>
+	                 AND TSAI.SALES_CLASS = #{searchSalesClass}
+                   </if>
+                   <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+                     AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+                   </if>
+             UNION ALL
+                SELECT '8' AS SORT
+                       , '99999' AS SALES_CD
+                       , '전체계 :' AS SALES_NM
+                       , SUM(IFNULL(A.MON_1,0)) AS MON_1
+                       , SUM(IFNULL(A.MON_2,0)) AS MON_2
+                       , SUM(IFNULL(A.MON_3,0)) AS MON_3
+                       , SUM(IFNULL(A.MON_4,0)) AS MON_4
+                       , SUM(IFNULL(A.MON_5,0)) AS MON_5
+                       , SUM(IFNULL(A.MON_6,0)) AS MON_6
+                       , SUM(IFNULL(A.MON_7,0)) AS MON_7
+                       , SUM(IFNULL(A.MON_8,0)) AS MON_8
+                       , SUM(IFNULL(A.MON_9,0)) AS MON_9
+                       , SUM(IFNULL(A.MON_10,0)) AS MON_10
+                       , SUM(IFNULL(A.MON_11,0)) AS MON_11
+                       , SUM(IFNULL(A.MON_12,0)) AS MON_12
+                       , 0 AS TOT_AMT
+                       , '' AS SALES_PR_NM
+                       , '' AS SALES_CLASS_NM
+                  FROM (SELECT TMS.SALES_CD
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN IFNULL(TMS.LBAL_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(TMS.LBAL_AMT,0)) AS TOT_AMT
+                          FROM TMH_MON_SALES_PAYMENT AS TMS
+                         WHERE TMS.YEAR_MON BETWEEN REPLACE(#{searchYearMnSt},'-','') AND REPLACE(#{searchYearMnEt},'-','')
+                         GROUP BY TMS.SALES_CD
+                      UNION ALL
+                        SELECT TMS.SALES_CD
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='01' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='02' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='03' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='04' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='05' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='06' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='07' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='08' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='09' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='10' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='11' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(TMS.YEAR_MON,5,2)='12' THEN IFNULL(TMS.SALES_AMT,0) END) AS MON_12
+                               , SUM(IFNULL(TMS.SALES_AMT,0)) AS TOT_AMT
+                          FROM TMH_MON_SALES_PAYMENT AS TMS
+                         WHERE TMS.YEAR_MON BETWEEN REPLACE(#{searchYearMnSt},'-','') AND REPLACE(#{searchYearMnEt},'-','')
+                         GROUP BY TMS.SALES_CD
+                     UNION ALL
+                        SELECT TSD.SALES_CD
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='01' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_1
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='02' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_2
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='03' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_3
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='04' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_4
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='05' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_5
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='06' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_6
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='07' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_7
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='08' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_8
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='09' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_9
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='10' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_10
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='11' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_11
+                               , SUM(CASE WHEN SUBSTRING(TSD.DEP_DT,5,2)='12' THEN IFNULL(TSD.SETL_AMT,0)*-1 END) AS MON_12
+                               , SUM(IFNULL(TSD.SETL_AMT,0))*-1 AS TOT_AMT
+                          FROM TSH_SALES_DEP AS TSD
+                         WHERE TSD.DEP_DT BETWEEN CONCAT(REPLACE(#{searchYearMnSt},'-',''),'01') AND CONCAT(REPLACE(#{searchYearMnEt},'-',''),'31')
+                         GROUP BY TSD.SALES_CD
+                       ) AS A
+                       
+                       JOIN SALES_HQ_CD AS SHC
+                           ON SHC.SALES_CD = A.SALES_CD
+                  
+                       JOIN TFM_SALES_ADD_INFO AS TSAI
+                           ON TSAI.SALES_CD = SHC.SALES_CD
+                 <where>
+	               <if test='searchSalesClass != null and searchSalesClass != ""'>
+	                 AND TSAI.SALES_CLASS = #{searchSalesClass}
+                   </if>
+                   <if test='searchSalesPrCd != null and searchSalesPrCd != ""'>
+                     AND TSAI.SALES_PR_CD = #{searchSalesPrCd}
+                   </if>
+                 </where>
+               ) AS A
+         GROUP BY A.SALES_CD
+                  , A.SALES_NM
+                  , A.SORT
+                  , CASE WHEN A.SORT='1' THEN '전월잔액'
+                         WHEN A.SORT='2' THEN '매출'
+                         WHEN A.SORT='3' THEN '입금'
+                         WHEN A.SORT='4' THEN '현잔고'
+                         WHEN A.SORT='5' THEN '전월잔액'
+                         WHEN A.SORT='6' THEN '매출'
+                         WHEN A.SORT='7' THEN '입금'
+                         WHEN A.SORT='8' THEN '현잔고' END
+                  , A.SALES_PR_NM
+                  , A.SALES_CLASS_NM
+         ORDER BY A.SALES_CD, A.SORT
+	</select>
+</mapper>

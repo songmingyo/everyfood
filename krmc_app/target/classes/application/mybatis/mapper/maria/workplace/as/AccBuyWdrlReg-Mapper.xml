@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.AccBuyWdrlRegMapper">
+
+
+	<!-- 매입처별지급현황 건수 -->
+	<select id="selectAccBuyWdrlRegCount" parameterType="com.doppio.workplace.as.service.AccSalesDepRegVo" resultType="Integer">
+	/*AccSalesDepRegMapper.selectAccBuyWdrlRegCount*/	
+		SELECT COUNT(*) AS CNT
+         FROM TBH_BUY_WDRL AS TBW
+         WHERE TBW.WDRL_DT = replace(#{wdrlDt},'-','')
+   		   <if test='buyCd != null and buyCd != ""'> 
+		       AND TBW.BUY_CD = #{buyCd}
+	   	   </if>
+	   	   <if test='setlClass != null and setlClass != ""'> 
+		       AND TBW.SETL_CLASS = #{setlClass}
+	   	   </if>
+	</select>
+	
+	<!-- 매입처별지급현황 조회 -->
+	<select id="selectAccBuyWdrlReg" parameterType="com.doppio.workplace.as.service.AccBuyWdrlRegVo" resultType="com.doppio.workplace.as.service.AccBuyWdrlRegVo">
+	/*AccBuyWdrlRegMapper.selectAccBuyWdrlReg*/	
+		SELECT DATE_FORMAT(TBW.WDRL_DT, '%Y-%m-%d') AS WDRL_DT
+			   , TBW.BUY_CD
+			   , TBM.BUY_NM
+			   , TBW.SETL_CLASS
+			   , TCD.DTL_NM AS SETL_CLASS_NM
+			   , TBW.SETL_AMT
+	      FROM TBH_BUY_WDRL AS TBW
+	      
+	           JOIN TFM_BUY_MST AS TBM
+	               ON TBM.BUY_CD = TBW.BUY_CD
+	               
+	           JOIN TCM_CODE_DTL AS TCD
+	               ON TCD.COM_CD = 'M014'
+	              AND TCD.DTL_CD = TBW.SETL_CLASS
+	              
+         WHERE TBW.WDRL_DT = replace(#{wdrlDt},'-','')
+   		   <if test='buyCd != null and buyCd != ""'> 
+		       AND TBW.BUY_CD = #{buyCd}
+	   	   </if>
+	   	   <if test='setlClass != null and setlClass != ""'> 
+		       AND TBW.SETL_CLASS = #{setlClass}
+	   	   </if>
+	     ORDER BY TBW.WDRL_DT, TBM.BUY_CD
+
+	</select>
+
+
+	<!-- 매입처별지급현황 조회 -->
+	<select id="selectAccBuyWdrlRegDetail" parameterType="com.doppio.workplace.as.service.AccBuyWdrlRegVo" resultType="com.doppio.workplace.as.service.AccBuyWdrlRegVo">
+	/*AccBuyWdrlRegMapper.selectAccBuyWdrlRegDetail*/	
+		SELECT DATE_FORMAT(TBW.WDRL_DT, '%Y-%m-%d') AS WDRL_DT
+			   , TBW.BUY_CD
+			   , TBM.BUY_NM
+			   , TBW.SETL_CLASS
+			   , TCD.DTL_NM AS SETL_CLASS_NM
+			   , TBW.SETL_AMT
+			   , DATE_FORMAT(TBW.PROM_DT, '%Y-%m-%d') AS PROM_DT
+			   , DATE_FORMAT(TBW.PROM_EXP_DT, '%Y-%m-%d') AS PROM_EXP_DT
+			   , TBW.REMARKS
+			   , TM_1.USER_NM AS REG_NM
+			   , TBW.REG_DT
+			   , TM_2.USER_NM AS MOD_NM
+			   , TBW.MOD_DT
+			   , 'U' AS GRID_FLAG
+	      FROM TBH_BUY_WDRL AS TBW
+	      
+	           JOIN TFM_BUY_MST AS TBM
+	               ON TBM.BUY_CD = TBW.BUY_CD
+	               
+	           JOIN TCM_CODE_DTL AS TCD
+	               ON TCD.COM_CD = 'M014'
+	              AND TCD.DTL_CD = TBW.SETL_CLASS
+	              
+	           LEFT OUTER JOIN TCM_MEMBER AS TM_1
+	               ON TM_1.USER_ID = TBW.REG_ID
+	               
+	           LEFT OUTER JOIN TCM_MEMBER AS TM_2
+	               ON TM_2.USER_ID = TBW.MOD_ID
+	               
+         WHERE TBW.BUY_CD = TBM.BUY_CD
+   	       AND TBW.WDRL_DT = replace(#{wdrlDt},'-','')
+           <if test='buyCd != null and buyCd != ""'> 
+		       AND TBW.BUY_CD = #{buyCd}
+	       </if>
+  		   <if test='setlClass != null and setlClass != ""'> 
+		       AND TBW.SETL_CLASS = #{setlClass}
+	   	   </if>
+	     ORDER BY TBW.WDRL_DT, TBW.BUY_CD
+
+	</select>
+	
+	<!-- 매입처별지급현황 입력 -->
+	<insert id="insertAccBuyWdrlReg" parameterType="com.doppio.workplace.as.service.AccBuyWdrlRegVo">
+	/*AccBuyWdrlRegMapper.insertAccBuyWdrlRegInfo*/
+		INSERT INTO TBH_BUY_WDRL
+	    	(WDRL_DT, BUY_CD, SETL_CLASS, SETL_AMT, PROM_DT, PROM_EXP_DT, REMARKS
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT
+			)
+		VALUES
+			(replace(#{wdrlDt},'-',''), #{buyCd}, #{setlClass}, #{setlAmt}, replace(#{promDt},'-',''), replace(#{promExpDt},'-',''), #{remarks}
+			 , #{useYn}, #{workId}, NOW(), #{workId}, NOW()
+			)
+	</insert>
+	
+
+	<!-- 매입처별지급현황 수정 -->
+	<update id="updateAccBuyWdrlReg" parameterType="com.doppio.workplace.as.service.AccBuyWdrlRegVo">
+	/*AccBuyWdrlRegMapper.updateAccBuyWdrlReg*/	
+        UPDATE TBH_BUY_WDRL
+           SET 	SETL_AMT        = #{setlAmt}
+               , PROM_DT      	= replace(#{promDt},'-','')
+               , PROM_EXP_DT   	= replace(#{promExpDt},'-','')
+               , REMARKS        = #{remarks}
+               , MOD_ID         = #{workId}
+               , MOD_DT         = NOW()
+         WHERE WDRL_DT = replace(#{wdrlDt},'-','')
+           AND BUY_CD = #{buyCd}
+           AND SETl_CLASS = #{setlClass}
+	</update>
+
+	</mapper>

@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.br.service.impl.BuyPeriodListMapper">
+
+	<!-- 매입처 조회 -->
+	<select id="selectBuyPeriodList" parameterType="com.doppio.workplace.br.service.BuyPeriodListVo" resultType="com.doppio.workplace.br.service.BuyPeriodListVo">
+	/*BuyPeriodListMapper.selectBuyStoreList*/	
+		SELECT TBM.BUY_NM
+			   , A.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , SUM(A.BUY_QTY) AS BUY_QTY
+			   , A.COST
+			   , SUM(A.PURE_AMT) AS PURE_AMT
+			   , SUM(A.VAT_AMT) AS VAT_AMT
+			   , SUM(A.TOT_AMT) AS TOT_AMT
+	      FROM (SELECT BUY_CD
+	                   , PRDT_CD
+	                   , COST
+	                   , SUM(BUY_QTY) AS BUY_QTY
+	                   , SUM(PURE_AMT) AS PURE_AMT
+	                   , SUM(VAT_AMT) AS VAT_AMT
+	                   , SUM(TOT_AMT) AS TOT_AMT
+	              FROM TBH_PRDT_RCPT
+	             WHERE BUY_DT BETWEEN #{buyStartDt} AND #{buyEndDt}
+	               AND BUY_CONF_YN= 'Y'
+	               AND BUY_QTY != 0
+	               <if test='buyCd != null and buyCd != ""'> 
+	                 AND BUY_CD = #{buyCd}
+	               </if>
+	               <if test='prdtCd != null and prdtCd != ""'> 
+	                 AND PRDT_CD = #{prdtCd}
+	               </if>
+	               <if test='whCd != null and whCd != ""'> 
+	                 AND WH_CD = #{whCd}
+	               </if>
+	             GROUP BY BUY_CD, PRDT_CD, COST
+	           UNION ALL
+	            SELECT BUY_CD
+	                   , PRDT_CD
+	                   , COST
+	                   , SUM(RTN_QTY)*-1 AS BUY_QTY
+	                   , SUM(PURE_AMT)*-1 AS PURE_AMT
+	                   , SUM(VAT_AMT)*-1 AS VAT_AMT
+	                   , SUM(TOT_AMT)*-1 AS TOT_AMT
+	              FROM TBH_PRDT_RETURN
+	             WHERE RTN_DT BETWEEN #{buyStartDt} AND #{buyEndDt}
+	               AND RTN_QTY != 0
+	               <if test='buyCd != null and buyCd != ""'> 
+	                 AND BUY_CD = #{buyCd}
+	               </if>
+	               <if test='prdtCd != null and prdtCd != ""'> 
+	                 AND PRDT_CD = #{prdtCd}
+	               </if>
+	               <if test='whCd != null and whCd != ""'> 
+	                 AND WH_CD = #{whCd}
+	               </if>
+	             GROUP BY BUY_CD, PRDT_CD, COST
+	           ) AS A
+	           JOIN TFM_BUY_MST AS TBM
+	               ON TBM.BUY_CD = A.BUY_CD
+	               
+	           JOIN TFM_PRDT_MST AS TPM
+	               ON TPM.PRDT_CD = A.PRDT_CD
+	     <where>
+	       <if test='lCd != null and lCd != ""'> 
+	         AND TPM.L_CD = #{lCd}
+           </if>
+	       <if test='mCd != null and mCd != ""'> 
+	         AND TPM.M_CD = #{mCd}
+	       </if>
+	     </where>           
+	
+	    GROUP BY TBM.BUY_NM
+			     , A.PRDT_CD
+			     , TPM.PRDT_NM
+			     , TPM.PRDT_STD
+			     , A.COST
+
+	</select>
+			
+
+	<!-- 기간별 매입현황 다운 -->
+	<select id="selectBuyPeriodListExcelDown" parameterType="com.doppio.workplace.br.service.BuyPeriodListVo" resultType="java.util.HashMap">
+	/*BuyPeriodListMapper.selectBuyStoreList*/	
+		SELECT TBM.BUY_NM
+			   , A.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , SUM(A.BUY_QTY) AS BUY_QTY
+			   , A.COST
+			   , SUM(A.PURE_AMT) AS PURE_AMT
+			   , SUM(A.VAT_AMT) AS VAT_AMT
+			   , SUM(A.TOT_AMT) AS TOT_AMT
+	      FROM (SELECT BUY_CD
+	                   , PRDT_CD
+	                   , COST
+	                   , SUM(BUY_QTY) AS BUY_QTY
+	                   , SUM(PURE_AMT) AS PURE_AMT
+	                   , SUM(VAT_AMT) AS VAT_AMT
+	                   , SUM(TOT_AMT) AS TOT_AMT
+	              FROM TBH_PRDT_RCPT
+	             WHERE BUY_DT BETWEEN REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+	               AND BUY_CONF_YN= 'Y'
+	               AND BUY_QTY != 0
+	               <if test='buyCd != null and buyCd != ""'> 
+	                 AND BUY_CD = #{buyCd}
+	               </if>
+	               <if test='prdtCd != null and prdtCd != ""'> 
+	                 AND PRDT_CD = #{prdtCd}
+	               </if>
+	               <if test='whCd != null and whCd != ""'> 
+	                 AND WH_CD = #{whCd}
+	               </if>
+	             GROUP BY BUY_CD, PRDT_CD, COST
+	           UNION ALL
+	            SELECT BUY_CD
+	                   , PRDT_CD
+	                   , COST
+	                   , SUM(RTN_QTY)*-1 AS BUY_QTY
+	                   , SUM(PURE_AMT)*-1 AS PURE_AMT
+	                   , SUM(VAT_AMT)*-1 AS VAT_AMT
+	                   , SUM(TOT_AMT)*-1 AS TOT_AMT
+	              FROM TBH_PRDT_RETURN
+	             WHERE RTN_DT BETWEEN REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+	               AND RTN_QTY != 0
+	               <if test='buyCd != null and buyCd != ""'> 
+	                 AND BUY_CD = #{buyCd}
+	               </if>
+	               <if test='prdtCd != null and prdtCd != ""'> 
+	                 AND PRDT_CD = #{prdtCd}
+	               </if>
+	               <if test='whCd != null and whCd != ""'> 
+	                 AND WH_CD = #{whCd}
+	               </if>
+	             GROUP BY BUY_CD, PRDT_CD, COST
+	           ) AS A
+	           JOIN TFM_BUY_MST AS TBM
+	               ON TBM.BUY_CD = A.BUY_CD
+	               
+	           JOIN TFM_PRDT_MST AS TPM
+	               ON TPM.PRDT_CD = A.PRDT_CD
+	     <where>
+	       <if test='lCd != null and lCd != ""'> 
+	         AND TPM.L_CD = #{lCd}
+           </if>
+	       <if test='mCd != null and mCd != ""'> 
+	         AND TPM.M_CD = #{mCd}
+	       </if>
+	     </where>
+	
+	    GROUP BY TBM.BUY_NM
+			     , A.PRDT_CD
+			     , TPM.PRDT_NM
+			     , TPM.PRDT_STD
+			     , A.COST
+	</select>
+	
+	<!-- 기간별 매입현황 출력 -->
+	<select id="selectBuyPeriodPrtList" parameterType="com.doppio.workplace.br.service.BuyPeriodListVo" resultType="com.doppio.workplace.br.service.BuyPeriodListVo">
+	/*BuyPeriodListMapper.selectBuyStoreList*/	
+		SELECT
+               #{buyStartDt} AS BUY_START_DT
+            ,  #{buyEndDt} AS BUY_END_DT
+            ,  #{prdtNm} AS PRDT_NM_SEARCH
+            ,  #{buyNm} AS BUY_NM_SEARCH		     
+			, B.BUY_NM AS BUY_NM
+			, A.PRDT_CD AS PRDT_CD
+			, C.PRDT_NM AS PRDT_NM
+			, C.PRDT_STD AS PRDT_STD
+			, SUM(A.ORD_QTY) AS ORD_QTY
+			, C.QTY_BOX AS QTY_BOX
+			, A.COST AS COST
+			, SUM(A.PURE_AMT) AS PURE_AMT
+			, SUM(A.VAT_AMT) AS VAT_AMT
+			, SUM(A.TOT_AMT) AS TOT_AMT
+	FROM	(SELECT WH_CD, BUY_CD, PRDT_CD, COST,
+	                SUM(ORD_QTY) AS ORD_QTY, SUM(PURE_AMT) AS PURE_AMT, SUM(VAT_AMT) AS VAT_AMT, SUM(TOT_AMT) AS TOT_AMT
+	           FROM TBH_PRDT_RCPT
+	          WHERE BUY_DT BETWEEN DATE_FORMAT(#{buyStartDt},'%Y%m%d') AND  DATE_FORMAT(#{buyEndDt},'%Y%m%d')
+	            AND BUY_CONF_YN = 'N'
+	            AND ORD_QTY != 0
+	            AND WH_CD LIKE CONCAT('%',#{whCd},'%')
+	          GROUP BY WH_CD, BUY_CD, ORD_QTY, COST
+	        UNION ALL
+	         SELECT WH_CD, BUY_CD, PRDT_CD, COST,
+	                SUM(ORD_QTY)*-1 AS ORD_QTY, SUM(PURE_AMT)*-1 AS PURE_AMT, SUM(VAT_AMT)*-1 AS VAT_AMT, SUM(TOT_AMT)*-1 AS TOT_AMT
+	           FROM TBH_PRDT_ORD
+	          WHERE ORD_DT BETWEEN DATE_FORMAT(#{buyStartDt},'%Y%m%d') AND  DATE_FORMAT(#{buyEndDt},'%Y%m%d')
+	            AND ORD_QTY != 0
+	            AND WH_CD LIKE CONCAT('%',#{whCd},'%')
+	          GROUP BY WH_CD, BUY_CD, PRDT_CD, COST
+	        ) A
+	        LEFT OUTER JOIN TFM_WH_MST E
+	            ON E.WH_CD = A.WH_CD
+	        , TFM_BUY_MST B, TFM_PRDT_MST C
+	WHERE	A.BUY_CD = B.BUY_CD
+	AND		A.PRDT_CD = C.PRDT_CD
+	AND		A.BUY_CD LIKE CONCAT('%',#{buyCd},'%')
+	AND		C.PRDT_CD LIKE CONCAT('%',#{prdtCd},'%')
+	<if test='prdtNm != null and prdtNm != ""'>	<!-- 품목명 --> 
+	AND C.PRDT_NM LIKE CONCAT('%',#{prdtNm},'%')
+   </if>
+  	<if test='lCd != null and lCd != ""'>	<!-- 대분류  --> 
+	AND C.L_CD LIKE CONCAT('%',#{lCd},'%')
+   </if>
+	<if test='mCd != null and mCd != ""'>	<!-- 중분류  --> 
+	AND C.M_CD LIKE CONCAT('%',#{mCd},'%')
+	</if>
+	GROUP BY B.BUY_NM
+			, A.PRDT_CD
+			, C.PRDT_NM
+			, C.PRDT_STD
+			, A.COST
+			, A.ORD_QTY
+			, C.ORD_UNIT
+			, C.STD_YN
+			, E.WH_NM
+	ORDER BY A.PRDT_CD
+	
+
+	</select>
+</mapper>

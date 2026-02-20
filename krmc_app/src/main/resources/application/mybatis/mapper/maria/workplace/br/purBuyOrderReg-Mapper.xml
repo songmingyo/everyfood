@@ -1,0 +1,853 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.br.service.impl.BuyOrderRegMapper">
+
+	
+	<!-- 매입 발주 대상 품목 조회 -->
+	<select id="selectBuyOrderRegNotOrdList" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo" resultType="com.doppio.workplace.br.service.BuyOrderRegVo">
+	/*BuyOrderRegMapper.selectBuyOrderRegNotOrdList*/	
+		SELECT IFNULL(TPO.BUY_SLIP_NO,'') AS BUY_SLIP_NO
+			   , IFNULL(TPO.BUY_SEQ, 0) AS BUY_SEQ
+		       , #{ordDt} AS ORD_DT
+			   , TPM.PRDT_CD
+			   , TPM.BUY_CD
+			   , TPM.LACK_NO_1
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TPM.QTY_BOX
+			   , TPM.STD_YN
+			   , TPM.VAT_YN
+   		       
+			   , TCD.DTL_NM AS ORD_UNIT
+			   , TBR.ORD_NOTE
+               
+               , IFNULL(B.PREV_SALES_QTY,0) AS PREV_SALES_QTY
+               , IFNULL(B.THIS_SALES_QTY,0) AS CUR_SALES_QTY
+               , IFNULL(B.WEEK_SALES_QTY,0) AS WEEK_SALES_QTY               
+               , IFNULL(A.HA_STK_QTY,0) AS HA_STK_QTY
+   		       , IFNULL(A.YEO_STK_QTY,0) AS YEO_STK_QTY
+   		       , ROUND(CASE WHEN IFNULL(B.PREV_SALES_QTY,0)=0 THEN 0 ELSE IFNULL(A.STK_QTY,0) / IFNULL(B.PREV_SALES_QTY,0) * 30 END,0) AS STK_DAY
+   		       
+   		       , IFNULL(TPO.BOX_QTY,'') AS BOX_QTY
+   		       , IFNULL(TPO.ORD_QTY,0) AS ORD_QTY
+   		       , IFNULL(TPO.ORD_QTY,0) AS ORD_QTY_ORG
+   		       
+   		       , #{buyDt} AS BUY_DT
+   		       
+   		       , IFNULL(TPM.COST,0) AS COST
+			   , IFNULL(TPO.PURE_AMT,0) AS PURE_AMT
+			   , IFNULL(TPO.VAT_AMT,0) AS VAT_AMT
+			   , IFNULL(TPO.TOT_AMT,0) AS TOT_AMT
+   		       
+   		       , TBM.BUY_NM
+   		                      
+               , CASE WHEN TPO.BUY_SLIP_NO IS NULL THEN 'I' ELSE 'U' END AS GRID_FLAG
+               
+		  FROM KRMC.TFM_PRDT_MST AS TPM
+		  	   LEFT OUTER JOIN TBH_PRDT_ORD AS TPO
+		  	       ON TPO.PRDT_CD = TPM.PRDT_CD
+		  	       AND TPO.BUY_CD = TPM.BUY_CD
+		  	       <if test='ordDt != null and ordDt != ""'>		<!-- 발주일자  --> 
+						AND TPO.ORD_DT = #{ordDt}
+					</if>
+					<if test='buyCd != null and buyCd != ""'>		<!-- 매입처코드  --> 
+						AND TPO.BUY_CD = #{buyCd}
+					</if>
+					<if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+						AND TPO.PRDT_CD = #{prdtCd}
+					</if>
+					<if test='buyDt != null and buyDt != ""'>		<!-- 입고일자  --> 
+						AND TPO.BUY_DT = #{buyDt}
+					</if> 
+			   LEFT OUTER JOIN KRMC.TFM_BUY_MST AS TBM
+			       ON TBM.BUY_CD = TPM.BUY_CD
+			       		           
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = TPM.ORD_UNIT
+		           AND TCD.COM_CD = 'M006'
+		           
+		       LEFT OUTER JOIN KRMC.TBM_BUY_REMARKS AS TBR
+		           ON TBR.BUY_CD = TPM.BUY_CD
+		           
+		       LEFT OUTER JOIN
+		           (SELECT A.PRDT_CD
+		                   , SUM(CASE WHEN A.WH_CD='10001' THEN A.STK_QTY END) AS HA_STK_QTY
+		                   , SUM(CASE WHEN A.WH_CD='10002' THEN A.STK_QTY END) AS YEO_STK_QTY
+		                   , SUM(A.STK_QTY) AS STK_QTY
+				      FROM V_WH_PRDT_STK_NEW AS A
+				     <where>
+				       <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+				         AND PRDT_CD = #{prdtCd}
+			           </if>
+				     </where>
+				     GROUP BY A.PRDT_CD
+		           ) AS A
+		           ON A.PRDT_CD = TPM.PRDT_CD
+		           
+		       LEFT OUTER JOIN
+		           (SELECT A.PRDT_CD
+		                   <![CDATA[
+		                   , SUM(CASE WHEN A.SALES_DT <= DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 1 MONTH), '%Y%m%d') THEN A.SALES_QTY END) AS PREV_SALES_QTY
+		                   , SUM(CASE WHEN A.SALES_DT >= CONCAT(DATE_FORMAT(NOW(), '%Y%m'),'01') THEN A.SALES_QTY END) AS THIS_SALES_QTY
+		                   , SUM(CASE WHEN A.SALES_DT BETWEEN DATE_FORMAT(NOW() - INTERVAL 6 DAY, '%Y%m%d') AND DATE_FORMAT(NOW() - INTERVAL 0 DAY, '%Y%m%d') THEN SALES_QTY END) AS WEEK_SALES_QTY
+		                   ]]>
+		              FROM (SELECT SALES_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(SALES_QTY) AS SALES_QTY
+				              FROM TSH_SALES_DLV
+				             WHERE SALES_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 0 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY SALES_DT, PRDT_CD
+				           UNION ALL
+				            SELECT RTN_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(RTN_QTY)*-1 AS SALES_QTY
+				              FROM TSH_SALES_RETURN
+				             WHERE RTN_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 0 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY RTN_DT, PRDT_CD
+				           UNION ALL
+				            SELECT FREE_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(FREE_QTY) AS SALES_QTY
+				              FROM TSH_SALES_FREE
+				             WHERE FREE_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 0 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY FREE_DT, PRDT_CD
+					       ) AS A
+					 GROUP BY A.PRDT_CD		           
+		           ) AS B
+		           ON B.PRDT_CD = TPM.PRDT_CD
+		 <where>
+			 <if test='prdtCd != null and prdtCd != ""'>	<!-- 품목코드  --> 
+			     AND TPM.PRDT_CD = #{prdtCd}
+			 </if>
+			 <if test='buyCd != null and buyCd != ""'>		<!-- 매입처코드  --> 
+			     AND TPM.BUY_CD = #{buyCd}
+			 </if>
+			  <if test='useYn != null and useYn != ""'>		<!-- 사용여부  --> 
+			     AND TPM.USE_YN = #{useYn}
+			 </if>
+		 </where>
+		 ORDER BY TPO.BUY_SLIP_NO DESC, TPO.BUY_SEQ
+	</select>
+	
+	<!-- 매입 발주 기 입력 조회 -->
+	<select id="selectBuyOrderRegOrdList" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo" resultType="com.doppio.workplace.br.service.BuyOrderRegVo">
+	/*BuyOrderRegMapper.selectBuyOrderRegOrdList*/	
+		SELECT IFNULL(TPO.BUY_SLIP_NO,'') AS BUY_SLIP_NO
+			   , IFNULL(TPO.BUY_SEQ, 0) AS BUY_SEQ
+			   , TPO.ORD_DT
+			   , TPM.PRDT_CD
+			   , TPM.BUY_CD
+			   , TPM.LACK_NO_1
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TPM.QTY_BOX
+			   , TPM.STD_YN
+			   , TPM.VAT_YN
+			   
+			   , TCD.DTL_NM AS ORD_UNIT			   
+			   , TBR.ORD_NOTE
+               
+               , IFNULL(B.PREV_SALES_QTY,0) AS PREV_SALES_QTY
+               , IFNULL(B.THIS_SALES_QTY,0) AS CUR_SALES_QTY
+               , IFNULL(B.WEEK_SALES_QTY,0) AS WEEK_SALES_QTY               
+               , IFNULL(A.HA_STK_QTY,0) AS HA_STK_QTY
+   		       , IFNULL(A.YEO_STK_QTY,0) AS YEO_STK_QTY	       
+   		       , ROUND(CASE WHEN IFNULL(B.PREV_SALES_QTY,0)=0 THEN 0 ELSE IFNULL(A.STK_QTY,0) / IFNULL(B.PREV_SALES_QTY,0) * 30 END,0) AS STK_DAY
+   		       
+   		       , IFNULL(TPO.BOX_QTY,'') AS BOX_QTY
+   		       , IFNULL(TPO.ORD_QTY,0) AS ORD_QTY
+   		       , IFNULL(TPO.ORD_QTY,0) AS ORD_QTY_ORG
+   		       
+   		       , TPO.BUY_DT
+   		       
+   		       , IFNULL(TPM.COST,0) AS COST
+			   , IFNULL(TPO.PURE_AMT,0) AS PURE_AMT
+			   , IFNULL(TPO.VAT_AMT,0) AS VAT_AMT
+			   , IFNULL(TPO.TOT_AMT,0) AS TOT_AMT
+			   
+			   , TBM.BUY_NM
+   		          		       
+   		       , CASE WHEN TPO.BUY_SLIP_NO IS NULL THEN 'I' ELSE 'U' END AS GRID_FLAG
+   		       
+		  FROM KRMC.TBH_PRDT_ORD AS TPO
+		  	   LEFT OUTER JOIN TFM_PRDT_MST AS TPM
+		  	       ON TPM.PRDT_CD = TPO.PRDT_CD
+		  	       AND TPM.BUY_CD = TPO.BUY_CD
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = TPM.ORD_UNIT
+		           AND TCD.COM_CD = 'M006'
+		       LEFT OUTER JOIN KRMC.TBM_BUY_REMARKS AS TBR
+		           ON TBR.BUY_CD = TPO.BUY_CD
+		       LEFT OUTER JOIN KRMC.TFM_BUY_MST AS TBM
+			       ON TBM.BUY_CD = TPO.BUY_CD
+		           
+		       LEFT OUTER JOIN
+		           (SELECT A.PRDT_CD
+		                   , SUM(CASE WHEN A.WH_CD='10001' THEN A.STK_QTY END) AS HA_STK_QTY
+		                   , SUM(CASE WHEN A.WH_CD='10002' THEN A.STK_QTY END) AS YEO_STK_QTY
+		                   , SUM(A.STK_QTY) AS STK_QTY
+				      FROM V_WH_PRDT_STK_NEW AS A
+				     <where>
+				       <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+				         AND PRDT_CD = #{prdtCd}
+			           </if>
+				     </where>
+				     GROUP BY A.PRDT_CD
+		           ) AS A
+		           ON A.PRDT_CD = TPO.PRDT_CD
+		       LEFT OUTER JOIN
+		           (SELECT A.PRDT_CD
+		                   <![CDATA[
+		                   , SUM(CASE WHEN A.SALES_DT <= DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 1 MONTH), '%Y%m%d') THEN A.SALES_QTY END) AS PREV_SALES_QTY
+		                   , SUM(CASE WHEN A.SALES_DT >= CONCAT(DATE_FORMAT(NOW(), '%Y%m'),'01') THEN A.SALES_QTY END) AS THIS_SALES_QTY
+		                   , SUM(CASE WHEN SALES_DT BETWEEN DATE_FORMAT(NOW() - INTERVAL 6 DAY, '%Y%m%d') AND DATE_FORMAT(NOW() - INTERVAL 0 DAY, '%Y%m%d') THEN SALES_QTY END) AS WEEK_SALES_QTY
+		                   ]]>
+		              FROM (SELECT SALES_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(SALES_QTY) AS SALES_QTY
+				              FROM TSH_SALES_DLV
+				             WHERE SALES_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 1 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY SALES_DT, PRDT_CD
+				           UNION ALL
+				            SELECT RTN_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(RTN_QTY) AS SALES_QTY
+				              FROM TSH_SALES_RETURN
+				             WHERE RTN_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 1 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY RTN_DT, PRDT_CD
+				           UNION ALL
+				            SELECT FREE_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(FREE_QTY) AS SALES_QTY
+				              FROM TSH_SALES_FREE
+				             WHERE FREE_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 1 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY FREE_DT, PRDT_CD
+					       ) AS A
+					 GROUP BY A.PRDT_CD		           
+		           ) AS B
+		           ON B.PRDT_CD = TPO.PRDT_CD
+                   
+		 WHERE TPO.ORD_DT = #{ordDt}
+	  	   AND TPO.BUY_DT = #{buyDt}  
+		 <if test='buyCd != null and buyCd != ""'>		<!-- 매입처코드  --> 
+		   AND TPO.BUY_CD = #{buyCd}
+		 </if>
+		 <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+		   AND TPO.PRDT_CD = #{prdtCd}
+		 </if>
+		   AND TPO.USE_YN = 'Y'
+		   AND TPO.ORD_QTY != 0
+		 ORDER BY TPO.BUY_SLIP_NO DESC, TPO.BUY_SEQ
+	</select>
+	
+	
+	<!-- 매입 발주 단일 품목 조회 -->
+	<select id="selectBuyOrderRegPrdtAddList" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo" resultType="com.doppio.workplace.br.service.BuyOrderRegVo">
+	/*BuyOrderRegMapper.selectBuyOrderRegPrdtAddList*/	
+		SELECT IFNULL(TPO.BUY_SLIP_NO,'') AS BUY_SLIP_NO
+		       , IFNULL(TPO.BUY_SEQ, 0) AS BUY_SEQ
+		       , #{ordDt} AS ORD_DT
+			   , TPM.PRDT_CD
+			   , TPM.BUY_CD
+			   , TPM.LACK_NO_1
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TPM.QTY_BOX
+			   , TPM.STD_YN
+   		       
+			   , TCD.DTL_NM AS ORD_UNIT
+			   , TBR.ORD_NOTE
+               
+               , IFNULL(B.PREV_SALES_QTY,0) AS PREV_SALES_QTY
+               , IFNULL(B.THIS_SALES_QTY,0) AS CUR_SALES_QTY
+               , IFNULL(B.WEEK_SALES_QTY,0) AS WEEK_SALES_QTY               
+               , IFNULL(A.HA_STK_QTY,0) AS HA_STK_QTY
+   		       , IFNULL(A.YEO_STK_QTY,0) AS YEO_STK_QTY
+   		       , ROUND(CASE WHEN IFNULL(B.PREV_SALES_QTY,0)=0 THEN 0 ELSE IFNULL(A.STK_QTY,0) / IFNULL(B.PREV_SALES_QTY,0) * 30 END,0) AS STK_DAY
+   		       
+   		       , IFNULL(TPO.BOX_QTY,'') AS BOX_QTY
+   		       , IFNULL(TPO.ORD_QTY,0) AS ORD_QTY
+   		       , IFNULL(TPO.ORD_QTY,0) AS ORD_QTY_ORG
+   		       
+   		       , #{buyDt} AS BUY_DT
+   		       
+   		       , IFNULL(TPM.COST,0) AS COST
+			   , IFNULL(TPO.PURE_AMT,0) AS PURE_AMT
+			   , IFNULL(TPO.VAT_AMT,0) AS VAT_AMT
+			   , IFNULL(TPO.TOT_AMT,0) AS TOT_AMT
+   		       
+   		       , TBM.BUY_NM
+   		                      
+               , CASE WHEN TPO.BUY_SLIP_NO IS NULL THEN 'I' ELSE 'U' END AS GRID_FLAG
+               
+		  FROM KRMC.TFM_PRDT_MST AS TPM
+		  	   LEFT OUTER JOIN TBH_PRDT_ORD AS TPO
+		  	       ON TPO.PRDT_CD = TPM.PRDT_CD
+		  	       AND TPO.BUY_CD = TPM.BUY_CD
+		  	       <if test='ordDt != null and ordDt != ""'>		<!-- 발주일자  --> 
+						AND TPO.ORD_DT = #{ordDt}
+					</if>
+					<if test='buyCd != null and buyCd != ""'>		<!-- 매입처코드  --> 
+						AND TPO.BUY_CD = #{buyCd}
+					</if>
+					<if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+						AND TPO.PRDT_CD = #{prdtCd}
+					</if>
+					<if test='buyDt != null and buyDt != ""'>		<!-- 입고일자  --> 
+						AND TPO.BUY_DT = #{buyDt}
+					</if> 
+			   LEFT OUTER JOIN KRMC.TFM_BUY_MST AS TBM
+			       ON TBM.BUY_CD = TPM.BUY_CD
+			       		           
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = TPM.ORD_UNIT
+		           AND TCD.COM_CD = 'M006'
+		           
+		       LEFT OUTER JOIN KRMC.TBM_BUY_REMARKS AS TBR
+		           ON TBR.BUY_CD = TPM.BUY_CD
+		       
+		       LEFT OUTER JOIN
+		           (SELECT A.PRDT_CD
+		                   , SUM(CASE WHEN A.WH_CD='10001' THEN A.STK_QTY END) AS HA_STK_QTY
+		                   , SUM(CASE WHEN A.WH_CD='10002' THEN A.STK_QTY END) AS YEO_STK_QTY
+		                   , SUM(A.STK_QTY) AS STK_QTY
+				      FROM V_WH_PRDT_STK_NEW AS A
+				     <where>
+				       <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+				         AND PRDT_CD = #{prdtCd}
+			           </if>
+				     </where>
+				     GROUP BY A.PRDT_CD
+		           ) AS A
+		           ON A.PRDT_CD = TPM.PRDT_CD
+		       LEFT OUTER JOIN
+		           (SELECT A.PRDT_CD
+		                   <![CDATA[
+		                   , SUM(CASE WHEN A.SALES_DT <= DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 1 MONTH), '%Y%m%d') THEN A.SALES_QTY END) AS PREV_SALES_QTY
+		                   , SUM(CASE WHEN A.SALES_DT >= CONCAT(DATE_FORMAT(NOW(), '%Y%m'),'01') THEN A.SALES_QTY END) AS THIS_SALES_QTY
+		                   , SUM(CASE WHEN SALES_DT BETWEEN DATE_FORMAT(NOW() - INTERVAL 6 DAY, '%Y%m%d') AND DATE_FORMAT(NOW() - INTERVAL 0 DAY, '%Y%m%d') THEN SALES_QTY END) AS WEEK_SALES_QTY
+		                   ]]>
+		              FROM (SELECT SALES_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(SALES_QTY) AS SALES_QTY
+				              FROM TSH_SALES_DLV
+				             WHERE SALES_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 0 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY SALES_DT, PRDT_CD
+				           UNION ALL
+				            SELECT RTN_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(RTN_QTY) AS SALES_QTY
+				              FROM TSH_SALES_RETURN
+				             WHERE RTN_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 0 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY RTN_DT, PRDT_CD
+				           UNION ALL
+				            SELECT FREE_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(FREE_QTY) AS SALES_QTY
+				              FROM TSH_SALES_FREE
+				             WHERE FREE_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 0 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY FREE_DT, PRDT_CD
+					       ) AS A
+					 GROUP BY A.PRDT_CD		           
+		           ) AS B
+		           ON B.PRDT_CD = TPM.PRDT_CD
+		 <where>
+			 <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+			     AND TPM.PRDT_CD = #{prdtCd}
+			 </if>
+			 <if test='buyCd != null and buyCd != ""'>		<!-- 매입처코드  --> 
+			     AND TPM.BUY_CD = #{buyCd}
+			 </if>
+		 </where>
+		 ORDER BY TPO.BUY_SLIP_NO DESC, TPM.PRDT_CD
+	</select>
+	
+	<!-- 매입 발주 발주서 출력 건수 -->
+	<select id="selectBuyOrderListPrintCnt" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo" resultType="int">
+	/*BuyOrderRegMapper.selectBuyOrderListPrintCnt*/	
+		SELECT COUNT(*) AS CNT
+		  FROM KRMC.TBH_PRDT_ORD AS TPO		  
+		 WHERE TPO.ORD_DT = #{searchOrdDt}
+		 <if test='searchBuyDt != null and searchBuyDt != ""'>		<!-- 입고일자  --> 
+	       AND TPO.BUY_DT = #{searchBuyDt}
+		 </if>
+		 <if test='buyCd != null and buyCd != ""'>		<!-- 매입처코드  --> 
+		   AND TPO.BUY_CD = #{buyCd}
+		 </if>
+		 <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+		   AND TPO.PRDT_CD = #{prdtCd}
+		 </if>		
+	</select>
+	
+
+	
+	
+	<!-- 매입 발주 대상 품목 엑셀 다운 -->
+	<select id="selectBuyOrdRegNotListExcelDown" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo" resultType="java.util.HashMap">
+	/*BuyOrderRegMapper.selectBuyOrdRegNotListExcelDown*/	
+		SELECT IFNULL(TPM.PRDT_CD, '')		AS PRDT_CD
+			   , IFNULL(TBM.BUY_NM, '')	AS BUY_NM
+			   , IFNULL(TPM.LACK_NO_1, '')	AS LACK_NO_1
+			   , IFNULL(TPM.PRDT_NM, '')	AS PRDT_NM 
+			   , IFNULL(TPM.PRDT_STD, '')	AS PRDT_STD
+			   , IFNULL(TCD.DTL_NM, '')	AS ORD_UNIT
+			   
+               , IFNULL(B.PREV_SALES_QTY,0) AS PREV_SALES_QTY
+               , IFNULL(B.THIS_SALES_QTY,0) AS CURR_SALES_QTY
+               , IFNULL(B.WEEK_SALES_QTY,0) AS WEEK_SALES_QTY               
+               , IFNULL(A.HA_STK_QTY,0) 	AS HA_STK_QTY
+   		       , IFNULL(A.YEO_STK_QTY,0) 	AS YEO_STK_QTY
+   		       , IFNULL(	ROUND(CASE WHEN IFNULL(B.PREV_SALES_QTY,0)=0 THEN 0 ELSE IFNULL(A.STK_QTY,0) / IFNULL(B.PREV_SALES_QTY,0) * 30 END,0), 0) AS STK_DAY
+   		       
+   		       , IFNULL(TPO.ORD_QTY,0) AS ORD_QTY
+   		       , IFNULL(TPO.BOX_QTY,0) AS BOX_QTY
+   		       
+   		       , IFNULL(TPO.BUY_DT, '')	AS BUY_DT
+   		       
+   		       , IFNULL(TPM.COST,0) 		AS COST
+			   , IFNULL(TPO.PURE_AMT,0) 	AS PURE_AMT
+			   , IFNULL(TPO.VAT_AMT,0) 		AS VAT_AMT
+			   , IFNULL(TPO.TOT_AMT,0) 		AS TOT_AMT
+               
+		  FROM KRMC.TFM_PRDT_MST AS TPM
+		  	   LEFT OUTER JOIN TBH_PRDT_ORD AS TPO
+		  	       ON TPO.PRDT_CD = TPM.PRDT_CD
+		  	       AND TPO.BUY_CD = TPM.BUY_CD
+		  	       <if test='ordDt != null and ordDt != ""'>		<!-- 발주일자  --> 
+						AND TPO.ORD_DT = REPLACE(#{ordDt}, '-', '')
+					</if>
+					<if test='buyCd != null and buyCd != ""'>		<!-- 매입처코드  --> 
+						AND TPO.BUY_CD = #{buyCd}
+					</if>
+					<if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+						AND TPO.PRDT_CD = #{prdtCd}
+					</if>
+					<if test='buyDt != null and buyDt != ""'>		<!-- 입고일자  --> 
+						AND TPO.BUY_DT = REPLACE(#{buyDt}, '-', '')
+					</if> 
+			   LEFT OUTER JOIN KRMC.TFM_BUY_MST AS TBM
+			       ON TBM.BUY_CD = TPM.BUY_CD
+			       		           
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = TPM.ORD_UNIT
+		           AND TCD.COM_CD = 'M006'
+		           
+		       LEFT OUTER JOIN KRMC.TBM_BUY_REMARKS AS TBR
+		           ON TBR.BUY_CD = TPM.BUY_CD
+		           
+		       LEFT OUTER JOIN
+		           (SELECT A.PRDT_CD
+		                   , SUM(CASE WHEN A.WH_CD='10001' THEN A.STK_QTY END) AS HA_STK_QTY
+		                   , SUM(CASE WHEN A.WH_CD='10002' THEN A.STK_QTY END) AS YEO_STK_QTY
+		                   , SUM(A.STK_QTY) AS STK_QTY
+				      FROM V_WH_PRDT_STK_NEW AS A
+				     <where>
+				       <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+				         AND PRDT_CD = #{prdtCd}
+			           </if>
+				     </where>
+				     GROUP BY A.PRDT_CD
+		           ) AS A
+		           ON A.PRDT_CD = TPM.PRDT_CD
+		       LEFT OUTER JOIN
+		           (SELECT A.PRDT_CD
+		                   <![CDATA[
+		                   , SUM(CASE WHEN A.SALES_DT <= DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 1 MONTH), '%Y%m%d') THEN A.SALES_QTY END) AS PREV_SALES_QTY
+		                   , SUM(CASE WHEN A.SALES_DT >= CONCAT(DATE_FORMAT(NOW(), '%Y%m'),'01') THEN A.SALES_QTY END) AS THIS_SALES_QTY
+		                   , SUM(CASE WHEN SALES_DT BETWEEN DATE_FORMAT(NOW() - INTERVAL 6 DAY, '%Y%m%d') AND DATE_FORMAT(NOW() - INTERVAL 0 DAY, '%Y%m%d') THEN SALES_QTY END) AS WEEK_SALES_QTY
+		                   ]]>
+		              FROM (SELECT SALES_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(SALES_QTY) AS SALES_QTY
+				              FROM TSH_SALES_DLV
+				             WHERE SALES_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 0 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY SALES_DT, PRDT_CD
+				           UNION ALL
+				            SELECT RTN_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(RTN_QTY) AS SALES_QTY
+				              FROM TSH_SALES_RETURN
+				             WHERE RTN_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 0 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY RTN_DT, PRDT_CD
+				           UNION ALL
+				            SELECT FREE_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(FREE_QTY) AS SALES_QTY
+				              FROM TSH_SALES_FREE
+				             WHERE FREE_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 0 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY FREE_DT, PRDT_CD
+					       ) AS A
+					 GROUP BY A.PRDT_CD		           
+		           ) AS B
+		           ON B.PRDT_CD = TPM.PRDT_CD
+		 <where>
+			 <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+			     AND TPM.PRDT_CD = #{prdtCd}
+			 </if>
+			 <if test='buyCd != null and buyCd != ""'>		<!-- 매입처코드  --> 
+			     AND TPM.BUY_CD = #{buyCd}
+			 </if>
+		 </where>
+		 ORDER BY TPO.BUY_SLIP_NO DESC, TPO.PRDT_CD
+	</select>
+	
+	
+	
+	<!-- 매입 발주 엑셀 다운로드 -->
+	<select id="selectBuyOrdRegListExcelDown" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo" resultType="java.util.HashMap">
+	/*BuyOrderRegMapper.selectBuyOrdRegListExcelDown*/	
+		SELECT TPM.PRDT_CD
+			   , TBM.BUY_NM
+			   , TPM.LACK_NO_1
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TCD.DTL_NM AS ORD_UNIT
+			   
+               , IFNULL(B.PREV_SALES_QTY,0) AS PREV_SALES_QTY
+               , IFNULL(B.THIS_SALES_QTY,0) AS CURR_SALES_QTY
+               , IFNULL(B.WEEK_SALES_QTY,0) AS WEEK_SALES_QTY               
+               , IFNULL(A.HA_STK_QTY,0) AS HA_STK_QTY
+   		       , IFNULL(A.YEO_STK_QTY,0) AS YEO_STK_QTY
+   		       , ROUND(CASE WHEN IFNULL(B.PREV_SALES_QTY,0)=0 THEN 0 ELSE IFNULL(A.STK_QTY,0) / IFNULL(B.PREV_SALES_QTY,0) * 30 END,0) AS STK_DAY
+   		       
+   		       , IFNULL(TPO.ORD_QTY,0) AS ORD_QTY
+   		       , IFNULL(TPO.BOX_QTY,'') AS BOX_QTY
+   		       
+   		       , TPO.BUY_DT
+   		       
+   		       , IFNULL(TPM.COST,0) AS COST
+			   , IFNULL(TPO.PURE_AMT,0) AS PURE_AMT
+			   , IFNULL(TPO.VAT_AMT,0) AS VAT_AMT
+			   , IFNULL(TPO.TOT_AMT,0) AS TOT_AMT
+			   
+		  FROM KRMC.TBH_PRDT_ORD AS TPO
+		  	   LEFT OUTER JOIN TFM_PRDT_MST AS TPM
+		  	       ON TPM.PRDT_CD = TPO.PRDT_CD
+		  	       AND TPM.BUY_CD = TPO.BUY_CD
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = TPM.ORD_UNIT
+		           AND TCD.COM_CD = 'M006'
+		       LEFT OUTER JOIN KRMC.TBM_BUY_REMARKS AS TBR
+		           ON TBR.BUY_CD = TPO.BUY_CD
+		       LEFT OUTER JOIN KRMC.TFM_BUY_MST AS TBM
+			       ON TBM.BUY_CD = TPO.BUY_CD
+		           
+		       LEFT OUTER JOIN
+		           (SELECT A.PRDT_CD
+		                   , SUM(CASE WHEN A.WH_CD='10001' THEN A.STK_QTY END) AS HA_STK_QTY
+		                   , SUM(CASE WHEN A.WH_CD='10002' THEN A.STK_QTY END) AS YEO_STK_QTY
+		                   , SUM(A.STK_QTY) AS STK_QTY
+				      FROM V_WH_PRDT_STK_NEW AS A
+				     <where>
+				       <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+				         AND PRDT_CD = #{prdtCd}
+			           </if>
+				     </where>
+				     GROUP BY A.PRDT_CD
+		           ) AS A
+		           ON A.PRDT_CD = TPO.PRDT_CD
+		       LEFT OUTER JOIN
+		           (SELECT A.PRDT_CD
+		                   <![CDATA[
+		                   , SUM(CASE WHEN A.SALES_DT <= DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 1 MONTH), '%Y%m%d') THEN A.SALES_QTY END) AS PREV_SALES_QTY
+		                   , SUM(CASE WHEN A.SALES_DT >= CONCAT(DATE_FORMAT(NOW(), '%Y%m'),'01') THEN A.SALES_QTY END) AS THIS_SALES_QTY
+		                   , SUM(CASE WHEN SALES_DT BETWEEN DATE_FORMAT(NOW() - INTERVAL 6 DAY, '%Y%m%d') AND DATE_FORMAT(NOW() - INTERVAL 0 DAY, '%Y%m%d') THEN SALES_QTY END) AS WEEK_SALES_QTY
+		                   ]]>
+		              FROM (SELECT SALES_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(SALES_QTY) AS SALES_QTY
+				              FROM TSH_SALES_DLV
+				             WHERE SALES_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 1 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY SALES_DT, PRDT_CD
+				           UNION ALL
+				            SELECT RTN_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(RTN_QTY) AS SALES_QTY
+				              FROM TSH_SALES_RETURN
+				             WHERE RTN_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 1 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY RTN_DT, PRDT_CD
+				           UNION ALL
+				            SELECT FREE_DT AS SALES_DT
+		                           , PRDT_CD
+				                   , SUM(FREE_QTY) AS SALES_QTY
+				              FROM TSH_SALES_FREE
+				             WHERE FREE_DT BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 2 MONTH) + INTERVAL 1 DAY,'%Y%m%d') AND DATE_FORMAT(NOW() + INTERVAL 1 DAY, '%Y%m%d')
+				             <if test='prdtCd != null and prdtCd != ""'>		<!-- 품목코드  --> 
+							     AND PRDT_CD = #{prdtCd}
+					         </if>
+					         GROUP BY FREE_DT, PRDT_CD
+					       ) AS A
+					 GROUP BY A.PRDT_CD		           
+		           ) AS B
+		           ON B.PRDT_CD = TPO.PRDT_CD
+        WHERE TPO.ORD_DT = #{searchOrdDt}
+		  AND TPO.BUY_DT = #{searchBuyDt}
+		  AND TPO.ORD_QTY != 0 
+		<if test='buyCd != null and buyCd != ""'> 
+			AND TPO.BUY_CD = #{buyCd}
+		</if>
+		<if test='prdtCd != null and prdtCd != ""'> 
+			AND TPO.PRDT_CD = #{prdtCd}
+		</if>
+		 ORDER BY TPO.PRDT_CD
+	</select>
+	
+	
+		<!-- 매입 발주 발주서 출력 조회 -->
+	<select id="selectBuyOrderRegOrdPrtList" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo" resultType="com.doppio.workplace.br.service.BuyOrderRegVo">
+	/*BuyOrderRegMapper.selectBuyOrderRegOrdPrtList*/	
+		SELECT TBM.BUY_NM
+		       , TBM.TEL_NO
+		       , TBM.FAX_NO
+		       , TPO.ORD_DT
+		       , TPO.BUY_DT
+		       , CONCAT(SALES_PR_NM, ' / ', SALES_PR_HP) AS SALES_PR_HP
+		       , TBM.SETL_CON
+		       
+			   , TPO.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TCD_1.DTL_NM AS ORD_UNIT
+			   , TCD_2.DTL_NM AS COMPANY_NM
+			   , TCD_3.DTL_NM AS COMPANY_ADDR
+			   , TCD_4.DTL_NM AS COMPANY_ADDR_SUB
+			   , TCD_5.DTL_NM AS COMPANY_TEL_NO
+			   , TCD_6.DTL_NM AS COMPANY_FAX_NO
+			   
+			   , TCD_7.DTL_NM AS BUY_COMMENT1
+			   , TCD_8.DTL_NM AS BUY_COMMENT2
+			   , TCD_9.DTL_NM AS BUY_COMMENT3
+			   
+   		       , IFNULL(TPO.BOX_QTY,'') AS BOX_QTY
+   		       , IFNULL(TPO.ORD_QTY,0) AS PRT_ORD_QTY
+   		       , IFNULL(TPM.COST,0) AS PRT_COST
+			   , IFNULL(TPO.PURE_AMT,0) AS PRT_PURE_AMT
+			   , IFNULL(TPO.VAT_AMT,0) AS PRT_VAT_AMT
+			   , IFNULL(TPO.TOT_AMT,0) AS PRT_TOT_AMT
+			   
+			   , ROW_NUMBER() OVER(ORDER BY TPO.PRDT_CD) AS ROW_NUM
+			   , SUM(PURE_AMT) OVER(PARTITION BY 1) AS PRT_PURE_SUM_AMT
+			   , SUM(VAT_AMT) OVER(PARTITION BY 1) AS PRT_VAT_SUM_AMT
+			   , SUM(TOT_AMT) OVER(PARTITION BY 1) AS PRT_TOT_SUM_AMT
+			   
+			   , ROW_NUMBER() OVER (PARTITION BY 1) AS COLUMN_CNT
+			   
+		  FROM KRMC.TBH_PRDT_ORD AS TPO
+		  
+		  	   LEFT OUTER JOIN TFM_PRDT_MST AS TPM
+		  	       ON TPM.PRDT_CD = TPO.PRDT_CD
+		  	       AND TPM.BUY_CD = TPO.BUY_CD
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_1
+		           ON TCD_1.DTL_CD = TPM.ORD_UNIT
+		           AND TCD_1.COM_CD = 'M006'
+		       LEFT OUTER JOIN KRMC.TFM_BUY_MST AS TBM
+			       ON TBM.BUY_CD = TPO.BUY_CD
+			   LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_2
+		           ON TCD_2.COM_CD = 'C001'
+		           AND TCD_2.DTL_CD = '10'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_3
+		           ON TCD_3.COM_CD = 'C001'
+		           AND TCD_3.DTL_CD = '11'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_4
+		           ON TCD_4.COM_CD = 'C001'
+		           AND TCD_4.DTL_CD = '12'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_5
+		           ON TCD_5.COM_CD = 'C001'
+		           AND TCD_5.DTL_CD = '13'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_6
+		           ON TCD_6.COM_CD = 'C001'
+		           AND TCD_6.DTL_CD = '14'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_7
+		           ON TCD_7.COM_CD = 'C002'
+		           AND TCD_7.DTL_CD = '10'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_8
+		           ON TCD_8.COM_CD = 'C002'
+		           AND TCD_8.DTL_CD = '11'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_9
+		           ON TCD_9.COM_CD = 'C002'
+		           AND TCD_9.DTL_CD = '12'
+		WHERE TPO.ORD_DT = #{searchOrdDt} 
+  		  AND TPO.BUY_DT = #{searchBuyDt}
+  		  AND IFNULL(TPO.ORD_QTY,0) != 0 
+		<if test='buyCd != null and buyCd != ""'> 
+			AND TPO.BUY_CD = #{buyCd}
+		</if>
+		<if test='prdtCd != null and prdtCd != ""'> 
+			AND TPO.PRDT_CD = #{prdtCd}
+		</if>
+	</select>
+	
+	
+	
+	<!-- 매입처 발주 신규 전표번호 저장 -->
+	<insert id="insertBuyOrderSlipNo" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo">
+	/*BuyOrderRegMapper.insertBuyOrderSlipNo*/
+	<selectKey keyProperty="buySlipNo" resultType="String" order="BEFORE">
+	    SELECT CASE WHEN A.BUY_SLIP_NO IS NOT NULL
+	           THEN A.BUY_SLIP_NO
+	           ELSE (SELECT CONCAT(#{ordDt}, '-', LPAD(CAST(RIGHT(IFNULL(MAX(BUY_SLIP_NO),'0000'),4) AS DECIMAL)+1, 4, 0)) AS BUY_SLIP_NO
+                       FROM KRMC.TBH_DAY_SLIPNO
+                      WHERE BUY_SLIP_DT = #{ordDt}	                  
+	                )
+	           END BUY_SLIP_NO
+	      FROM (SELECT MAX(BUY_SLIP_NO) AS BUY_SLIP_NO
+	              FROM KRMC.TBH_PRDT_ORD
+	             WHERE ORD_DT = #{ordDt}
+	           ) AS A
+	</selectKey>
+	    INSERT IGNORE INTO KRMC.TBH_DAY_SLIPNO
+            (BUY_SLIP_DT, BUY_SLIP_NO
+             , REG_DT)
+        VALUES
+            (SUBSTRING(#{buySlipNo},1,8), #{buySlipNo}
+			 , NOW()
+            )
+	</insert>
+
+	<!-- 매입처 발주 신규 저장 -->
+	<insert id="insertBuyOrderRegData" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo">
+	/*BuyOrderRegMapper.insertBuyOrderRegData*/
+	<selectKey keyProperty="buySeq" resultType="String" order="BEFORE">
+		SELECT IFNULL(MAX(BUY_SEQ),0)+1 AS BUY_SEQ
+          FROM KRMC.TBH_PRDT_RCPT
+         WHERE BUY_SLIP_NO = #{buySlipNo}
+	</selectKey>
+	    INSERT INTO KRMC.TBH_PRDT_ORD
+            (BUY_SLIP_NO, BUY_SEQ, ORD_DT, BUY_CD, PRDT_CD, BUY_DT, WH_CD
+             , COST, BOX_QTY, ORD_QTY, PURE_AMT, VAT_AMT, TOT_AMT
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT)
+        VALUES
+            (#{buySlipNo}, #{buySeq}, #{ordDt}, #{buyCd}, #{prdtCd}, #{buyDt}, '10001'
+             , #{cost}, #{boxQty}, #{ordQty}, #{pureAmt}, #{vatAmt}, #{totAmt}
+			 , 'Y', #{workId}, NOW(), #{workId}, NOW()
+            )
+	</insert>
+	
+
+	<!-- 매입처 발주 수정 -->
+	<update id="updateBuyOrderRegData" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo">
+	/*BuyOrderRegMapper.updateBuyOrderRegData*/
+        UPDATE KRMC.TBH_PRDT_ORD
+           SET BUY_DT		= #{buyDt}
+               , BOX_QTY	= #{boxQty}
+           	   , ORD_QTY   	= #{ordQty}
+               , PURE_AMT   = #{pureAmt}
+               , VAT_AMT    = #{vatAmt}
+               , TOT_AMT    = #{totAmt}
+               , MOD_ID     = #{workId}
+               , MOD_DT     = NOW()
+         WHERE BUY_SLIP_NO = #{buySlipNo}
+           AND BUY_SEQ = #{buySeq}
+	</update>
+	
+	<!-- 매입처 입고 신규 저장 -->
+	<insert id="insertBuyRcptRegData" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo">
+	/*BuyOrderRegMapper.insertBuyRcptRegData*/
+	    INSERT INTO KRMC.TBH_PRDT_RCPT
+            (BUY_SLIP_NO, BUY_SEQ, BUY_DT, BUY_CD, PRDT_CD, WH_CD, ORD_DT
+             , COST, BOX_QTY, ORD_QTY, BUY_QTY, PURE_AMT, VAT_AMT, TOT_AMT, TERM_VAL, BUY_CONF_YN, REMARKS
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT
+            )
+        VALUES
+        	(#{buySlipNo}, #{buySeq}, #{buyDt}, #{buyCd}, #{prdtCd}, '10001', #{ordDt}
+             , #{cost}, #{boxQty}, #{ordQty}, #{ordQty}, #{pureAmt}, #{vatAmt}, #{totAmt}, '', 'N', ''
+			 , 'Y', #{workId}, NOW(), #{workId}, NOW()
+            )
+	</insert>
+	
+
+	<!-- 매입처 입고 수정 -->
+	<update id="updateBuyRcptRegData" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo">
+	/*BuyOrderRegMapper.updateBuyRcptRegData*/
+        UPDATE KRMC.TBH_PRDT_RCPT
+           SET BOX_QTY		 = #{boxQty}
+           	   , ORD_QTY   	 = #{ordQty}
+           	   , BUY_QTY   	 = #{ordQty}
+               , PURE_AMT    = #{pureAmt}
+               , VAT_AMT     = #{vatAmt}
+               , TOT_AMT     = #{totAmt}
+               , TERM_VAL    = ''
+               , BUY_CONF_YN = 'N'
+               , REMARKS     = ''
+               , MOD_ID      = #{workId}
+               , MOD_DT      = NOW()
+         WHERE BUY_SLIP_NO = #{buySlipNo}
+           AND BUY_SEQ     = #{buySeq}
+	</update>
+	
+	<!-- 매입처 발주 노트 count -->
+	<select id="selectBuyOrderRegNoteCount" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo" resultType="int">
+	/*BuyOrderRegMapper.selectBuyOrderRegNoteCount*/
+		SELECT COUNT(*)
+          FROM TBM_BUY_REMARKS
+         WHERE BUY_CD = #{buyCd}
+	</select>
+	
+	<!-- 매입처 발주 노트 저장 -->
+	<insert id="insertBuyOrderRegNote" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo">
+	/*BuyOrderRegMapper.insertBuyOrderRegNote*/
+	    INSERT INTO KRMC.TBM_BUY_REMARKS
+            (BUY_CD, ORD_NOTE, REMARKS_1, REMARKS_2
+             , REG_ID, REG_DT, MOD_ID, MOD_DT)
+        VALUES
+            (#{buyCd}, #{ordNote}, '', ''
+			 , #{workId}, NOW(), #{workId}, NOW()
+            )
+	</insert>
+	
+
+	<!-- 매입처 노트 수정 -->
+	<update id="updateBuyOrderRegNote" parameterType="com.doppio.workplace.br.service.BuyOrderRegVo">
+	/*BuyOrderRegMapper.updateBuyOrderRegNote*/
+        UPDATE KRMC.TBM_BUY_REMARKS
+           SET ORD_NOTE   	= #{ordNote}
+               , MOD_ID     = #{workId}
+               , MOD_DT     = NOW()
+         WHERE BUY_CD =  #{buyCd}
+	</update>
+	
+	
+</mapper>
+

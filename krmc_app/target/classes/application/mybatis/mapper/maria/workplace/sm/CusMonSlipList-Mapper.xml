@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusMonSlipListMapper">
+
+	<!-- 매출처월별출고현황 조회 -->
+	<select id="selectCusMonSlipList" parameterType="com.doppio.workplace.sm.service.CusMonSlipListVo" resultType="com.doppio.workplace.sm.service.CusMonSlipListVo">
+	/*CusPeriodListMapper.selectCusMonSlipList*/	
+        SELECT
+               TCD.DTL_NM AS SALES_CLASS_NM
+               , TSAI.SALES_NM
+               , TWM.WH_NM
+               , SUM(CASE WHEN TSPM.VAT_YN='1' THEN A.PURE_AMT END) AS PURE_AMT
+               , SUM(CASE WHEN TSPM.VAT_YN='1' THEN A.VAT_AMT END) AS VAT_AMT
+               , SUM(CASE WHEN TSPM.VAT_YN='1' THEN A.TOT_AMT END) AS PURE_TOT_AMT
+               , SUM(CASE WHEN TSPM.VAT_YN='2' THEN A.PURE_AMT END) as FREE_AMT
+               , SUM(A.TOT_AMT) AS TOT_AMT
+               
+          FROM (SELECT WH_CD
+                       , SALES_CD
+                       , PRDT_CD
+                       , SUM(PURE_AMT) AS PURE_AMT
+                       , SUM(VAT_AMT) AS VAT_AMT
+                       , SUM(TOT_AMT) AS TOT_AMT
+                  FROM TSH_SALES_DLV
+                 WHERE SALES_DT like CONCAT(#{yearMn},'%')
+                 <if test='whCd != null and whCd != ""'> 
+				   AND WH_CD = #{whCd}
+   			     </if>
+   			     <if test='salesCd != null and salesCd != ""'> 
+				   AND SALES_CD = #{salesCd}
+   			     </if>
+                 GROUP BY WH_CD, SALES_CD, PRDT_CD
+               UNION ALL
+                SELECT WH_CD
+                       , SALES_CD
+                       , PRDT_CD
+                       , SUM(PURE_AMT)*-1 AS PURE_AMT
+                       , SUM(VAT_AMT)*-1 AS VAT_AMT
+                       , SUM(TOT_AMT)*-1 AS TOT_AMT
+                  FROM TSH_SALES_RETURN
+                 WHERE RTN_DT like CONCAT(#{yearMn},'%')
+                 <if test='whCd != null and whCd != ""'> 
+				   AND WH_CD = #{whCd}
+   			     </if>
+   			     <if test='salesCd != null and salesCd != ""'> 
+				   AND SALES_CD = #{salesCd}
+   			     </if>
+                 GROUP BY WH_CD, SALES_CD, PRDT_CD
+               ) AS A
+               
+               LEFT OUTER JOIN 
+                   (SELECT SALES_CD
+                           , PRDT_CD
+                           , VAT_YN
+                           , MAX(START_DT) AS START_DT
+                      FROM TSM_SALES_PRDT_MST
+                     GROUP BY SALES_CD, PRDT_CD, VAT_YN
+                   ) AS TSPM
+                   ON TSPM.PRDT_CD = A.PRDT_CD
+                  AND TSPM.SALES_CD = A.SALES_CD
+                  
+               LEFT OUTER JOIN TFM_WH_MST AS TWM
+                   ON TWM.WH_CD = A.WH_CD
+               
+               JOIN
+                   (SELECT CASE WHEN #{hqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                           , SALES_CD
+                      FROM V_SALES_HQ_CD
+                     WHERE HQ_CLASS = #{hqClass}
+                     <if test='salesCd != null and salesCd != ""'> 
+                       AND HQ_CD = #{salesCd}
+                     </if>
+                   ) AS VSHD
+                   ON VSHD.SALES_CD = A.SALES_CD
+               
+               JOIN TFM_SALES_ADD_INFO AS TSAI
+                   ON TSAI.SALES_CD = VSHD.HQ_CD
+                   
+               LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                   ON TCD.DTL_CD = TSAI.SALES_CLASS
+                  AND TCD.COM_CD = 'M013'
+               
+         <where> 
+           <if test='salesClass != null and salesClass != ""'> 
+		     AND TSAI.SALES_CLASS = #{salesClass}
+	       </if>
+         </where>
+          GROUP BY TCD.DTL_NM
+                   , TSAI.SALES_NM
+                   , TWM.WH_NM
+          ORDER BY TCD.DTL_NM
+
+	</select>
+
+
+	<!-- 매출처월별출고현황 엑셀 -->
+	<select id="selectCusMonSlipListExcelDown" parameterType="com.doppio.workplace.sm.service.CusMonSlipListVo" resultType="java.util.HashMap">
+	/*CusPeriodListMapper.selectCusMonSlipListExcelDown*/	
+        SELECT 	 IFNULL(TCD.DTL_NM, ' ') AS SALES_CLASS_NM
+               , IFNULL(TSAI.SALES_NM, ' ')
+               , IFNULL(TWM.WH_NM, ' ')
+               , IFNULL(	SUM(CASE WHEN TSPM.VAT_YN='1' THEN A.PURE_AMT END), 0) AS PURE_AMT
+               , IFNULL(	SUM(CASE WHEN TSPM.VAT_YN='1' THEN A.VAT_AMT END), 0) AS VAT_AMT
+               , IFNULL(	SUM(CASE WHEN TSPM.VAT_YN='1' THEN A.TOT_AMT END), 0) AS PURE_TOT_AMT
+               , IFNULL(	SUM(CASE WHEN TSPM.VAT_YN='2' THEN A.PURE_AMT END), 0) as FREE_AMT
+               , IFNULL(	SUM(A.TOT_AMT), 0) AS TOT_AMT
+          FROM (SELECT WH_CD
+                       , SALES_CD
+                       , PRDT_CD
+                       , SUM(PURE_AMT) AS PURE_AMT
+                       , SUM(VAT_AMT) AS VAT_AMT
+                       , SUM(TOT_AMT) AS TOT_AMT
+                  FROM TSH_SALES_DLV
+                 WHERE SALES_DT like CONCAT(REPLACE(#{yearMn},'-',''),'%')
+                 <if test='whCd != null and whCd != ""'> 
+				   AND WH_CD = #{whCd}
+   			     </if>
+   			     <if test='salesCd != null and salesCd != ""'> 
+				   AND SALES_CD = #{salesCd}
+   			     </if>
+                 GROUP BY WH_CD, SALES_CD, PRDT_CD
+               UNION ALL
+                SELECT WH_CD
+                       , SALES_CD
+                       , PRDT_CD
+                       , SUM(PURE_AMT)*-1 AS PURE_AMT
+                       , SUM(VAT_AMT)*-1 AS VAT_AMT
+                       , SUM(TOT_AMT)*-1 AS TOT_AMT
+                  FROM TSH_SALES_RETURN
+                 WHERE RTN_DT like CONCAT(REPLACE(#{yearMn},'-',''),'%')
+                 <if test='whCd != null and whCd != ""'> 
+				   AND WH_CD = #{whCd}
+   			     </if>
+   			     <if test='salesCd != null and salesCd != ""'> 
+				   AND SALES_CD = #{salesCd}
+   			     </if>
+                 GROUP BY WH_CD, SALES_CD, PRDT_CD
+               ) AS A
+               
+               LEFT OUTER JOIN 
+                   (SELECT SALES_CD
+                           , PRDT_CD
+                           , VAT_YN
+                           , MAX(START_DT) AS START_DT
+                      FROM TSM_SALES_PRDT_MST
+                     GROUP BY SALES_CD, PRDT_CD, VAT_YN
+                   ) AS TSPM
+                   ON TSPM.PRDT_CD = A.PRDT_CD
+                  AND TSPM.SALES_CD = A.SALES_CD
+                  
+               LEFT OUTER JOIN TFM_WH_MST AS TWM
+                   ON TWM.WH_CD = A.WH_CD
+               
+               JOIN
+                   (SELECT CASE WHEN #{hqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                           , SALES_CD
+                      FROM V_SALES_HQ_CD
+                     WHERE HQ_CLASS = #{hqClass}
+                     <if test='salesCd != null and salesCd != ""'> 
+                       AND HQ_CD = #{salesCd}
+                     </if>
+                   ) AS VSHD
+                   ON VSHD.SALES_CD = A.SALES_CD
+               
+               JOIN TFM_SALES_ADD_INFO AS TSAI
+                   ON TSAI.SALES_CD = VSHD.HQ_CD
+                   
+               LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                   ON TCD.DTL_CD = TSAI.SALES_CLASS
+                  AND TCD.COM_CD = 'M013'
+               
+         <where> 
+           <if test='salesClass != null and salesClass != ""'> 
+		     AND TSAI.SALES_CLASS = #{salesClass}
+	       </if>
+         </where>
+          GROUP BY TCD.DTL_NM
+                   , TSAI.SALES_NM
+                   , TWM.WH_NM
+          ORDER BY TCD.DTL_NM
+
+	</select>
+
+</mapper>

@@ -1,0 +1,596 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.SalSalesListMapper">
+
+	<!-- 영업신규현황 조회 레코드 갯수 -->
+	<select id="selectSalSalesMstListCnt" parameterType="com.doppio.workplace.as.service.SalSalesListVo" resultType="int">
+		/* salSaleslList-Mapper.selectSalSalesMstListCnt  */
+		<![CDATA[
+			SELECT 	COUNT(A.SALES_CD) 																		AS CNT			/* 영업신규현황 조회 레코드 갯수 */			         			
+			FROM TFM_SALES_MST A                                                                                            
+			LEFT OUTER JOIN TFM_SALES_ADD_INFO B ON B.SALES_CD = A.SALES_CD
+			LEFT OUTER JOIN TFM_SALES_ADD_INFO D ON D.SALES_CD = A.SALES_CD                                                 
+			LEFT OUTER JOIN (                                                                                               
+								SELECT 	A.SALES_CD                                                                          
+									,	SUM(1)	AS CNT
+								FROM TSM_SALES_PRDT_MST A
+								WHERE 1=1
+								AND A.USE_YN <> 'N'
+								GROUP BY A.SALES_CD 	
+							) C ON C.SALES_CD = A.SALES_CD 
+			WHERE 1=1			
+			AND A.USE_YN <> 'N'
+		]]>	
+			<if test="srchFrDt != null and srchFrDt != ''">
+				AND (A.START_DT BETWEEN #{srchFrDt} AND #{srchToDt} OR A.START_DT = '' OR A.START_DT >= '20090101')
+			</if>		
+			<if test="srchSalesPrCd != null and srchSalesPrCd != ''">
+				AND B.SALES_PR_CD = #{srchSalesPrCd}
+			</if>			
+			<if test="srchSalesClass != null and srchSalesClass != ''">
+				AND B.SALES_CLASS = #{srchSalesClass}
+			</if>
+			<if test="srchNewSalesPrCd != null and srchNewSalesPrCd != ''">
+				AND D.NEW_SALES_PR_CD = #{srchNewSalesPrCd}							
+			</if>			
+			
+	</select>
+
+	<!-- 영업신규현황 조회  -->
+	<select id="selectSalSalesMstList" parameterType="com.doppio.workplace.as.service.SalSalesListVo" resultType="com.doppio.workplace.as.service.SalSalesListVo">
+		/* salSaleslList-Mapper.selectSalSalesMstList */
+		<![CDATA[
+			SELECT 	A.SALES_CD  																		AS SALES_CD			/* 매출처 코드 */         
+				,	DATE_FORMAT(A.START_DT, '%Y-%m-%d')											 		AS START_DT	 		/* 거래시작일 */       
+				,	B.SALES_NM																			AS SALES_NM         /* 매출처 명 */       
+				,	B.SALES_CLASS																		AS SALES_CLASS      /* 매출구분 코드 */                      
+				,	(SELECT DTL_NM FROM TCM_CODE_DTL WHERE COM_CD = 'M013' AND DTL_CD = B.SALES_CLASS)	AS SALES_CLASS_NM   /* 매출구분 코드 명 */            
+				,	IFNULL(C.CNT, '0')																	AS CNT              /* 거래품목수 */
+				,	A.BUSI_CON																			AS BUSI_CON			/* 업태 */
+				,	A.BUSI_TYPE 																		AS BUSI_TYPE        /* 업종 */
+				,	B.STORE_CNT 																		AS BUSI_TYPE        /* 매장수 */
+				,	B.SETL_CON 																			AS SETL_CON         /* 결제조건 */
+				,	B.EXP_SALES_AMT 																	AS EXP_SALES_AMT    /* 에상매출액 */
+				,	B.SUBSIDY_RATE																		AS SUBSIDY_RATE     /* 장려금율 */
+				,	B.WARR_AMT																			AS WARR_AMT         /* 보증금 */
+				,	B.CRE_LIM																			AS CRE_LIM          /* 여신한도 */
+				,	B.CAR_CD																			AS CAR_CD           /* 배송차량 코드 */
+				,	(SELECT CAR_NM FROM TFM_DLVR_MST WHERE CAR_CD = B.CAR_CD)							AS CAR_NM           /* 배송차량 코드 명 */
+				,	B.SALES_PR_CD																		AS SALES_PR_CD      /* 담당영업사원 코드 */
+				,	(SELECT SALES_PR_NM FROM TFM_SALES_PR_MST WHERE SALES_PR_CD = B.SALES_PR_CD)		AS SALES_PR_CD_NM   /* 담당영업사원 명 */ 
+				,	A.END_DT 																			AS END_DT           /* 거래 종료일 */
+				,	(SELECT SALES_PR_NM FROM TFM_SALES_PR_MST WHERE SALES_PR_CD = D.NEW_SALES_PR_CD)	AS NEW_SALES_PR_CD_NM   /* 개설영업사원 명 */
+				,	IFNULL(E.PURE_AMT, '0')																AS PURE_AMT			/* 공급가(출고금액) */
+				,	IFNULL(E.VAT_AMT, '0')																AS VAT_AMT			/* 부가세 */
+				,	IFNULL(E.TOT_AMT, '0')																AS TOT_AMT			/* 총금액 */
+				,	IFNULL(F.PROFIT_AMT_3, 0)															AS PROFIT_AMT_3		/* 매출이익 */
+				,	IFNULL(F.MAR_RATE_3, 0)																AS MAR_RATE_3		/* 마진율 */
+			FROM TFM_SALES_MST A                                                                                            
+			LEFT OUTER JOIN TFM_SALES_ADD_INFO B ON B.SALES_CD = A.SALES_CD
+			LEFT OUTER JOIN TFM_SALES_ADD_INFO D ON D.SALES_CD = A.SALES_CD                                                 
+			LEFT OUTER JOIN (                                                                                               
+								SELECT 	A.SALES_CD                                                                          
+									,	SUM(1)	AS CNT
+								FROM TSM_SALES_PRDT_MST A
+								WHERE 1=1
+								AND A.USE_YN <> 'N'
+								GROUP BY A.SALES_CD 	
+							) C ON C.SALES_CD = A.SALES_CD
+			LEFT OUTER JOIN (
+					SELECT	A.SALES_CD
+						,	SUM(A.PURE_AMT)	AS PURE_AMT
+						,	SUM(A.VAT_AMT)	AS VAT_AMT
+						,	SUM(A.TOT_AMT)	AS TOT_AMT
+						FROM
+						(
+							SELECT '1' AS SORT
+							      , SUBSTRING(TSD.SALES_DT,1,6) AS YEARMON
+							      , TSD.SALES_DT AS DT
+							      , TSD.SALES_SLIP_NO
+							      , TSD.SALES_SEQ
+							      , TSD.SALES_CD
+							      , TSD.PRDT_CD
+							      , TSD.PRICE
+							      , TSD.SALES_QTY AS QTY
+							      , TSD.PURE_AMT
+							      , TSD.VAT_AMT
+							      , TSD.TOT_AMT
+							      , '정상' AS GUBUN
+							      , TSD.WH_CD
+							 FROM TSH_SALES_DLV AS TSD                     
+							      JOIN TFM_SALES_HQ_CLASS AS TSHC
+							          ON TSHC.SALES_CD = TSD.SALES_CD			                  
+							WHERE TSD.SALES_DT BETWEEN  #{srchFrDt} AND #{srchToDt}
+							  UNION ALL
+							   SELECT
+							          '2' AS SORT
+							      , SUBSTRING(TSR.RTN_DT,1,6) AS YEARMON
+							      , TSR.RTN_DT AS DT
+							      , TSR.SALES_SLIP_NO
+							      , TSR.SALES_SEQ
+							      , TSR.SALES_CD
+							      , TSR.PRDT_CD
+							      , TSR.PRICE
+							      , TSR.RTN_QTY*-1 AS QTY
+							      , TSR.PURE_AMT*-1 AS PURE_AMT
+							      , TSR.VAT_AMT*-1 AS VAT_AMT
+							      , TSR.TOT_AMT*-1 AS TOT_AMT
+							      , '반품' AS GUBUN
+							      , TSR.WH_CD
+							 FROM TSH_SALES_RETURN AS TSR	        
+							      JOIN TFM_SALES_HQ_CLASS AS TSHC
+							          ON TSHC.SALES_CD = TSR.SALES_CD	        
+							WHERE TSR.RTN_DT BETWEEN #{srchFrDt} AND #{srchToDt}					
+						) A
+						WHERE 1=1
+						AND A.QTY != '0'
+						GROUP BY A.SALES_CD
+					) E ON E.SALES_CD = A.SALES_CD 	
+			LEFT OUTER JOIN (
+							SELECT A.SALES_CD
+								, IFNULL(TCD.DTL_NM,'') 							AS SALES_CLASS_NM
+							    , TSAI.SALES_NM               
+							    , IFNULL(A.BUY_AMT_1,0) 							AS BUY_AMT_1
+							    , IFNULL(A.SALES_AMT_1,0) 							AS SALES_AMT_1
+							    , IFNULL(A.SALES_AMT_1,0) - IFNULL(A.BUY_AMT_1,0)	AS PROFIT_AMT_1
+							    , ROUND(CASE WHEN (CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT_1 ELSE A.SALES_AMT_1 END) = 0 THEN 0
+							                 ELSE ( A.SALES_AMT_1 - A.BUY_AMT_1) / ( CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT_1 ELSE A.SALES_AMT_1 END ) * 100
+							             END, 2) AS MAR_RATE_1
+							             
+							    , IFNULL(A.BUY_AMT_2,0) 							AS BUY_AMT_2
+							    , IFNULL(A.SALES_AMT_2,0) 							AS SALES_AMT_2
+							    , IFNULL(A.SALES_AMT_2,0) - IFNULL(A.BUY_AMT_2,0) 	AS PROFIT_AMT_2
+							    , ROUND(CASE WHEN (CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT_2 ELSE A.SALES_AMT_2 END) = 0 THEN 0
+							                 ELSE ( A.SALES_AMT_2 - A.BUY_AMT_2) / ( CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT_2 ELSE A.SALES_AMT_2 END ) * 100
+							             END, 2) AS MAR_RATE_2
+							    
+							    , IFNULL(A.BUY_AMT_3,0) 							AS BUY_AMT_3
+							    , IFNULL(A.SALES_AMT_3,0) 							AS SALES_AMT_3
+							    , IFNULL(A.SALES_AMT_3,0) - IFNULL(A.BUY_AMT_3,0) 	AS PROFIT_AMT_3
+							    , ROUND(CASE WHEN (CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT_3 ELSE A.SALES_AMT_3 END) = 0 THEN 0
+							                 ELSE ( A.SALES_AMT_3 - A.BUY_AMT_3) / ( CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT_3 ELSE A.SALES_AMT_3 END ) * 100
+							             END, 2) AS MAR_RATE_3
+							    
+							    , IFNULL(TSPM.SALES_PR_NM,'') AS SALES_PR_NM
+							    , IFNULL(TSAI.SUBSIDY_RATE,0) AS SUBSIDY_RATE
+							   FROM (SELECT 							                 
+							                  VSHC.SALES_CD							                 
+							                , SUM(A.SALES_AMT_1) AS SALES_AMT_1
+							                , SUM(A.SALES_AMT_2) AS SALES_AMT_2
+							                , SUM(A.SALES_AMT_3) AS SALES_AMT_3
+							                , SUM(A.BUY_AMT_1) 	 AS BUY_AMT_1
+							                , SUM(A.BUY_AMT_2)	 AS BUY_AMT_2
+							                , SUM(A.BUY_AMT_3) 	 AS BUY_AMT_3
+							           FROM (SELECT A.SALES_CD
+							                        , SUM(A.SALES_AMT) AS SALES_AMT_1
+							                        , 0 AS SALES_AMT_2
+							                        , 0 AS SALES_AMT_3
+							                        , SUM(A.SALES_QTY * IFNULL(TMBC.COST,TPM.COST)) AS BUY_AMT_1
+							                        , 0 AS BUY_AMT_2
+							                        , 0 AS BUY_AMT_3
+							                   FROM (SELECT SALES_CD
+							                                , PRDT_CD
+							                                , SUM(PURE_AMT) AS SALES_AMT
+							                                , SUM(SALES_QTY) AS SALES_QTY
+							                           FROM TSH_SALES_DLV
+							                          WHERE SALES_DT BETWEEN CONCAT(DATE_FORMAT(DATE_ADD(#{srchToDt}, INTERVAL -2 MONTH),'%Y%m'),'01') AND DATE_FORMAT(DATE_ADD(#{srchToDt}, INTERVAL -2 MONTH),'%Y%m%d')
+							                      GROUP BY SALES_CD, PRDT_CD
+							                    UNION ALL
+							                     SELECT SALES_CD
+							                            , PRDT_CD
+							                            , SUM(PURE_AMT)*-1 	AS SALES_AMT
+							                            , SUM(RTN_QTY)*-1 	AS SALES_QTY
+							                       FROM TSH_SALES_RETURN
+							                      WHERE RTN_DT BETWEEN CONCAT(DATE_FORMAT(DATE_ADD(#{srchToDt}, INTERVAL -2 MONTH),'%Y%m'),'01') AND DATE_FORMAT(DATE_ADD(#{srchToDt}, INTERVAL -2 MONTH),'%Y%m%d')
+							                      GROUP BY SALES_CD, PRDT_CD
+							                    ) A
+							                    LEFT OUTER JOIN TMH_MON_BUY_COST AS TMBC
+							                        ON TMBC.PRDT_CD = A.PRDT_CD
+							                       AND TMBC.YEAR_MON = DATE_FORMAT(DATE_ADD(#{srchFrDt}, INTERVAL -2 MONTH),'%Y%m')
+							                    LEFT OUTER JOIN TFM_PRDT_MST AS TPM
+							                        ON TPM.PRDT_CD = A.PRDT_CD
+							              GROUP BY A.SALES_CD
+							            UNION ALL
+							              SELECT A.SALES_CD
+							                     , 0 AS SALES_AMT_1
+							                     , SUM(A.SALES_AMT) AS SALES_AMT_2
+							                     , 0 AS SALES_AMT_3
+							                     , 0 AS BUY_AMT_1
+							                     , SUM(A.SALES_QTY * IFNULL(TMBC.COST,TPM.COST)) AS BUY_AMT_2
+							                     , 0 AS BUY_AMT_3
+							                FROM (SELECT SALES_CD
+							                             , PRDT_CD
+							                             , SUM(PURE_AMT) AS SALES_AMT
+							                             , SUM(SALES_QTY) AS SALES_QTY
+							                        FROM TSH_SALES_DLV
+							                       WHERE SALES_DT BETWEEN CONCAT(DATE_FORMAT(DATE_ADD(#{srchToDt}, INTERVAL -1 MONTH),'%Y%m'),'01') AND DATE_FORMAT(DATE_ADD(#{srchToDt}, INTERVAL -1 MONTH),'%Y%m%d')
+							                       GROUP BY SALES_CD, PRDT_CD
+							                     UNION ALL
+							                      SELECT SALES_CD
+							                             , PRDT_CD
+							                             , SUM(PURE_AMT)*-1 AS SALES_AMT
+							                             , SUM(RTN_QTY)*-1 AS SALES_QTY
+							                        FROM TSH_SALES_RETURN
+							                       WHERE RTN_DT BETWEEN CONCAT(DATE_FORMAT(DATE_ADD(#{srchToDt}, INTERVAL -1 MONTH),'%Y%m'),'01') AND DATE_FORMAT(DATE_ADD(#{srchToDt}, INTERVAL -1 MONTH),'%Y%m%d')
+							                       GROUP BY SALES_CD, PRDT_CD
+							                     ) A
+							                     LEFT OUTER JOIN TMH_MON_BUY_COST AS TMBC
+							                         ON TMBC.PRDT_CD = A.PRDT_CD
+							                        AND TMBC.YEAR_MON = DATE_FORMAT(DATE_ADD(#{srchFrDt}, INTERVAL -1 MONTH),'%Y%m')
+							                     LEFT OUTER JOIN TFM_PRDT_MST AS TPM
+							                         ON TPM.PRDT_CD = A.PRDT_CD
+							               GROUP BY A.SALES_CD
+							            UNION ALL
+							              SELECT A.SALES_CD
+							                     , 0 AS SALES_AMT_1
+							                     , 0 AS SALES_AMT_2
+							                     , SUM(A.SALES_AMT) 	AS SALES_AMT_3
+							                     , 0 AS BUY_AMT_1
+							                     , 0 AS BUY_AMT_2
+							                     , SUM(A.SALES_QTY * IFNULL(CONF_COST.COST,TPM.COST)) AS BUY_AMT_3
+							                FROM (SELECT SALES_CD
+							                             , PRDT_CD
+							                             , SUM(PURE_AMT) AS SALES_AMT
+							                             , SUM(A.SALES_QTY) AS SALES_QTY
+							                        FROM TSH_SALES_DLV A
+							                       WHERE SALES_DT BETWEEN #{srchFrDt} AND #{srchToDt}
+							                       GROUP BY SALES_CD, PRDT_CD
+							                     UNION ALL
+							                      SELECT SALES_CD
+							                             , PRDT_CD
+							                             , SUM(PURE_AMT)*-1 AS SALES_AMT
+							                             , SUM(RTN_QTY)*-1 	AS SALES_QTY
+							                        FROM TSH_SALES_RETURN
+							                       WHERE RTN_DT BETWEEN #{srchFrDt} AND #{srchToDt}
+							                       GROUP BY SALES_CD, PRDT_CD
+							                     ) A                                 
+							                     LEFT OUTER JOIN
+									               (SELECT A.PRDT_CD
+													       , MAX(CASE WHEN DATE_FORMAT(#{srchFrDt}, '%Y%m') = DATE_FORMAT(NOW(), '%Y%m') THEN (CASE WHEN IFNULL(A.COST,0)=0 THEN A.CONF_COST ELSE A.COST END) ELSE A.CONF_COST END) AS COST
+													  FROM (
+													        SELECT LEFT(TPR.BUY_DT, 6) AS YEAR_MON
+													               , TPR.PRDT_CD
+													               , IFNULL(MAX(TPR.COST),0) AS COST
+													               , 0 AS CONF_COST
+													          FROM TBH_PRDT_RCPT AS TPR
+													               JOIN
+													                   (SELECT PRDT_CD, MAX(BUY_DT) AS MAX_BUY_DT
+													                      FROM TBH_PRDT_RCPT
+													                     WHERE BUY_DT LIKE CONCAT(DATE_FORMAT(#{srchFrDt}, '%Y%m') , '%')
+													                       AND BUY_CONF_YN = 'Y'
+													                       AND BUY_QTY != 0
+													                     GROUP BY PRDT_CD
+													                   ) AS A
+													         WHERE TPR.BUY_DT = A.MAX_BUY_DT
+													           AND TPR.PRDT_CD = A.PRDT_CD
+													           AND TPR.BUY_CONF_YN = 'Y'
+													           AND TPR.BUY_QTY != 0
+													         GROUP BY LEFT(TPR.BUY_DT, 6), TPR.PRDT_CD
+													     UNION ALL
+													        SELECT YEAR_MON
+													               , PRDT_CD
+													               , 0 AS COST
+													               , COST AS CONF_COST
+													          FROM TMH_MON_BUY_COST
+													         WHERE YEAR_MON = DATE_FORMAT(#{srchFrDt},'%Y%m')
+													       ) AS A
+													 GROUP BY A.PRDT_CD
+								          		   ) AS CONF_COST
+									                   ON CONF_COST.PRDT_CD = A.PRDT_CD
+							                        
+							                     LEFT OUTER JOIN TFM_PRDT_MST AS TPM
+							                         ON TPM.PRDT_CD = A.PRDT_CD
+							               GROUP BY A.SALES_CD
+							             ) AS A                         
+							             JOIN
+							               (SELECT CASE WHEN '20'='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+							                       , SALES_CD
+							                  FROM V_SALES_HQ_CD
+							                 WHERE HQ_CLASS = '20'						
+							               ) AS VSHC
+							               ON VSHC.SALES_CD = A.SALES_CD                   
+							       GROUP BY  
+							              VSHC.SALES_CD
+							     ) A                
+							     JOIN TFM_SALES_ADD_INFO AS TSAI
+							         ON TSAI.SALES_CD = A.SALES_CD                     
+							     LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+							         ON TCD.DTL_CD = TSAI.SALES_CLASS
+							        AND TCD.COM_CD = 'M013'                    
+							     LEFT OUTER JOIN TFM_SALES_PR_MST AS TSPM
+							         ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD	
+							) F ON F.SALES_CD = A.SALES_CD					 
+			WHERE 1=1
+			AND A.USE_YN <> 'N'
+	]]>	
+			<if test="srchFrDt != null and srchFrDt != ''">
+/* 2025.12.23 주석처리 				AND (A.START_DT BETWEEN #{srchFrDt} AND #{srchToDt} OR A.START_DT = '' OR A.START_DT >= '20090101')		*/
+				AND A.START_DT BETWEEN #{srchFrDt} AND #{srchToDt}
+			</if>		
+			<if test="srchSalesPrCd != null and srchSalesPrCd != ''">
+				AND B.SALES_PR_CD = #{srchSalesPrCd}
+			</if>
+			<if test="srchSalesClass != null and srchSalesClass != ''">
+				AND B.SALES_CLASS = #{srchSalesClass}
+			</if>
+			<if test="srchNewSalesPrCd != null and srchNewSalesPrCd != ''">
+				AND D.NEW_SALES_PR_CD = #{srchNewSalesPrCd}							
+			</if>
+			ORDER BY A.START_DT DESC
+	</select>
+	
+	
+	<!-- 영업신규현황 조회  excel download -->
+	<select id="salSalesMstListSelExcelDown" parameterType="com.doppio.workplace.as.service.SalSalesListVo" resultType="java.util.HashMap">
+		/* salSaleslList-Mapper.salSalesMstListSelExcelDown */
+		<![CDATA[
+			SELECT  IFNULL(DATE_FORMAT(A.START_DT, '%Y-%m-%d'), '')								 					AS START_DT	 		/* 거래시작일 */       
+				,	IFNULL(B.SALES_NM, '')																			AS SALES_NM         /* 매출처 명 */                             
+				,	IFNULL((SELECT DTL_NM FROM TCM_CODE_DTL WHERE COM_CD = 'M013' AND DTL_CD = B.SALES_CLASS), '')	AS SALES_CLASS_NM   /* 매출구분 코드 명 */
+				,	IFNULL(A.BUSI_CON, '')																			AS BUSI_CON			/* 업태 */
+				,	IFNULL(A.BUSI_TYPE, '') 																		AS BUSI_TYPE        /* 업종 */    
+				
+				,	IFNULL(E.PURE_AMT, '0')																			AS PURE_AMT			/* 공급가(출고금액) */				
+				,	IFNULL(F.PROFIT_AMT_3, '0')																		AS PROFIT_AMT_3		/* 매출이익 */
+				,	IFNULL(F.MAR_RATE_3, '0')																			AS MAR_RATE_3		/* 마진율 */
+				        				
+				,	IFNULL(B.SETL_CON, '') 																			AS SETL_CON         /* 결제조건 */
+
+				,	IFNULL(B.SUBSIDY_RATE, '0')																		AS SUBSIDY_RATE     /* 장려금율 */
+				,	IFNULL(B.WARR_AMT, '0')																			AS WARR_AMT         /* 보증금 */
+				,	IFNULL(B.CRE_LIM, '0')																			AS CRE_LIM          /* 여신한도 */
+				,	IFNULL((SELECT CAR_NM FROM TFM_DLVR_MST WHERE CAR_CD = B.CAR_CD), '')							AS CAR_NM           /* 배송차량 코드 명 */
+				,	IFNULL((SELECT SALES_PR_NM FROM TFM_SALES_PR_MST WHERE SALES_PR_CD = B.NEW_SALES_PR_CD), '')	AS NEW_SALES_PR_CD_NM   /* 개설영업사원 명 */
+				,	IFNULL((SELECT SALES_PR_NM FROM TFM_SALES_PR_MST WHERE SALES_PR_CD = B.SALES_PR_CD), '')		AS SALES_PR_CD_NM   	/* 담당영업사원 명 */ 
+				,	IFNULL(DATE_FORMAT(A.END_DT, '%Y-%m-%d'), '')													AS END_DT           	/* 거래 종료일 */
+			FROM TFM_SALES_MST A                                                                                            
+			LEFT OUTER JOIN TFM_SALES_ADD_INFO B ON B.SALES_CD = A.SALES_CD                                                 
+			LEFT OUTER JOIN (                                                                                               
+								SELECT 	A.SALES_CD                                                                          
+									,	SUM(1)	AS CNT
+								FROM TSM_SALES_PRDT_MST A
+								WHERE 1=1
+								AND A.USE_YN <> 'N'
+								GROUP BY A.SALES_CD 	
+							) C ON C.SALES_CD = A.SALES_CD
+			LEFT OUTER JOIN (
+							SELECT	A.SALES_CD
+								,	SUM(A.PURE_AMT)	AS PURE_AMT
+								,	SUM(A.VAT_AMT)	AS VAT_AMT
+								,	SUM(A.TOT_AMT)	AS TOT_AMT
+								FROM
+								(
+									SELECT '1' AS SORT
+									      , SUBSTRING(TSD.SALES_DT,1,6) AS YEARMON
+									      , TSD.SALES_DT AS DT
+									      , TSD.SALES_SLIP_NO
+									      , TSD.SALES_SEQ
+									      , TSD.SALES_CD
+									      , TSD.PRDT_CD
+									      , TSD.PRICE
+									      , TSD.SALES_QTY AS QTY
+									      , TSD.PURE_AMT
+									      , TSD.VAT_AMT
+									      , TSD.TOT_AMT
+									      , '정상' AS GUBUN
+									      , TSD.WH_CD
+									 FROM TSH_SALES_DLV AS TSD                     
+									      JOIN TFM_SALES_HQ_CLASS AS TSHC
+									          ON TSHC.SALES_CD = TSD.SALES_CD			                  
+									WHERE TSD.SALES_DT BETWEEN  REPLACE(#{srchFrDt}, '-', '') AND REPLACE(#{srchToDt}, '-', '')
+									  UNION ALL
+									   SELECT
+									          '2' AS SORT
+									      , SUBSTRING(TSR.RTN_DT,1,6) AS YEARMON
+									      , TSR.RTN_DT AS DT
+									      , TSR.SALES_SLIP_NO
+									      , TSR.SALES_SEQ
+									      , TSR.SALES_CD
+									      , TSR.PRDT_CD
+									      , TSR.PRICE
+									      , TSR.RTN_QTY*-1 AS QTY
+									      , TSR.PURE_AMT*-1 AS PURE_AMT
+									      , TSR.VAT_AMT*-1 AS VAT_AMT
+									      , TSR.TOT_AMT*-1 AS TOT_AMT
+									      , '반품' AS GUBUN
+									      , TSR.WH_CD
+									 FROM TSH_SALES_RETURN AS TSR	        
+									      JOIN TFM_SALES_HQ_CLASS AS TSHC
+									          ON TSHC.SALES_CD = TSR.SALES_CD	        
+									WHERE TSR.RTN_DT BETWEEN REPLACE(#{srchFrDt}, '-', '') AND REPLACE(#{srchToDt}, '-', '')					
+								) A
+								WHERE 1=1
+								AND A.QTY != '0'
+								GROUP BY A.SALES_CD
+							) E ON E.SALES_CD = A.SALES_CD 	
+			LEFT OUTER JOIN (
+							SELECT A.SALES_CD
+								, IFNULL(TCD.DTL_NM,'') 							AS SALES_CLASS_NM
+							    , TSAI.SALES_NM               
+							    , IFNULL(A.BUY_AMT_1,0) 							AS BUY_AMT_1
+							    , IFNULL(A.SALES_AMT_1,0) 							AS SALES_AMT_1
+							    , IFNULL(A.SALES_AMT_1,0) - IFNULL(A.BUY_AMT_1,0)	AS PROFIT_AMT_1
+							    , ROUND(CASE WHEN (CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT_1 ELSE A.SALES_AMT_1 END) = 0 THEN 0
+							                 ELSE ( A.SALES_AMT_1 - A.BUY_AMT_1) / ( CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT_1 ELSE A.SALES_AMT_1 END ) * 100
+							             END, 2) AS MAR_RATE_1
+							             
+							    , IFNULL(A.BUY_AMT_2,0) 							AS BUY_AMT_2
+							    , IFNULL(A.SALES_AMT_2,0) 							AS SALES_AMT_2
+							    , IFNULL(A.SALES_AMT_2,0) - IFNULL(A.BUY_AMT_2,0) 	AS PROFIT_AMT_2
+							    , ROUND(CASE WHEN (CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT_2 ELSE A.SALES_AMT_2 END) = 0 THEN 0
+							                 ELSE ( A.SALES_AMT_2 - A.BUY_AMT_2) / ( CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT_2 ELSE A.SALES_AMT_2 END ) * 100
+							             END, 2) AS MAR_RATE_2
+							    
+							    , IFNULL(A.BUY_AMT_3,0) 							AS BUY_AMT_3
+							    , IFNULL(A.SALES_AMT_3,0) 							AS SALES_AMT_3
+							    , IFNULL(A.SALES_AMT_3,0) - IFNULL(A.BUY_AMT_3,0) 	AS PROFIT_AMT_3
+							    , ROUND(CASE WHEN (CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT_3 ELSE A.SALES_AMT_3 END) = 0 THEN 0
+							                 ELSE ( A.SALES_AMT_3 - A.BUY_AMT_3) / ( CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT_3 ELSE A.SALES_AMT_3 END ) * 100
+							             END, 2) AS MAR_RATE_3
+							    
+							    , IFNULL(TSPM.SALES_PR_NM,'') AS SALES_PR_NM
+							    , IFNULL(TSAI.SUBSIDY_RATE,0) AS SUBSIDY_RATE
+							   FROM (SELECT 							                 
+							                  VSHC.SALES_CD							                 
+							                , SUM(A.SALES_AMT_1) AS SALES_AMT_1
+							                , SUM(A.SALES_AMT_2) AS SALES_AMT_2
+							                , SUM(A.SALES_AMT_3) AS SALES_AMT_3
+							                , SUM(A.BUY_AMT_1) 	 AS BUY_AMT_1
+							                , SUM(A.BUY_AMT_2)	 AS BUY_AMT_2
+							                , SUM(A.BUY_AMT_3) 	 AS BUY_AMT_3
+							           FROM (SELECT A.SALES_CD
+							                        , SUM(A.SALES_AMT) AS SALES_AMT_1
+							                        , 0 AS SALES_AMT_2
+							                        , 0 AS SALES_AMT_3
+							                        , SUM(A.SALES_QTY * IFNULL(TMBC.COST,TPM.COST)) AS BUY_AMT_1
+							                        , 0 AS BUY_AMT_2
+							                        , 0 AS BUY_AMT_3
+							                   FROM (SELECT SALES_CD
+							                                , PRDT_CD
+							                                , SUM(PURE_AMT) AS SALES_AMT
+							                                , SUM(SALES_QTY) AS SALES_QTY
+							                           FROM TSH_SALES_DLV
+							                          WHERE SALES_DT BETWEEN CONCAT(DATE_FORMAT(DATE_ADD(REPLACE(#{srchToDt}, '-', ''),  INTERVAL -2 MONTH),'%Y%m'),'01') AND DATE_FORMAT(DATE_ADD(REPLACE(#{srchToDt}, '-', ''),  INTERVAL -2 MONTH),'%Y%m%d')
+							                      GROUP BY SALES_CD, PRDT_CD
+							                    UNION ALL
+							                     SELECT SALES_CD
+							                            , PRDT_CD
+							                            , SUM(PURE_AMT)*-1 	AS SALES_AMT
+							                            , SUM(RTN_QTY)*-1 	AS SALES_QTY
+							                       FROM TSH_SALES_RETURN
+							                      WHERE RTN_DT BETWEEN CONCAT(DATE_FORMAT(DATE_ADD(REPLACE(#{srchToDt}, '-', ''),  INTERVAL -2 MONTH),'%Y%m'),'01') AND DATE_FORMAT(DATE_ADD(REPLACE(#{srchToDt}, '-', ''),  INTERVAL -2 MONTH),'%Y%m%d')
+							                      GROUP BY SALES_CD, PRDT_CD
+							                    ) A
+							                    LEFT OUTER JOIN TMH_MON_BUY_COST AS TMBC
+							                        ON TMBC.PRDT_CD = A.PRDT_CD
+							                       AND TMBC.YEAR_MON = DATE_FORMAT(DATE_ADD(REPLACE(#{srchFrDt}, '-', ''),  INTERVAL -2 MONTH),'%Y%m')
+							                    LEFT OUTER JOIN TFM_PRDT_MST AS TPM
+							                        ON TPM.PRDT_CD = A.PRDT_CD
+							              GROUP BY A.SALES_CD
+							            UNION ALL
+							              SELECT A.SALES_CD
+							                     , 0 AS SALES_AMT_1
+							                     , SUM(A.SALES_AMT) AS SALES_AMT_2
+							                     , 0 AS SALES_AMT_3
+							                     , 0 AS BUY_AMT_1
+							                     , SUM(A.SALES_QTY * IFNULL(TMBC.COST,TPM.COST)) AS BUY_AMT_2
+							                     , 0 AS BUY_AMT_3
+							                FROM (SELECT SALES_CD
+							                             , PRDT_CD
+							                             , SUM(PURE_AMT) AS SALES_AMT
+							                             , SUM(SALES_QTY) AS SALES_QTY
+							                        FROM TSH_SALES_DLV
+							                       WHERE SALES_DT BETWEEN CONCAT(DATE_FORMAT(DATE_ADD(REPLACE(#{srchToDt}, '-', ''),  INTERVAL -1 MONTH),'%Y%m'),'01') AND DATE_FORMAT(DATE_ADD(REPLACE(#{srchToDt}, '-', ''),  INTERVAL -1 MONTH),'%Y%m%d')
+							                       GROUP BY SALES_CD, PRDT_CD
+							                     UNION ALL
+							                      SELECT SALES_CD
+							                             , PRDT_CD
+							                             , SUM(PURE_AMT)*-1 AS SALES_AMT
+							                             , SUM(RTN_QTY)*-1 AS SALES_QTY
+							                        FROM TSH_SALES_RETURN
+							                       WHERE RTN_DT BETWEEN CONCAT(DATE_FORMAT(DATE_ADD(REPLACE(#{srchToDt}, '-', ''),  INTERVAL -1 MONTH),'%Y%m'),'01') AND DATE_FORMAT(DATE_ADD(REPLACE(#{srchToDt}, '-', ''), INTERVAL -1 MONTH),'%Y%m%d')
+							                       GROUP BY SALES_CD, PRDT_CD
+							                     ) A
+							                     LEFT OUTER JOIN TMH_MON_BUY_COST AS TMBC
+							                         ON TMBC.PRDT_CD = A.PRDT_CD
+							                        AND TMBC.YEAR_MON = DATE_FORMAT(DATE_ADD(REPLACE(#{srchFrDt}, '-', ''), INTERVAL -1 MONTH),'%Y%m')
+							                     LEFT OUTER JOIN TFM_PRDT_MST AS TPM
+							                         ON TPM.PRDT_CD = A.PRDT_CD
+							               GROUP BY A.SALES_CD
+							            UNION ALL
+							              SELECT A.SALES_CD
+							                     , 0 AS SALES_AMT_1
+							                     , 0 AS SALES_AMT_2
+							                     , SUM(A.SALES_AMT) 	AS SALES_AMT_3
+							                     , 0 AS BUY_AMT_1
+							                     , 0 AS BUY_AMT_2
+							                     , SUM(A.SALES_QTY * IFNULL(CONF_COST.COST,TPM.COST)) AS BUY_AMT_3
+							                FROM (SELECT SALES_CD
+							                             , PRDT_CD
+							                             , SUM(PURE_AMT) AS SALES_AMT
+							                             , SUM(A.SALES_QTY) AS SALES_QTY
+							                        FROM TSH_SALES_DLV A
+							                       WHERE SALES_DT BETWEEN REPLACE(#{srchFrDt}, '-', '') AND REPLACE(#{srchToDt}, '-', '')
+							                       GROUP BY SALES_CD, PRDT_CD
+							                     UNION ALL
+							                      SELECT SALES_CD
+							                             , PRDT_CD
+							                             , SUM(PURE_AMT)*-1 AS SALES_AMT
+							                             , SUM(RTN_QTY)*-1 	AS SALES_QTY
+							                        FROM TSH_SALES_RETURN
+							                       WHERE RTN_DT BETWEEN REPLACE(#{srchFrDt}, '-', '') AND REPLACE(#{srchToDt}, '-', '')
+							                       GROUP BY SALES_CD, PRDT_CD
+							                     ) A                                 
+							                     LEFT OUTER JOIN
+									               (SELECT A.PRDT_CD
+													       , MAX(CASE WHEN DATE_FORMAT(REPLACE(#{srchFrDt}, '-', ''), '%Y%m') = DATE_FORMAT(NOW(), '%Y%m') THEN (CASE WHEN IFNULL(A.COST,0)=0 THEN A.CONF_COST ELSE A.COST END) ELSE A.CONF_COST END) AS COST
+													  FROM (
+													        SELECT LEFT(TPR.BUY_DT, 6) AS YEAR_MON
+													               , TPR.PRDT_CD
+													               , IFNULL(MAX(TPR.COST),0) AS COST
+													               , 0 AS CONF_COST
+													          FROM TBH_PRDT_RCPT AS TPR
+													               JOIN
+													                   (SELECT PRDT_CD, MAX(BUY_DT) AS MAX_BUY_DT
+													                      FROM TBH_PRDT_RCPT
+													                     WHERE BUY_DT LIKE CONCAT(DATE_FORMAT(REPLACE(#{srchFrDt}, '-', ''), '%Y%m') , '%')
+													                       AND BUY_CONF_YN = 'Y'
+													                       AND BUY_QTY != 0
+													                     GROUP BY PRDT_CD
+													                   ) AS A
+													         WHERE TPR.BUY_DT = A.MAX_BUY_DT
+													           AND TPR.PRDT_CD = A.PRDT_CD
+													           AND TPR.BUY_CONF_YN = 'Y'
+													           AND TPR.BUY_QTY != 0
+													         GROUP BY LEFT(TPR.BUY_DT, 6), TPR.PRDT_CD
+													     UNION ALL
+													        SELECT YEAR_MON
+													               , PRDT_CD
+													               , 0 AS COST
+													               , COST AS CONF_COST
+													          FROM TMH_MON_BUY_COST
+													         WHERE YEAR_MON = DATE_FORMAT(REPLACE(#{srchFrDt}, '-', ''),'%Y%m')
+													       ) AS A
+													 GROUP BY A.PRDT_CD
+								          		   ) AS CONF_COST
+									                   ON CONF_COST.PRDT_CD = A.PRDT_CD
+							                        
+							                     LEFT OUTER JOIN TFM_PRDT_MST AS TPM
+							                         ON TPM.PRDT_CD = A.PRDT_CD
+							               GROUP BY A.SALES_CD
+							             ) AS A                         
+							             JOIN
+							               (SELECT CASE WHEN '20'='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+							                       , SALES_CD
+							                  FROM V_SALES_HQ_CD
+							                 WHERE HQ_CLASS = '20'						
+							               ) AS VSHC
+							               ON VSHC.SALES_CD = A.SALES_CD                   
+							       GROUP BY  
+							              VSHC.SALES_CD
+							     ) A                
+							     JOIN TFM_SALES_ADD_INFO AS TSAI
+							         ON TSAI.SALES_CD = A.SALES_CD                     
+							     LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+							         ON TCD.DTL_CD = TSAI.SALES_CLASS
+							        AND TCD.COM_CD = 'M013'                    
+							     LEFT OUTER JOIN TFM_SALES_PR_MST AS TSPM
+							         ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD	
+							) F ON F.SALES_CD = A.SALES_CD				 
+			WHERE 1=1
+			AND A.USE_YN <> 'N'
+	]]>	
+			<if test="srchFrDt != null and srchFrDt != ''">
+/* 2025.12.23 주석처리 				AND (A.START_DT BETWEEN #{srchFrDt} AND #{srchToDt} OR A.START_DT = '' OR A.START_DT >= '20090101')		*/
+				AND A.START_DT BETWEEN #{srchFrDt} AND #{srchToDt}
+			</if>		
+			<if test="srchSalesPrCd != null and srchSalesPrCd != ''">
+				AND B.SALES_PR_CD = #{srchSalesPrCd}
+			</if>
+			<if test="srchSalesClass != null and srchSalesClass != ''">
+				AND B.SALES_CLASS = #{srchSalesClass}
+			</if>
+			ORDER BY A.START_DT DESC
+	</select>
+</mapper>
+

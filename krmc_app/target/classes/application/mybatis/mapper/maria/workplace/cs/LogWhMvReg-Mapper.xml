@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.cs.service.impl.LogWhMvRegMapper">
+
+	
+	<!-- 센터이동 등록 조회 -->
+	<select id="selectLogWhMvRegList" parameterType="com.doppio.workplace.cs.service.LogWhMvRegVo" resultType="com.doppio.workplace.cs.service.LogWhMvRegVo">
+	/*LogWhMvRegMapper.selectLogWhMvRegList*/	
+		SELECT TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD.DTL_NM AS ORD_UNIT_NM
+		       , IFNULL(TWMP.MV_QTY,0) AS MV_QTY
+		       , IFNULL(TWMP.TERM_VAL,'') AS TERM_VAL
+		       , IFNULL(TWMP.REMARKS,'') AS REMARKS
+		       
+		       , IFNULL(TWM_1.WH_CD,'') AS OUT_WH_CD
+		       , IFNULL(TWM_2.WH_CD,'') AS IN_WH_CD
+		       , IFNULL(TWM_1.WH_NM,'') AS OUT_WH_NM
+		       , IFNULL(TWM_2.WH_NM,'') AS IN_WH_NM
+		       
+		       , IFNULL(TWMP.MV_QTY,0) AS MV_QTY_ORG
+		       
+          FROM TFM_PRDT_MST AS TPM
+          
+               LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                   ON TCD.DTL_CD = TPM.ORD_UNIT
+                  AND TCD.COM_CD = 'M006'
+          
+               JOIN TBH_WH_MV_PRDT AS TWMP
+                   ON TWMP.PRDT_CD = TPM.PRDT_CD     
+          
+               JOIN TFM_WH_MST AS TWM_1
+                   ON TWM_1.WH_CD = #{searchOutWhCd}
+          
+               JOIN TFM_WH_MST AS TWM_2
+                   ON TWM_2.WH_CD = #{searchInWhCd}
+                   
+         WHERE TWMP.MV_DT = #{searchMvDt}
+           AND TWMP.OUT_WH_CD = #{searchOutWhCd}
+           AND TWMP.IN_WH_CD = #{searchInWhCd}     
+         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+		   AND TPM.PRDT_CD = #{searchPrdtCd}
+		 </if>
+         <if test='searchLCd != null and searchLCd != ""'> 
+		   AND TPM.L_CD = #{searchLCd}
+		 </if>
+		 <if test='searchMCd != null and searchMCd != ""'> 
+		   AND TPM.M_CD = #{searchMCd}
+		 </if>		     
+        
+		 ORDER BY TPM.PRDT_CD
+	</select>
+	
+	
+	<!-- 센터이동 등록 단일 품목 조회 -->
+	<select id="selectLogWhMvRegPrdtAddList" parameterType="com.doppio.workplace.cs.service.LogWhMvRegVo" resultType="com.doppio.workplace.cs.service.LogWhMvRegVo">
+	/*LogWhMvRegMapper.selectLogWhMvRegPrdtAddList*/	
+		SELECT TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD.DTL_NM AS ORD_UNIT_NM
+		       , IFNULL(TWMP.MV_QTY,0) AS MV_QTY
+		       , IFNULL(TWMP.TERM_VAL,'') AS TERM_VAL
+		       , IFNULL(TWMP.REMARKS,'') AS REMARKS
+		       
+		       , IFNULL(TWM_1.WH_CD,'') AS OUT_WH_CD
+		       , IFNULL(TWM_2.WH_CD,'') AS IN_WH_CD
+		       , IFNULL(TWM_1.WH_NM,'') AS OUT_WH_NM
+		       , IFNULL(TWM_2.WH_NM,'') AS IN_WH_NM
+		       
+		       , IFNULL(TWMP.MV_QTY,0) AS MV_QTY_ORG
+		       
+          FROM TFM_PRDT_MST AS TPM
+               LEFT OUTER JOIN TBH_WH_MV_PRDT AS TWMP
+                   ON TWMP.PRDT_CD = TPM.PRDT_CD
+                  AND TWMP.MV_DT = #{searchMvDt}
+                  AND TWMP.OUT_WH_CD = #{searchOutWhCd}
+                  AND TWMP.IN_WH_CD = #{searchInWhCd}
+                  <if test='searchPrdtCd != null and searchPrdtCd != ""'>		<!-- 품목  --> 
+		              AND TWMP.PRDT_CD = #{searchPrdtCd}
+		     	  </if>
+               LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+                   ON TCD.DTL_CD = TPM.ORD_UNIT
+                  AND TCD.COM_CD = 'M006'
+               JOIN TFM_WH_MST AS TWM_1
+                   ON TWM_1.WH_CD = #{searchOutWhCd}
+               JOIN TFM_WH_MST AS TWM_2
+                   ON TWM_2.WH_CD = #{searchInWhCd}
+         WHERE TPM.PRDT_CD = #{searchPrdtCd}
+             <if test='searchLCd != null and searchLCd != ""'>		<!-- 대분류  --> 
+		         AND TPM.L_CD = #{searchLCd}
+		     </if>
+		     <if test='searchMCd != null and searchMCd != ""'>		<!-- 중분류  --> 
+		         AND TPM.M_CD = #{searchMCd}
+		     </if>		     
+	</select>
+
+	<!-- 센터이동 등록 저장 -->
+	<insert id="insertLogWhMvRegData" parameterType="com.doppio.workplace.cs.service.LogWhMvRegVo">
+	    INSERT INTO TBH_WH_MV_PRDT
+            (MV_DT, PRDT_CD, OUT_WH_CD, IN_WH_CD, MV_QTY, MV_CONF_YN, TERM_VAL, REMARKS
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT)
+        VALUES
+            (#{mvDt}, #{prdtCd}, #{outWhCd}, #{inWhCd}, #{mvQty}, #{mvConfYn}, #{termVal}, #{remarks}
+			 , #{useYn}, #{workId}, NOW(), #{workId}, NOW()
+            )
+        ON DUPLICATE KEY
+            UPDATE MV_QTY		= #{mvQty}
+                   , TERM_VAL	= #{termVal}
+           	       , REMARKS   	= #{remarks}
+                   , MOD_ID     = #{workId}
+                   , MOD_DT     = NOW();
+        
+	</insert>
+
+	<!-- 센터이동 등록 수정
+	<update id="updateLogWhMvRegData" parameterType="com.doppio.workplace.cs.service.LogWhMvRegVo">
+	/*LogWhMvRegMapper.updateLogWhMvRegData*/
+        UPDATE TBH_WH_MV_PRDT
+           SET MV_QTY		= #{mvQty}
+               , TERM_VAL	= #{termVal}
+           	   , REMARKS   	= #{remarks}
+               , MOD_ID     = #{workId}
+               , MOD_DT     = NOW()
+         WHERE MV_DT     = #{mvDt}
+           AND PRDT_CD   = #{prdtCd}
+           AND OUT_WH_CD = #{outWhCd}
+           AND IN_WH_CD  = #{inWhCd}
+	</update>
+ -->
+	
+</mapper>
+

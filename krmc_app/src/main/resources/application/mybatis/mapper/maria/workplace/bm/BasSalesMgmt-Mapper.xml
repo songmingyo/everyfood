@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.bm.service.impl.SalesMgmtMapper">
+
+	
+	<!-- 매출처 조회 리스트 검색조건-->
+	<sql id="selectSalesMgmtList_Where">
+		/*PrdtMgmtMapper.selectSalesMgmtList_Where*/
+		<where>
+			<if test='salesCd != null and salesCd != ""'> 
+				AND TSM.SALES_CD = #{salesCd}
+			</if>
+			<if test='salesNm != null and salesNm != ""'> 
+				AND TSAI.SALES_NM LIKE CONCAT('%',#{salesNm},'%')
+			</if>			
+			<if test='useYn != null and useYn != ""'> 
+				AND TSM.USE_YN = #{useYn}
+			</if>
+			<if test='bossNm != null and bossNm != ""'> 
+				AND TSM.BOSS_NM LIKE CONCAT('%',#{bossNm},'%')
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 매출처 조회  카운터 -->
+	<select id="selectSalesMgmtListCount" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo" resultType="int">
+		/* SalesMgmtMapper.selectSalesMgmtListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM KRMC.TFM_SALES_MST AS TSM
+		       JOIN TFM_SALES_ADD_INFO AS TSAI
+		           ON TSAI.SALES_CD = TSM.SALES_CD
+		<include refid="selectSalesMgmtList_Where"/>
+	</select>
+	
+	
+	<!-- 매출처 마스터 조회 -->
+	<select id="selectSalesMgmtList" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo" resultType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*SalesMgmtMapper.selectSalesMgmtList*/	
+		SELECT TSAI.SALES_CD
+			   , TSAI.SALES_NM
+			   , TSM.TEL_NO
+			   , TCD.DTL_NM AS HQ_CLASS_NM
+			   , TSM.USE_YN
+		  FROM TFM_SALES_MST AS TSM
+		       JOIN TFM_SALES_ADD_INFO AS TSAI
+		           ON TSAI.SALES_CD = TSM.SALES_CD
+		       JOIN TFM_SALES_HQ_CLASS AS TSHC
+		           ON TSHC.SALES_CD = TSAI.SALES_CD
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.COM_CD = 'M004'
+		          AND TCD.DTL_CD = TSHC.HQ_CLASS
+		 <include refid="selectSalesMgmtList_Where"/>
+		 ORDER BY TSM.USE_YN DESC,TSAI.SALES_CD 
+	</select>
+	
+	<!-- 매출처 상세 조회 -->
+	<select id="selectSalesMgmtData" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo" resultType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*SalesMgmtMapper.selectSalesMgmtData*/	
+		SELECT TSM.SALES_CD
+               , TSM.BSNS_NUM
+               , TSM.CORP_NUM
+               , TSM.BUSI_CON
+               , TSM.BUSI_TYPE
+               , TSM.BOSS_NM
+               , TSM.TEL_NO
+               , TSM.FAX_NO
+               , TSM.PUR_PR_NM
+               , TSM.PUR_PR_HP
+               , TSM.CLOSE_PR_NM
+               , TSM.CLOSE_HP
+               , TSM.CENTER_PR_NM
+               , TSM.CENTER_PR_HP
+               , TSM.CENTER_PR_TEL
+               , TSM.CENTER_FAX
+               , TSM.ZIP_CD
+               , TSM.ADDR_1
+               , TSM.ADDR_2
+               , TSM.DLV_ZIP
+               , TSM.DLV_ADDR_1
+               , TSM.DLV_ADDR_2
+               , TSM.EMAIL
+               , TSM.START_DT
+               , TSM.END_DT
+               , TSM.USE_YN
+               , TSM.REG_ID
+               , TM_1.USER_NM AS REG_NM
+               , TSM.REG_DT
+               , TSM.MOD_ID
+               , TM_2.USER_NM AS MOD_NM
+               , TSM.MOD_DT
+               , TSAI.SALES_NM
+               , TSAI.SALES_S_NM
+               , TSAI.AREA_CLASS
+               , TSAI.SALES_PR_CD
+               , TSAI.CAR_CD
+               , TSAI.TAX_YN
+               , TSAI.SETL_CON
+               , TSAI.SETL_DT
+               , TSAI.CRE_LIM
+               , TSAI.CR_SALES_YN
+               , TSAI.ORD_DDLN_TM
+               , TSAI.ORD_DDLN_YN
+               , TSAI.REMARKS
+               , TSAI.CLT_SALES_CD
+               , TSAI.SALES_CLASS
+               , TSAI.PROFIT_CLASS
+               , TSAI.DLV_DT_CLASS
+               , TSAI.SUBSIDY_RATE
+               , TSHC.HQ_CLASS
+               , TSHC.HQ_CD
+               , TSAI.BAL_DISPLAY_YN
+               , TSAI.PRICE_DISPLAY_YN
+               , TSAI.WARR_AMT 
+               , DATE_FORMAT(TSAI.WARR_EXP_DT, '%Y-%m-%d') AS WARR_EXP_DT 
+               , TSAI.STORE_CNT
+               , TSAI.EXP_SALES_AMT
+               , TSAI.NEW_SALES_PR_CD
+               , TSAI.VR_ACCT_NO
+		  FROM KRMC.TFM_SALES_MST AS TSM
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_1
+		           ON TSM.REG_ID = TM_1.USER_ID
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_2
+		           ON TSM.MOD_ID = TM_2.USER_ID
+		       JOIN TFM_SALES_ADD_INFO AS TSAI
+		           ON TSAI.SALES_CD = TSM.SALES_CD
+		       JOIN TFM_SALES_HQ_CLASS AS TSHC
+		           ON TSHC.SALES_CD = TSM.SALES_CD
+		 WHERE TSM.SALES_CD = #{salesCd}
+	</select>
+	
+	
+	<!-- 매출처 엑셀 다운로드 -->
+	<select id="selectSalesMgmtListExcelDown" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo"  resultType="java.util.HashMap">
+	/*SalesMgmtMapper.selectSalesMgmtListExcelDown*/	
+		SELECT   IFNULL(TSM.SALES_CD, ' ')		AS SALES_CD 		
+               , IFNULL(TSAI.SALES_NM, ' ')     AS SALES_NM
+               , IFNULL(TSAI.SALES_S_NM, ' ')   AS SALES_S_NM
+               , IFNULL(TSM.BSNS_NUM, ' ')      AS BSNS_NUM
+               , IFNULL(TSM.CORP_NUM, ' ')      AS CORP_NUM
+               , IFNULL(TSM.BUSI_CON, ' ')      AS BUSI_CON
+               , IFNULL(TSM.BUSI_TYPE, ' ')     AS BUSI_TYPE
+               , IFNULL(TSM.BOSS_NM, ' ')       AS BOSS_NM
+               , IFNULL(TSM.TEL_NO, ' ')        AS TEL_NO
+               , IFNULL(TSM.FAX_NO, ' ')        AS FAX_NO
+               , IFNULL(TSM.PUR_PR_NM, ' ')     AS PUR_PR_NM
+               , IFNULL(TSM.PUR_PR_HP, ' ')     AS PUR_PR_HP
+               , IFNULL(TSM.CLOSE_PR_NM, ' ')   AS CLOSE_PR_NM
+               , IFNULL(TSM.CLOSE_HP, ' ')      AS CLOSE_HP
+               , IFNULL(TSM.CENTER_PR_NM, ' ')  AS CENTER_PR_NM
+               , IFNULL(TSM.CENTER_PR_HP, ' ')  AS CENTER_PR_HP
+               , IFNULL(TSM.CENTER_PR_TEL, ' ') AS CENTER_PR_TEL
+               , IFNULL(TSM.CENTER_FAX, ' ')    AS CENTER_FAX
+               , IFNULL(TSM.ZIP_CD, ' ')        AS ZIP_CD
+               , IFNULL(TSM.ADDR_1, ' ')        AS ADDR_1
+               , IFNULL(TSM.ADDR_2, ' ')        AS ADDR_2
+               , IFNULL(TSM.DLV_ZIP, ' ')       AS DLV_ZIP
+               , IFNULL(TSM.DLV_ADDR_1, ' ')    AS DLV_ADDR_1
+               , IFNULL(TSM.DLV_ADDR_2, ' ')    AS DLV_ADDR_2
+               , IFNULL(TSM.EMAIL, ' ')         AS EMAIL
+               , IFNULL(TSM.START_DT, ' ')      AS START_DT
+               , IFNULL(TSM.END_DT, ' ')        AS END_DT
+               , IFNULL(TSM.USE_YN, ' ')        AS USE_YN
+               , IFNULL(TSAI.AREA_CLASS, ' ')   AS AREA_CLASS
+               , IFNULL(TSAI.SALES_PR_CD, ' ')  AS SALES_PR_CD
+               , IFNULL(TSAI.CAR_CD, ' ')       AS CAR_CD
+               , IFNULL(TSAI.TAX_YN, ' ')       AS TAX_YN
+               , IFNULL(TSAI.SETL_CON, ' ')     AS SETL_CON
+               , IFNULL(TSAI.SETL_DT, ' ')      AS SETL_DT
+               , IFNULL(TSAI.CRE_LIM, ' ')      AS CRE_LIM
+               , IFNULL(TSAI.CR_SALES_YN, ' ')  AS CR_SALES_YN
+               , IFNULL(TSAI.ORD_DDLN_TM, ' ')  AS ORD_DDLN_TM
+               , IFNULL(TSAI.ORD_DDLN_YN, ' ')  AS ORD_DDLN_YN
+               , IFNULL(TSAI.REMARKS, ' ')      AS REMARKS
+               , IFNULL(TSAI.CLT_SALES_CD, ' ')		AS CLT_SALES_CD
+               , IFNULL(TSAI.SALES_CLASS, ' ')		AS SALES_CLASS
+               , IFNULL(TSAI.VR_ACCT_NO, ' ')		AS VR_ACCT_NO
+               , IFNULL(TSAI.PROFIT_CLASS, ' ')     AS PROFIT_CLASS
+               , IFNULL(TSAI.DLV_DT_CLASS, ' ')     AS DLV_DT_CLASS
+               , IFNULL(TSAI.SUBSIDY_RATE, ' ')     AS SUBSIDY_RATE
+               , IFNULL(TCD.DTL_NM, ' ')			AS HQ_CLASS_NM 
+               , IFNULL(TSAI_1.SALES_NM, ' ')		AS HQ_CD_NM
+               , IFNULL(TSAI.BAL_DISPLAY_YN, ' ')	AS BAL_DISPLAY_YN
+               , IFNULL(TSAI.PRICE_DISPLAY_YN, ' ')	AS PRICE_DISPLAY_YN
+               
+		  FROM KRMC.TFM_SALES_MST AS TSM
+		  
+		       JOIN TFM_SALES_ADD_INFO AS TSAI
+		           ON TSAI.SALES_CD = TSM.SALES_CD
+		           
+		       JOIN TFM_SALES_HQ_CLASS AS TSHC
+		           ON TSHC.SALES_CD = TSM.SALES_CD
+		           
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.COM_CD = 'M004'
+		          AND TCD.DTL_CD = TSHC.HQ_CLASS
+		       
+		       LEFT OUTER JOIN TFM_SALES_ADD_INFO AS TSAI_1
+		           ON TSAI_1.SALES_CD = TSHC.HQ_CD
+		 <include refid="selectSalesMgmtList_Where"/>
+		 ORDER BY TSAI.VR_ACCT_NO DESC
+	</select>
+	
+	
+	<!-- 매출처 신규 마스터 저장 -->
+	<insert id="insertSalesMgmt" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*SalesMgmtMapper.insertSalesMgmt*/
+	<selectKey keyProperty="salesCd" resultType="String" order="BEFORE">
+		SELECT CAST(IFNULL(MAX(TSM.SALES_CD),'10000') AS DECIMAL)+1 AS SALES_CD FROM KRMC.TFM_SALES_MST as TSM
+	</selectKey>
+	    INSERT INTO KRMC.TFM_SALES_MST
+            (SALES_CD, BSNS_NUM, CORP_NUM, BUSI_CON, BUSI_TYPE, BOSS_NM, TEL_NO, FAX_NO, PUR_PR_NM
+             , PUR_PR_HP, CLOSE_PR_NM, CLOSE_HP, CENTER_PR_NM, CENTER_PR_HP, CENTER_PR_TEL, CENTER_FAX, ZIP_CD, ADDR_1
+             , ADDR_2, DLV_ZIP, DLV_ADDR_1, DLV_ADDR_2, EMAIL, START_DT, END_DT
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT)
+        VALUES
+            (
+             #{salesCd}, #{bsnsNum}, #{corpNum}, #{busiCon}, #{busiType}, #{bossNm}, #{telNo}, #{faxNo}, #{purPrNm}
+             , #{purPrHp}, #{closePrNm}, #{closeHp}, #{centerPrNm}, #{centerPrHp}, #{centerPrTel}, #{centerFax}, #{zipCd}, #{addr1}
+             , #{addr2}, #{dlvZip}, #{dlvAddr1}, #{dlvAddr2}, #{email}, #{startDt}, #{endDt}
+             , #{useYn}, #{workId}, NOW(), #{workId}, NOW()
+            )
+	</insert>
+	
+	<!-- 매출처 신규 추가정보 저장 -->
+	<insert id="insertSalesAddInfo" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*SalesMgmtMapper.insertSalesAddInfo*/
+	    INSERT INTO KRMC.TFM_SALES_ADD_INFO
+            (SALES_CD, SALES_NM, SALES_S_NM, AREA_CLASS, SALES_PR_CD, CAR_CD, TAX_YN, SETL_CON
+             , SETL_DT, CRE_LIM, CR_SALES_YN, ORD_DDLN_TM, ORD_DDLN_YN, REMARKS
+             , CLT_SALES_CD, SALES_CLASS, PROFIT_CLASS, DLV_DT_CLASS, SUBSIDY_RATE, BAL_DISPLAY_YN, PRICE_DISPLAY_YN
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT, WARR_AMT, WARR_EXP_DT, STORE_CNT, EXP_SALES_AMT, NEW_SALES_PR_CD, VR_ACCT_NO)
+        VALUES
+            (
+             #{salesCd}, #{salesNm}, #{salesSNm}, #{areaClass}, #{salesPrCd}, #{carCd}, #{taxYn}, #{setlCon}
+             , #{setlDt}, IFNULL(#{creLim},0), #{crSalesYn}, #{ordDdlnTm}, #{ordDdlnYn}, #{remarks}
+             , #{cltSalesCd}, #{salesClass}, '10', #{dlvDtClass}, IFNULL(#{subsidyRate},0), #{balDisplayYn}, #{priceDisplayYn}
+             , #{useYn}, #{workId}, NOW(), #{workId}, NOW(), #{warrAmt}, #{warrExpDt}, #{storeCnt}, #{expSalesAmt}, #{newSalesPrCd}, #{vrAcctNo}
+            ) 
+	</insert>
+	
+	<!-- 매출처 신규 본사실제매출처 저장 -->
+	<insert id="insertSalesHqClass" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*SalesMgmtMapper.insertSalesHqClass*/
+	    INSERT INTO KRMC.TFM_SALES_HQ_CLASS
+            (SALES_CD, HQ_CLASS, HQ_CD
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT)
+        VALUES
+            (
+             #{salesCd}, #{hqClass}, #{hqCd}
+             , #{useYn}, #{workId}, NOW(), #{workId}, NOW()
+            )
+	</insert>
+	
+
+	<!-- 매출처 마스터 업데이트 -->
+	<update id="updateSalesMgmt" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*SalesMgmtMapper.updateSalesMgmt*/	
+        UPDATE TFM_SALES_MST
+           SET BSNS_NUM             = #{bsnsNum}
+               , CORP_NUM           = #{corpNum}
+               , BUSI_CON           = #{busiCon}
+               , BUSI_TYPE          = #{busiType}
+               , BOSS_NM            = #{bossNm}
+               , TEL_NO             = #{telNo}
+               , FAX_NO            = #{faxNo}
+               , PUR_PR_NM          = #{purPrNm}
+               , PUR_PR_HP          = #{purPrHp}
+               , CLOSE_PR_NM        = #{closePrNm}
+               , CLOSE_HP           = #{closeHp}
+               , CENTER_PR_NM       = #{centerPrNm}
+               , CENTER_PR_HP       = #{centerPrHp}
+               , CENTER_PR_TEL      = #{centerPrTel}
+               , CENTER_FAX         = #{centerFax}
+               , ZIP_CD             = #{zipCd}
+               , ADDR_1             = #{addr1}
+               , ADDR_2             = #{addr2}
+               , DLV_ZIP            = #{dlvZip}
+               , DLV_ADDR_1         = #{dlvAddr1}
+               , DLV_ADDR_2         = #{dlvAddr2}
+               , EMAIL              = #{email}
+               , START_DT           = #{startDt}
+               , END_DT             = #{endDt}
+               , USE_YN             = #{useYn}
+               , MOD_ID             = #{workId}
+               , MOD_DT             = NOW()
+         WHERE SALES_CD =  #{salesCd}
+	</update>
+	
+		<!-- 매출처 추가정보 업데이트 -->
+	<update id="updateSalesAddInfo" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*SalesMgmtMapper.updateSalesAddInfo*/	
+        UPDATE TFM_SALES_ADD_INFO
+           SET SALES_NM           = #{salesNm} 
+               , SALES_S_NM       = #{salesSNm}
+               , AREA_CLASS       = #{areaClass}
+               , SALES_PR_CD      = #{salesPrCd}
+               , CAR_CD           = #{carCd}
+               , TAX_YN           = #{taxYn}
+               , SETL_CON         = #{setlCon}
+               , SETL_DT          = #{setlDt}
+               , CRE_LIM          = IFNULL(#{creLim},0)
+               , CR_SALES_YN      = #{crSalesYn}
+               , ORD_DDLN_TM      = #{ordDdlnTm}
+               , ORD_DDLN_YN      = #{ordDdlnYn}
+               , REMARKS          = #{remarks}
+               , CLT_SALES_CD     = #{cltSalesCd}
+               , SALES_CLASS      = #{salesClass}
+               , PROFIT_CLASS     = '10'
+               , DLV_DT_CLASS     = #{dlvDtClass}
+               , SUBSIDY_RATE     = IFNULL(#{subsidyRate},0)
+               , BAL_DISPLAY_YN   = #{balDisplayYn}
+               , PRICE_DISPLAY_YN = #{priceDisplayYn}
+               , USE_YN           = #{useYn}
+               , MOD_ID           = #{workId}
+               , MOD_DT           = NOW()
+               , WARR_AMT		  = #{warrAmt}
+               , WARR_EXP_DT	  = #{warrExpDt}	
+               , STORE_CNT		  =	#{storeCnt}
+               , EXP_SALES_AMT	  = #{expSalesAmt}
+               , NEW_SALES_PR_CD  = #{newSalesPrCd}	
+               , VR_ACCT_NO       = #{vrAcctNo}
+         WHERE SALES_CD =  #{salesCd}
+	</update>
+	
+		<!-- 매출처 본사실제매출처 업데이트 -->
+	<update id="updateSalesHqClass" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*SalesMgmtMapper.updateSalesHqClass*/	
+        UPDATE TFM_SALES_HQ_CLASS
+           SET HQ_CLASS    = #{hqClass}
+               , HQ_CD     = #{hqCd}
+               , USE_YN    = #{useYn}
+               , MOD_ID    = #{workId}
+               , MOD_DT    = NOW()
+         WHERE SALES_CD =  #{salesCd}
+	</update>
+	
+	
+	<!-- 매출처 신규 ID 저장 -->
+	<insert id="insertSalesMember" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*BuyMgmtMapper.insertSalesMember*/
+	    INSERT INTO TCM_MEMBER
+		(MEMBER_CD, USER_ID, USER_NM, USER_PW, USER_TYPE, USER_ROLES, PASS_CHG_YN, PASS_LAST_DY, PASS_FAIL_CNT, USE_YN, LOCK_YN, GEN_DIVN_CD, REG_DT, REG_ID, MOD_DT, MOD_ID 
+		)
+		VALUES
+		(#{salesCd}, #{salesCd}, #{salesNm}, #{salesCd}, 'S1', 'ROLE_USER', 'Y', '99991231', 0, #{useYn}, 'N', '9007001', NOW(), #{workId, jdbcType=VARCHAR}, NOW(), #{workId, jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!-- 매출처 신규 ID 권한 저장 -->
+	<insert id="insertSalesMemberAuth" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*BuyMgmtMapper.insertSalesMemberAuth*/
+	    INSERT INTO TCM_MEMBER_AUTH
+		(GROUP_ID, MEMBER_CD, REG_DT, REG_ID 
+		)
+		VALUES
+		('SU50', #{salesCd}, NOW(), #{workId, jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!-- 매츨처 신규 ID 수정 -->
+	<update id="updateSalesMember" parameterType="com.doppio.workplace.bm.service.SalesMgmtVo">
+	/*BuyMgmtMapper.updateSalesMember*/
+	    UPDATE TCM_MEMBER
+	       SET USER_NM = #{salesNm}
+	           , USE_YN = #{useYn}
+	           , MOD_DT = NOW()
+	           , MOD_ID = #{workId, jdbcType=VARCHAR}
+	     WHERE USER_ID = #{salesCd}
+	</update>
+	
+</mapper>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<taglib xmlns="http://java.sun.com/xml/ns/j2ee"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-jsptaglibrary_2_0.xsd"
+	version="2.0">
+
+	<description>DOPPIO Functions</description>
+	<tlib-version>1.2</tlib-version>
+	<short-name>util</short-name>
+	<uri>http://taglib/app</uri>
+
+	<function>
+		<name>encrypt</name>
+		<function-class>org.springframework.tronic.util.StringUtil</function-class>
+		<function-signature>java.lang.String getEncrypt(java.lang.String)</function-signature>
+		<example>
+			util:getEncrypt("ABCD") 
+			result : "#$$#$#$#$#$#$srffasfasfS"
+		</example>
+	</function>
+	
+	<function>
+		<name>decrypt</name>
+		<function-class>org.springframework.tronic.util.StringUtil</function-class>
+		<function-signature>java.lang.String getDecrypt(java.lang.String)</function-signature>
+		<example>
+			util:getDecrypt("#$$#$#$#$#$#$srffasfasfS") 
+			result : "ABCD"
+		</example>
+	</function>
+	
+	<function>
+		<name>formatValuePattern</name>
+		<function-class>org.springframework.tronic.util.StringUtil</function-class>
+		<function-signature>java.lang.String formatValuePattern(java.lang.String, java.lang.String)</function-signature>
+		<example>
+			util:formatValuePattern('1234567890',"###-##-#####") 
+			result : "123-45-67890"
+		</example>
+	</function>
+	
+	<function>
+		<name>getNowDate</name>
+		<function-class>org.springframework.tronic.util.DateUtil</function-class>
+		<function-signature>java.lang.String getNowDate()</function-signature>
+		<example>
+			util:getNowDate() 
+			result : "2012/06/28"
+		</example>
+	</function>
+	
+	<function>
+		<name>getNowDateFmt</name>
+		<function-class>org.springframework.tronic.util.DateUtil</function-class>
+		<function-signature>java.lang.String getNowDate(java.lang.String)</function-signature>
+		<example>
+			util:getNowDate("yyyy/MM") 
+			result : "2012/06"
+			util:getNowDate("yyyy") 
+			result : "2012""
+			util:getNowDate("MM") 
+			result : "06"
+			util:getNowDate("DD") 
+			result : "28"
+		</example>
+	</function>
+	
+	<function>
+		<name>getYearMonthFirstDay</name>
+		<function-class>org.springframework.tronic.util.DateUtil</function-class>
+		<function-signature>java.lang.String getYearMonthFirstDay()</function-signature>
+		<example>
+			getYearMonthFirstDay() 
+			result : "2012/06/01"
+		</example>
+	</function>
+	
+	<function>
+		<name>getMonthLastDayDate</name>
+		<function-class>org.springframework.tronic.util.DateUtil</function-class>
+		<function-signature>java.lang.String getMonthLastDayDate()</function-signature>
+		<example>
+			util:getMonthLastDayDate() 
+			result : "2012/06/28"
+		</example>
+	</function>
+	
+	<function>
+		<name>getAddDate</name>
+		<function-class>org.springframework.tronic.util.DateUtil</function-class>
+		<function-signature>java.lang.String getAddDate(java.lang.String)</function-signature>
+		<example>
+			util:getAddDate(1) 
+			result : "2021/03/31"
+		</example>
+	</function>	
+
+</taglib>

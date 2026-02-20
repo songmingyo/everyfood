@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.cs.service.impl.ClsDsplLossListMapper">
+
+	
+	<!-- 일재고 조회 -->
+	<select id="selectClsDsplLossList" parameterType="com.doppio.workplace.cs.service.ClsDsplLossListVo" resultType="com.doppio.workplace.cs.service.ClsDsplLossListVo">
+	/*ClsDsplLossListMapper.selectClsDsplLossList*/	
+		SELECT TPD.DSP_DT
+		       , TWM.WH_NM
+		       , TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD.DTL_NM AS DSP_CLASS_NM
+		       , TPD.DSP_QTY
+		       , TPD.COST
+		       , TPD.DSP_AMT
+		       , TPD.REMARKS
+		       , TM.USER_NM AS REG_NM
+		       , DATE_FORMAT(TPD.REG_DT,'%Y-%m-%d %T') AS REG_DT
+		  FROM TBH_PRDT_DSPL AS TPD
+		       JOIN TFM_PRDT_MST AS TPM
+		           ON TPM.PRDT_CD = TPD.PRDT_CD
+		       JOIN TFM_WH_MST AS TWM
+		           ON TWM.WH_CD = TPD.WH_CD
+		       LEFT OUTER JOIN TCM_MEMBER AS TM
+		           ON TM.USER_ID = TPD.REG_ID
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = TPD.DSP_CLASS
+		          AND TCD.COM_CD = 'M015'
+         WHERE TPD.DSP_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+           AND TPD.DSP_QTY != 0
+         
+         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+           AND TPD.PRDT_CD = #{searchPrdtCd}
+         </if>
+         <if test='searchDspClass != null and searchDspClass != ""'> 
+           AND TPD.DSP_CLASS = #{searchDspClass}
+         </if>
+         <if test='searchWhCd != null and searchWhCd != ""'> 
+           AND TPD.WH_CD = #{searchWhCd}
+         </if>
+         <if test='searchLCd != null and searchLCd != ""'> 
+           AND TPM.L_CD = #{searchLCd}
+         </if>
+         <if test='searchMCd != null and searchMCd != ""'> 
+           AND TPM.M_CD = #{searchMCd}
+         </if>
+         
+	</select>
+	
+	
+	<!-- 일재고 엑셀 다운로드 -->
+	<select id="selectClsDsplLossListExcel" parameterType="com.doppio.workplace.cs.service.ClsDsplLossListVo" resultType="java.util.HashMap">
+	/*ClsDsplLossListMapper.selectClsDsplLossListExcel*/	
+		SELECT TPD.DSP_DT
+		       , TWM.WH_NM
+		       , TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD.DTL_NM AS DSP_CLASS_NM
+		       , TPD.DSP_QTY
+		       , TPD.COST
+		       , TPD.DSP_AMT
+		       , TPD.REMARKS
+		       , TM.USER_NM AS REG_NM
+		       , DATE_FORMAT(TPD.REG_DT,'%Y-%m-%d %T') AS REG_DT
+		  FROM TBH_PRDT_DSPL AS TPD
+		       JOIN TFM_PRDT_MST AS TPM
+		           ON TPM.PRDT_CD = TPD.PRDT_CD
+		       JOIN TFM_WH_MST AS TWM
+		           ON TWM.WH_CD = TPD.WH_CD
+		       LEFT OUTER JOIN TCM_MEMBER AS TM
+		           ON TM.USER_ID = TPD.REG_ID
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = TPD.DSP_CLASS
+		          AND TCD.COM_CD = 'M015'
+         WHERE TPD.DSP_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+           AND TPD.DSP_QTY != 0
+         
+         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+           AND TPD.PRDT_CD = #{searchPrdtCd}
+         </if>
+         <if test='searchDspClass != null and searchDspClass != ""'> 
+           AND TPD.DSP_CLASS = #{searchDspClass}
+         </if>
+         <if test='searchWhCd != null and searchWhCd != ""'> 
+           AND TPD.WH_CD = #{searchWhCd}
+         </if>
+         <if test='searchLCd != null and searchLCd != ""'> 
+           AND TPM.L_CD = #{searchLCd}
+         </if>
+         <if test='searchMCd != null and searchMCd != ""'> 
+           AND TPM.M_CD = #{searchMCd}
+         </if>
+	</select>
+	
+</mapper>
+

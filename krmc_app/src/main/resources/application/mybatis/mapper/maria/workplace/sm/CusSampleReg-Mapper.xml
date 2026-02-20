@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusSampleRegMapper">
+
+	  
+	
+	<!-- 매출처샘플등록 마스터 조회 -->
+	<select id="selectCusSamplePrdtList" parameterType="com.doppio.workplace.sm.service.CusSampleRegVo" resultType="com.doppio.workplace.sm.service.CusSampleRegVo">
+	/*CusSampleRegMapper.selectCusSamplePrdtList*/	
+		SELECT TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD_1.DTL_NM AS ORD_UNIT
+		       , TCD_2.DTL_NM AS STRG_TYPE
+		       , TCD_3.DTL_NM AS VAT_YN_NM
+		       , TPM.VAT_YN
+		       , TPM.QTY_BOX
+		       , TPM.COST
+		       , TPM.STD_YN
+		       , 0 AS FREE_QTY
+		  FROM TFM_PRDT_MST AS TPM
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_1
+		           ON TCD_1.DTL_CD = TPM.ORD_UNIT 
+		          AND TCD_1.COM_CD = 'M006'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_2
+		           ON TCD_2.DTL_CD = TPM.STRG_TYPE 
+		          AND TCD_2.COM_CD = 'M001'
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_3
+		           ON TCD_3.DTL_CD = TPM.VAT_YN 
+		          AND TCD_3.COM_CD = '9008'
+         <where>
+           <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+		     AND TPM.PRDT_CD = #{searchPrdtCd}
+		   </if>
+		   <if test='searchPrdtNm != null and searchPrdtNm != ""'> 
+		     AND TPM.PRDT_NM LIKE CONCAT('%',#{searchPrdtNm},'%')
+		   </if>
+		 </where>
+
+	</select>
+	
+	<!-- 매출처샘플등록 마스터 하나의 품목만 조회 -->
+	<select id="selectCusSampleRegPrdtAdd" parameterType="com.doppio.workplace.sm.service.CusSampleRegVo" resultType="com.doppio.workplace.sm.service.CusSampleRegVo">
+	/*CusSampleRegMapper.selectCusSampleRegPrdtAdd*/	
+		SELECT #{searchSalesCd} AS SALES_CD
+		       , TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD_1.DTL_NM AS ORD_UNIT
+		       , TPM.QTY_BOX
+		       , TPM.STD_YN
+		  FROM TFM_PRDT_MST AS TPM
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_1
+		           ON TCD_1.DTL_CD = TPM.ORD_UNIT 
+		          AND TCD_1.COM_CD = 'M006'
+         <where>
+           <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+		     AND TPM.PRDT_CD = #{searchPrdtCd}
+		   </if>
+		   <if test='searchPrdtNm != null and searchPrdtNm != ""'> 
+		     AND TPM.PRDT_NM LIKE CONCAT('%',#{searchPrdtNm},'%')
+		   </if>
+		 </where>
+
+	</select>
+	
+	<!--  매출처 샘플등록 내역 조회  -->
+	<select id="selectCusSampleRegList" parameterType="com.doppio.workplace.sm.service.CusSampleRegVo" resultType="com.doppio.workplace.sm.service.CusSampleRegVo">
+	/*CusSampleRegMapper.selectCusSampleRegList*/	
+	    SELECT TSF.SALES_SLIP_NO
+	           , TSF.SALES_SEQ
+		  	   , TSF.FREE_DT
+			   , TSF.SALES_CD
+		  	   , TSF.PRDT_CD
+		  	   , TPM.PRDT_NM 
+		  	   , TPM.PRDT_STD
+		  	   , TCD_1.DTL_NM AS ORD_UNIT
+		  	   , TSF.FREE_QTY
+		  	   , IFNULL(TSF.BOX_QTY,'') AS BOX_QTY
+		  	   , TSF.WH_CD
+    	  	   , TWM.WH_NM 
+    	  	   , TSR.REMARKS_1    	  	   
+    	  	   , TM_1.USER_NM AS MOD_NM
+    	  	   , TM_2.USER_NM AS REG_NM
+    	  	   , TCD_2.DTL_NM AS FREE_CLASS_NM
+    	  	   
+    	  	   , TPM.QTY_BOX
+			   , TPM.STD_YN
+			   
+	      FROM TSH_SALES_FREE AS TSF
+    	          
+		       LEFT OUTER JOIN TFM_WH_MST AS TWM 
+		           ON TWM.WH_CD = TSF.WH_CD 
+		         
+		       LEFT OUTER JOIN TSH_SALES_REMARK AS TSR
+		           ON TSR.SALES_SLIP_NO = TSF.SALES_SLIP_NO
+		          AND TSR.SALES_SEQ = TSF.SALES_SEQ
+		          
+		       JOIN TCM_MEMBER AS TM_1
+		         ON TM_1.USER_ID = TSF.REG_ID 
+		         
+		       JOIN TCM_MEMBER AS TM_2
+		         ON TM_2.USER_ID = TSF.MOD_ID
+		        
+		       JOIN TFM_PRDT_MST AS TPM 
+		         ON TPM.PRDT_CD = TSF.PRDT_CD 
+		         
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD_1
+    	         ON TCD_1.DTL_CD = TPM.ORD_UNIT
+    	        AND TCD_1.COM_CD = 'M006'
+    	        
+    	       LEFT OUTER JOIN TCM_CODE_DTL AS TCD_2
+    	         ON TCD_2.DTL_CD = TSF.FREE_CLASS
+    	        AND TCD_2.COM_CD = 'M016'
+    	       
+    	 WHERE TSF.FREE_DT = #{searchFreeDt}
+    	   AND TSF.SALES_CD = #{searchSalesCd}
+    	   AND TSF.FREE_CLASS = #{searchFreeClass}
+    	   AND TSF.FREE_QTY != 0
+    	   
+    	 <if test='searchPrdtCd != null and searchPrdtCd != ""'>
+	       AND TSF.PRDT_CD = #{searchPrdtCd}
+		 </if>
+    	   
+    	 ORDER BY TSF.SALES_SLIP_NO
+	              , TSF.SALES_SEQ
+	</select>
+	
+	<!-- 전표번호 생성 기존 전표번호가 없으면 무조건 신규 생성	-->
+     <insert id="insertSampleSlipNoNew" parameterType="com.doppio.workplace.sm.service.CusSampleRegVo">
+     /*CusSampleRegMapper.insertSampleSlipNoNew*/
+	      <selectKey resultType="string" keyProperty="salesSlipNo" order="BEFORE">
+	     	    SELECT CONCAT(#{freeDt}, '-', LPAD(CAST(RIGHT(IFNULL(MAX(SALES_SLIP_NO),'0000'),4) AS DECIMAL)+1, 4, 0)) AS SALES_SLIP_NO
+         	  	  FROM TSH_DAY_SLIPNO
+             	 WHERE SALES_SLIP_DT = #{freeDt}	
+		</selectKey>
+	     	INSERT IGNORE INTO TSH_DAY_SLIPNO
+	     	(
+	     		SALES_SLIP_DT
+				, SALES_SLIP_NO
+				, REG_DT
+		 	)
+		 	VALUES
+		 	(
+		 		#{freeDt}	
+		 		, #{salesSlipNo}
+		 		, NOW()
+		 	)
+	</insert>
+	
+
+	
+	<!--  전표번호 생성 및 조회 
+		(25개이상인 경우 신규 전표번호 생성 하고 Insert/전표번호 반환,  25이하인경우 전표번호 INSERT 무시(IGNORE), 조회된 전표번호 반환  )  
+	-->
+     <insert id="insertSampleSlipNo" parameterType="com.doppio.workplace.sm.service.CusSampleRegVo">
+     /*CusSampleRegMapper.insertSampleSlipNo*/
+	      <selectKey resultType="string" keyProperty="salesSlipNo" order="BEFORE">
+	     	    SELECT CASE WHEN IFNULL(S.SALES_SLIP_NO,'') != '' AND SALES_SEQ BETWEEN 1 AND 24
+			       		    THEN S.SALES_SLIP_NO   -- 기존 전표사용 
+			       		    ELSE ( SELECT CONCAT(#{freeDt}, '-', LPAD(CAST(RIGHT(IFNULL(MAX(SALES_SLIP_NO),'0000'),4) AS DECIMAL)+1, 4, 0)) AS SALES_SLIP_NO
+         	  				         FROM TSH_DAY_SLIPNO
+             				        WHERE SALES_SLIP_DT = #{freeDt}	
+             				     ) 	 			 -- 신규 전표생성 
+			       		    END AS SALES_SLIP_NO
+			     FROM ( SELECT TSF.SALES_SLIP_NO, COUNT(*) AS SALES_SEQ
+						  FROM TSH_SALES_FREE AS TSF
+						 WHERE TSF.SALES_SLIP_NO = #{salesSlipNo}
+						   AND TSF.FREE_DT = #{freeDt}
+			          ) S
+		</selectKey>
+	     	INSERT IGNORE INTO TSH_DAY_SLIPNO
+	     	(
+	     		SALES_SLIP_DT
+				, SALES_SLIP_NO
+				, REG_DT
+		 	)
+		 	VALUES
+		 	(
+		 		#{freeDt}	
+		 		, #{salesSlipNo}
+		 		, NOW()
+		 	)
+	</insert>
+	   
+	<!-- 매출처 샘플등록 데이터 저장   -->
+	<insert id="insertSamepleDlv" parameterType="com.doppio.workplace.sm.service.CusSampleRegVo">
+	/*CusSampleRegMapper.insertSamepleDlv*/
+	<selectKey resultType="string" keyProperty="salesSeq" order="BEFORE">
+	 	SELECT IFNULL( MAX(SALES_SEQ),0)+1 AS SALES_SEQ 
+	 	  FROM TSH_SALES_FREE
+	 	 WHERE SALES_SLIP_NO = #{salesSlipNo} 
+	 </selectKey>
+		INSERT INTO TSH_SALES_FREE
+	    	(SALES_SLIP_NO, SALES_SEQ, FREE_DT, SALES_CD
+	    	 , PRDT_CD, FREE_CLASS, WH_CD
+             , FREE_QTY, BOX_QTY
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT
+			)
+		VALUES
+			(#{salesSlipNo}, #{salesSeq}, #{freeDt}, #{salesCd}
+			 , #{prdtCd}, #{freeClass}, #{whCd}
+			 , #{freeQty}, #{boxQty}
+			 , #{useYn}, #{workId}, NOW(), #{workId}, NOW()
+			)
+	</insert>
+		
+		
+		
+	<!-- 매출처 샘플등록 데이터 수정 처리    -->
+	<update id="updateSampleDlv" parameterType="com.doppio.workplace.sm.service.CusSampleRegVo">
+	/*CusSampleRegMapper.updateSampleDlv*/
+		UPDATE TSH_SALES_FREE
+		   SET FREE_QTY 	= #{freeQty}
+			   , BOX_QTY	= #{boxQty}
+			   , USE_YN     = #{useYn}
+			   , MOD_ID   	= #{workId}
+			   , MOD_DT   	= NOW() 
+	     WHERE SALES_SLIP_NO  =  #{salesSlipNo}
+	       AND SALES_SEQ      =  #{salesSeq}
+	</update>
+	
+	<!-- 매출처 전표별 비고 Count   -->
+	<select id="selectSampleRemarksListCount" parameterType="com.doppio.workplace.sm.service.CusSampleRegVo" resultType="int">
+	/*CusSampleRegMapper.selectSampleRemarksListCount*/
+		SELECT COUNT(*)
+		  FROM TSH_SALES_REMARK AS TSR
+	     WHERE TSR.SALES_SLIP_NO =  #{salesSlipNo}
+	       AND TSR.SALES_SEQ     =  #{salesSeq}
+	</select>
+	
+	
+	<!-- 매출처 전표별 비고 저장   -->
+	<insert id="insertSampleRemarks" parameterType="com.doppio.workplace.sm.service.CusSampleRegVo">
+	/*CusSampleRegMapper.insertSampleRemarks*/
+		INSERT INTO TSH_SALES_REMARK
+	    	(SALES_SLIP_NO, SALES_SEQ, REMARKS_1, REMARKS_2
+             , REG_ID, REG_DT
+			)
+		VALUES
+			(#{salesSlipNo}, #{salesSeq}, #{remarks1}, #{remarks2}
+			 , #{workId}, NOW()
+			)
+	</insert>
+		
+		
+		
+	<!-- 매출처 전표별 비고 수정 처리    -->
+	<update id="updateSampleRemarks" parameterType="com.doppio.workplace.sm.service.CusSampleRegVo">
+	/*CusSampleRegMapper."updateSampleRemarks"*/
+		UPDATE TSH_SALES_REMARK
+		   SET REMARKS_1 	= #{remarks1}
+			   , REG_ID   	= #{workId}
+			   , REG_DT   	= NOW()
+	     WHERE SALES_SLIP_NO  =  #{salesSlipNo}
+	</update>
+	
+	
+</mapper>

@@ -1,0 +1,632 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.common.service.impl.CommonMapper">
+
+	<!-- 회사찾기 MAP -->
+	<resultMap id="commonCompInfoMap"   type="com.doppio.common.model.CommonCompInfoVo">
+		<result column="MASTER_ID"		 property="masterId"		  />	 <!-- 회사코드		-->
+		<result column="PARENT_COMP_CD"  property="parentCompCd"  />     <!-- 부모회사코드      	-->
+		<result column="COMP_NM"         property="compNm"        />     <!-- 회사명              	-->
+		<result column="BMAN_NO"         property="bmanNo"        />     <!-- 사업자등록번호    	-->
+		<result column="CORPN_NO"        property="corpnNo"       />     <!-- 법인번호           	-->
+		<result column="BMAN_DIVN_CD"    property="bmanDivnCd"    />     <!-- 사업자구분코드    	-->
+		<result column="AFFILIATE_YN"    property="affiliateYn"   />     <!-- 계열사유무        	-->
+		<result column="CEO_NM"          property="ceoNm"         />     <!-- 대표자명           	-->
+		<result column="BTYP_NM"         property="btypNm"        />     <!-- 업태코드           	-->
+		<result column="BIZ_ITM_NM"      property="bizItmNm"      />     <!-- 업종                	-->
+		<result column="REP_BRAND"       property="repBrand"      />     <!-- 대표브랜드         	-->
+		<result column="FOU_DY"          property="fouDy"         />     <!-- 설립일자           	-->
+		<result column="REP_TEL_NO"      property="repTelNo"      />     <!-- 대표전화           	-->
+		<result column="FAX_TEL_NO"      property="faxTelNo"      />     <!-- 팩스전화번호      	-->
+		<result column="ZIP_NO"          property="zipNo"         />     <!-- 우편번호           	-->
+		<result column="ZIP_ADDR"        property="zipAddr"       />     <!-- 우편주소           	-->
+		<result column="DTL_ADDR"        property="dtlAddr"       />     <!-- 상세주소           	-->
+		<result column="REC_NAME"        property="recName"       />     <!-- 담당자명           	-->
+		<result column="USER_ID"         property="userId"        />     <!-- 담당자아이디        	-->
+		<result column="USER_NM"         property="userNm"        />     <!-- 담당자명           	-->
+		<result column="EMAIL"         	 property="email"         />     <!-- 담당자메일          	-->
+		<result column="RNUM"         	 property="rnum"		  />   	 <!-- 열 순서         	-->
+    	<result column="TOTAL_COUNT"	 property="totalCount"    /> 	 <!-- 전체카운트        	-->
+    	<result column="BMAN_NUMBER"	 property="bmanNumber"	  />	 <!-- 사업자번호 형식 	    -->
+	</resultMap>
+
+	<!-- 사용자찾기 MAP -->
+	<resultMap id="commonMemberInfoMap"  type="com.doppio.common.model.CommonMemberInfoVo">
+		<result column="MEMBER_CD"		property="memberCd"		  />	<!-- 사용자고유번호  	 -->
+    	<result column="USER_ID"       	property="userId"      	  />	<!-- 담당자ID			 -->
+    	<result column="USER_NM"       	property="userNm"         />	<!-- 신청인성명		 -->
+    	<result column="TEL_NO"        	property="telNo"          />	<!-- 전화번호		 	 -->
+    	<result column="HP_NO"         	property="hpNo"           />	<!-- 핸드폰번호		 -->
+    	<result column="EMAIL"         	property="email"          />	<!-- 이메일			 -->
+    	<result column="MASTER_ID"      property="masterId"         />	<!-- 소속회사코드		 -->
+    	<result column="COMP_NM"       	property="compNm"         />	<!-- 소속회사명칭		 -->
+    	<result column="AFFILIATE_YN"  	property="affiliateYn"    />	<!-- 계열사유무(기관:Y/기업:N 구분)-->
+    	<result column="POSITION_NM"   	property="positionNm"     />	<!-- 직책명			 -->
+    	<result column="CLASS_NM"      	property="classNm"        />	<!-- 직급명			 -->
+    	<result column="USER_TYPE"     	property="userType"       />	<!-- 사용자타입 코드[9001]-->
+    	<result column="USER_TYPE_NM"  	property="userTypeNm"     />	<!-- 사용자타입명		  -->
+    	<result column="USE_YN"        	property="useYn"          />	<!-- 사용자타입명		  -->
+    	<result column="RNUM"         	property="rnum"			  />   	<!--   열 순서         -->
+    	<result column="TOTAL_COUNT"	property="totalCount"  	  /> 	<!--전체카운트        		        -->
+	</resultMap>
+
+	<!-- 공통코드 MAP -->
+	<resultMap id="customCodeMap" 	type="com.doppio.common.model.CustomCodeVo">
+		<result column="VAL" 		property="value" 		  />	<!-- 코드  	-->
+		<result column="TEXT" 		property="text"			  />	<!-- 코드명 	-->
+	</resultMap>
+	
+	<!-- 캘린더 Map -->
+	<resultMap id="calendarMap" type="com.doppio.common.model.CalendarVo">
+		<result column="TITLE"			 			property="title"		  			/> <!-- TITLE  	  	-->
+		<result column="START"			 			property="start"		  			/> <!-- START  	  	-->
+		<result column="END"			 			property="end"		  				/> <!-- END  	  	-->
+		<result column="COLOR"			 			property="color"		  			/> <!-- TITLE  	  	-->
+	</resultMap>
+	
+	<!-- USER 커뮤니티 최근글 MAP -->
+	<resultMap id="userCommunityMap" 			type="com.doppio.community.service.CmtBoardVo">
+		<result column="BOARD_IDX"				property="boardIdx"		/>	<!-- 게시인덱스  -->
+		<result column="BOARD_CD"				property="boardCd"		/>	<!-- 게시판코드  -->
+		<result column="BOARD_TITLE"			property="boardTitle"	/>	<!-- 게시제목    -->
+		<result column="BOARD_CONTENT"			property="boardContent"	/>	<!-- 게시내용    -->
+		<result column="USER_NM"				property="userNm"		/>	<!-- 등록자명    -->
+		<result column="REG_DT"	        		property="regDt"		/>	<!-- 일시        -->
+		<result column="ALERT_FR_DT"	        property="alertFrDt"	/>	<!-- 팝업공지시작일시     -->
+		<result column="ALERT_TO_DT"	        property="alertFrDt"	/>	<!-- 팝업공지종료일시     -->
+	</resultMap>
+	
+	<resultMap id="securityMap" type="com.doppio.common.security.service.CustomUser">
+        <result	column="USER_ID" 				property="userId" 			/>	
+        <result	column="USER_ID" 				property="username" 		/>
+    	<result	column="USER_PW" 				property="password"			/>
+    	<result	column="USER_NM" 				property="fullName"			/>
+    	<result	column="EMAIL" 					property="email"			/>
+   		<result	column="MEMBER_CD" 				property="memberCd"			/>
+    	<result	column="MASTER_ID"				property="masterId"			/>
+    	<result	column="COMP_NM" 				property="compNm"			/>
+    	<result	column="STR_CD"					property="strCd"			/>    	
+    	<result	column="USER_TYPE" 	 			property="userType"			/>
+    	<result	column="USER_ROLES" 			property="userRoles"		/>
+    	<result	column="PASS_FAIL_CNT"  		property="passFailCnt"		/>
+    	<result	column="LOCK_YN"  				property="lockYn"			/>
+    	<result	column="USE_YN"  				property="useYn"			/>
+    	<result	column="HP_NO"					property="hpNo"				/>
+    	<result	column="TEL_NO"					property="telNo"			/>
+    	<result	column="PASS_CHG_YN"			property="passChgYn"		/>
+    	<result	column="PASS_LAST_DY"			property="passLastDy"		/>
+    	<result	column="ID_TYPE_CD"				property="idTypeCd"			/>
+    	<result	column="PASS_CHG_NEED_YN"		property="passChgNeedYn"	/>
+    	<result	column="WORKNG_SE_CD"			property="workngSeCd"		/>
+    	<result	column="APRV_DIVN_CD"  			property="aprvDivnCd"		/>  
+		<result	column="IF_YN" 		 			property="ifYn"				/>
+		<result	column="DEPT_CD" 		 		property="deptCd"			/>
+		<result	column="DEPT_NM" 		 		property="deptNm"			/>		
+		<result column="STR_CD"	 		 		property="strCd"    	  	/>
+    </resultMap>
+    
+	<!-- 사용자아이디 카운트   -->
+	<select id="selectUserIdValidation" parameterType="String" resultType="Integer">
+		/*CommonMapper.selectUserIdValidation*/
+		SELECT
+			count(*) AS CNT
+		FROM TCM_MEMBER  WHERE USER_ID = #{userId}
+	</select>
+
+	<!-- 사업자등록번호 카운트   -->
+	<select id="selectBmanNoValidation" parameterType="String" resultType="Integer">
+		/*CommonMapper.selectBmanNoValidation*/
+		SELECT
+			count(*) AS CNT
+		FROM TCM_COMPINFO  WHERE BMAN_NO = #{bmanNo}
+	</select>
+
+	<!-- 회사찾기 POPUP 조회 List -->
+	<select id="selectCompInfoList" parameterType="com.doppio.common.model.CommonCompInfoVo" resultMap="commonCompInfoMap">
+	/*CommonMapper.selectCompInfoList*/
+		SELECT 
+				T2.RNUM
+				,T2.TOTAL_COUNT
+				,T2.MASTER_ID							 /* 회사코드 */
+		        ,T2.PARENT_COMP_CD						 /* 부모회사코드 */
+		        ,T2.COMP_NM                              /* 회사명 */
+		        ,T2.BMAN_NO                              /* 사업자등록번호 */
+		        , CONCAT(SUBSTR(T2.BMAN_NO,1,3),'-',SUBSTR(T2.BMAN_NO,3,2),'-',SUBSTR(T2.BMAN_NO,5)) AS BMAN_NUMBER	/*사업자번호*/
+		        ,T2.CORPN_NO                             /* 법인번호 */
+		        ,T2.BMAN_DIVN_CD                         /* 사업자구분코드  */
+		        <!-- ,T2.AFFILIATE_YN                         /* 계열사유무    */ -->
+		        ,T2.CEO_NM                               /* 대표자명     */
+		        ,T2.BTYP_NM                              /* 업태코드     */
+		        ,T2.BIZ_ITM_NM                           /* 업종       */
+		        ,T2.REP_BRAND                            /* 대표브랜드    */
+		        ,T2.FOU_DY                               /* 설립일자     */
+		        ,T2.REP_TEL_NO                           /* 대표전화     */
+		        ,T2.FAX_TEL_NO                           /* 팩스전화번호   */
+		        ,T2.ZIP_NO                               /* 우편번호     */
+		        ,T2.ZIP_ADDR                             /* 우편주소     */
+		        ,T2.DTL_ADDR                             /* 상세주소     */
+		        ,T2.REC_NAME        				     /* 담당자명     */
+		        ,T2.USER_ID        				     	 /* 담당자아이디  */
+		        ,T2.USER_NM	        				     /* 담당자명     */
+<!-- 		        ,T2.EMAIL	        				     /* 담당자 메일   */ -->
+      	  FROM(
+      			SELECT ROW_NUMBER() OVER(ORDER BY
+      				 <choose>
+						<when test='sidx == "BMAN_NO"'>  T1.BMAN_NO  </when>
+						<when test='sidx == "COMP_NM"'>  T1.COMP_NM  </when>
+						<when test='sidx == "CEO_NM"'>  T1.CEO_NM  </when>
+						<when test='sidx == "ZIP_ADDR"'>  T1.ZIP_ADDR  </when>
+						<otherwise> T1.MASTER_ID </otherwise>
+					</choose>
+					<choose>
+						<when test='sord != null and sord.equalsIgnoreCase("DESC")'>DESC</when>
+						<otherwise>ASC</otherwise>
+					</choose>
+      			) RNUM , COUNT(1) OVER() AS TOTAL_COUNT
+      			,T1.MASTER_ID							 /* 회사코드 */
+		        ,T1.PARENT_COMP_CD						 /* 부모회사코드 */
+		        ,T1.COMP_NM                              /* 회사명 */
+		        ,T1.BMAN_NO                              /* 사업자등록번호 */
+		        ,T1.CORPN_NO                             /* 법인번호 */
+		        ,T1.BMAN_DIVN_CD                         /* 사업자구분코드  */
+		        <!-- ,T1.AFFILIATE_YN                         /* 계열사유무    */ -->
+		        ,T1.CEO_NM                               /* 대표자명     */
+		        ,T1.BTYP_NM                              /* 업태코드     */
+		        ,T1.BIZ_ITM_NM                           /* 업종       */
+		        ,T1.REP_BRAND                            /* 대표브랜드    */
+		        ,T1.FOU_DY                               /* 설립일자     */
+		        ,T1.REP_TEL_NO                           /* 대표전화     */
+		        ,T1.FAX_TEL_NO                           /* 팩스전화번호   */
+		        ,T1.ZIP_NO                               /* 우편번호     */
+		        ,T1.ZIP_ADDR                             /* 우편주소     */
+		        ,T1.DTL_ADDR                             /* 상세주소     */
+		        ,T1.REC_NAME        				     /* 담당자명     */
+		        ,T1.USER_ID        				     	 /* 담당자아이디  */
+		        ,T1.USER_NM	        				     /* 담당자명     */
+<!-- 		        ,T1.EMAIL	        				     /* 담당자 메일   */ -->
+      			  FROM(
+						  SELECT A.MASTER_ID							/* 회사코드 */
+						        ,A.PARENT_COMP_CD						/* 부모회사코드 */
+						        ,A.COMP_NM                              /* 회사명 */
+						        ,A.BMAN_NO                              /* 사업자등록번호 */
+						        ,A.CORPN_NO                             /* 법인번호 */
+						        ,A.BMAN_DIVN_CD                         /* 사업자구분코드  */
+						        <!-- ,A.AFFILIATE_YN                         /* 계열사유무    */ -->
+						        ,A.CEO_NM                               /* 대표자명     */
+						        ,A.BTYP_NM                              /* 업태코드     */
+						        ,A.BIZ_ITM_NM                           /* 업종       */
+						        ,A.REP_BRAND                            /* 대표브랜드    */
+						        ,A.FOU_DY                               /* 설립일자     */
+						        ,A.REP_TEL_NO                           /* 대표전화     */
+						        ,A.FAX_TEL_NO                           /* 팩스전화번호   */
+						        ,A.ZIP_NO                               /* 우편번호     */
+						        ,A.ZIP_ADDR                             /* 우편주소     */
+						        ,A.DTL_ADDR                             /* 상세주소     */
+						        ,B.USER_NM   AS REC_NAME                /* 담당자명     */
+						        , CASE WHEN A.GEN_DIVN_CD = '9303005' THEN A.MASTER_ID 
+						        	ELSE C.USER_ID
+						        	END USER_ID
+						        , CASE WHEN A.GEN_DIVN_CD = '9303005' THEN A.CEO_NM
+						        	ELSE C.USER_NM
+						        	END USER_NM   			                /* 담당자명     */
+						        <!-- ,C.EMAIL   			                		/* 담당자메일    */ -->
+<!-- 						        , A.ENTP_MAN_EMAIL AS EMAIL -->
+						   FROM VCM_COMPINFO A 
+					            LEFT OUTER JOIN
+					                 (SELECT MASTER_ID, USER_NM
+					                   FROM TCM_MEMBER 
+					                   <if test='recName == null or recName == ""'>
+					                       WHERE MEMBER_CD = '0'
+					                   </if>
+					                   GROUP BY MASTER_ID, USER_NM
+					                 ) B ON A.MASTER_ID = B.MASTER_ID
+					            LEFT OUTER JOIN TCM_MEMBER C ON A.MASTER_ID = C.MASTER_ID  
+					            							AND C.USE_YN = 'Y' 
+					              							AND C.USER_TYPE = 'FA'
+						 <where>
+						    <if test='find_compNm != null and find_compNm != ""'>
+						        AND A.COMP_NM  LIKE CONCAT('%', #{find_compNm}, '%')
+						    </if>
+						    <if test='find_bmanNo != null and find_bmanNo != ""'>
+						        AND A.BMAN_NO  LIKE CONCAT('%', #{find_bmanNo}, '%')
+						    </if>
+						    <if test='find_ceoNm != null and find_ceoNm != ""'>
+						        AND A.CEO_NM   LIKE CONCAT('%', #{find_ceoNm}, '%')
+						    </if>
+						    <if test='find_recName != null and find_recName != ""'>
+						        AND B.USER_NM LIKE CONCAT('%', #{find_recName}, '%')
+						    </if>
+						    <!-- <if test='affiliateYn != null and affiliateYn != ""'>
+								AND A.AFFILIATE_YN = #{affiliateYn}
+							</if> -->
+							<if test='hedoYn != null and hedoYn != ""'>
+								AND A.HEDO_YN = #{hedoYn}
+							</if>
+							<if test='find_ifYn != null and find_ifYn != "" and find_ifYn == "Y"'>
+								AND A.GEN_DIVN_CD NOT IN ('9303005')
+							</if>
+							 <if test='find_tradeCompCd != null and find_tradeCompCd != ""'>
+						        AND A.TRADE_COMP_CD  = #{find_tradeCompCd}
+						    </if>
+							</where>
+					)T1
+			)T2
+		<if test='startRowNo != null and startRowNo != ""'>
+   			WHERE T2.RNUM between #{startRowNo} and #{endRowNo}
+   	    </if>
+   	    ORDER BY T2.RNUM
+	</select>
+
+	<!-- 사용자 코드생성(DB 시퀀스 X) -->
+    <insert id="insertSequenceNo" parameterType="java.util.HashMap">
+ 		 UPDATE TCM_SEQ SET SEQ = SEQ+1
+		 WHERE TABLE_NAME = #{TABLE_NAME}
+		  AND COL_NAME = #{COL_NAME}
+ 		<selectKey keyProperty="SEQ" resultType="String" order="AFTER">
+ 			SELECT
+ 				<choose>
+ 					<when test='VAL != null and VAL != ""'>
+ 						#{VAL}+LPAD(CONVERT(VARCHAR,SEQ),10-LEN(#{VAL}),'0') AS  SEQ
+ 					</when>
+ 					<otherwise>
+ 						LPAD(CONVERT(VARCHAR,SEQ) ,10,'0') AS  SEQ
+ 					</otherwise>
+ 				</choose>
+ 		     FROM TCM_SEQ WHERE TABLE_NAME = #{TABLE_NAME} AND COL_NAME = #{COL_NAME}
+		</selectKey>
+	</insert>
+
+
+
+	<!-- 게시판코드별 최근글 조회 List -->
+	<select id="selectCommunityList" parameterType="java.util.HashMap" resultType="java.util.HashMap" >
+	  /* CommonMapper.selectCommunityList */
+	 	 SELECT   CONVERT(S.BOARD_IDX, CHAR(50)) AS BOARD_IDX
+	             ,S.BOARD_CD
+	             ,S.BOARD_TITLE
+	             ,S.BOARD_CONTENT
+	             ,S.USER_NM
+	             ,S.REG_DT
+	             ,S.REG_DT_YMD
+	             ,S.REG_DT_DMY
+	             ,S.IS_URGENCY_YN
+	             ,S.BOARD_NOTICE_YN
+	       FROM (SELECT ROW_NUMBER() OVER(ORDER BY BOARD_NOTICE_YN DESC, REG_DT DESC) AS ROWCNT
+	                ,BOARD_IDX
+	                ,BOARD_CD
+	                ,BOARD_TITLE
+	                ,BOARD_CONTENT
+	                ,USER_NM
+					,DATE_FORMAT(REG_DT, '%Y%m%d%H%i%s') AS REG_DT
+	                ,DATE_FORMAT(REG_DT, '%Y-%m-%d %H:%i') AS REG_DT_YMD
+	                ,DATE_FORMAT(REG_DT, '%d-%m-%Y  %H:%i') AS REG_DT_DMY
+	                ,IS_URGENCY_YN
+	                ,BOARD_NOTICE_YN
+	                ,IFNULL(DEL_YN,'N') DEL_YN
+	           FROM TCM_BOARD_MST 
+			<where>
+				<if test='boardCd != null and boardCd != ""'>
+			        AND BOARD_CD = #{boardCd}
+			    </if>
+			    <if test='boardExposureCd != null and boardExposureCd != ""'>
+<!-- 		            AND (BOARD_EXPOSURE_CD is null OR BOARD_EXPOSURE_CD IN(#{boardExposureCd},'A')) -->
+		        </if>
+			</where>
+	             ) S
+			<choose>
+ 				<when test='rowCount != null and rowCount != ""'>
+ 				    WHERE  S.ROWCNT BETWEEN '1' AND #{rowCount}
+ 				</when>
+ 				<otherwise> WHERE  S.ROWCNT BETWEEN 1 AND 5</otherwise>
+ 			</choose>
+ 			  AND DEL_YN ='N'
+ 	</select>
+
+ 	<!-- 게시판코드별 최근글 상세조회 -->
+	<select id="selectDasboardCommunityView" parameterType="java.util.HashMap" resultType="java.util.HashMap" >
+	/*CommonMapper.selectDasboardCommunityView*/
+	 SELECT    CONVERT(BOARD_IDX, CHAR(50)) AS BOARD_IDX
+              ,BOARD_CD
+              ,BOARD_TITLE
+              ,BOARD_CONTENT
+              ,USER_NM
+              ,EMAIL
+              ,CONVERT(BOARD_COUNT, CHAR(50)) AS BOARD_COUNT 
+			  ,DATE_FORMAT(REG_DT, '%Y%m%d%H%i%s') AS REG_DT
+	          ,DATE_FORMAT(REG_DT, '%Y-%m-%d %H:%i') AS REG_DT_YMD
+	          ,DATE_FORMAT(REG_DT, '%d-%m-%Y  %H:%i') AS REG_DT_DMY
+              ,IS_URGENCY_YN
+	    FROM TCM_BOARD_MST 
+	   WHERE BOARD_IDX = #{boardIdx}
+	     AND BOARD_CD  = #{boardCd}
+ 	</select>
+
+
+	<!-- 영역별 팝업존 조회 List -->
+	<select id="selectPopupZoneList" parameterType="java.util.HashMap" resultType="java.util.HashMap" >
+	/*CommonMapper.selectPopupZoneList*/
+		SELECT    A.ZONE_CD
+                 ,A.ZONE_ID
+                 ,A.EXP_TYPE_CD
+                 ,A.POP_URL
+                 ,A.POP_CN
+                 ,A.ZONE_NM
+                 ,A.SUBJECT
+				 ,CONVERT(VARCHAR, A.REG_DT, 120) AS REG_DT
+                 ,B.FILE_PATH_NM
+                 ,B.SAVE_FILE_NM
+                 ,B.FILE_KIND_CD
+                 ,B.ATCH_FILE_ID+'_'+CONVERT(VARCHAR, B.SEQ) AS IMAGE_INFO
+                 ,C.USER_NM
+             FROM TCM_POPUP_ZONE A 
+                  LEFT OUTER JOIN TCM_ATTACH_FILE B  ON A.ATCH_FILE_ID = B.ATCH_FILE_ID
+                  LEFT OUTER JOIN TCM_MEMBER      C  ON A.REG_ID = C.MEMBER_CD
+            WHERE A.DEL_YN  = 'N'
+				AND A.EXP_YN  = 'Y'
+				AND (CONVERT(VARCHAR, NOW(), 112) + SUBSTRING(REPLACE(CONVERT(VARCHAR, NOW(), 108),':',''),1,4)) BETWEEN A.EXP_FR_DT AND A.EXP_TO_DT
+			<if test='zoneId != null and zoneId != ""'>
+				AND A.ZONE_ID = #{zoneId}
+			</if>
+			<if test='zoneCd != null and zoneCd != ""'>
+				AND A.ZONE_CD = #{zoneCd}
+			</if>
+		ORDER BY A.SORT_NO
+	</select>
+
+
+	<!-- 사용자찾기 POPUP 조회 List -->
+	<select id="selectMemberInfoList" parameterType="com.doppio.common.model.CommonMemberInfoVo" resultMap="commonMemberInfoMap">
+		/*CommonMapper.selectMemberInfoList*/
+		SELECT T2.*
+      FROM(
+      	SELECT ROW_NUMBER() OVER(ORDER BY T1.MEMBER_CD) RNUM , COUNT(1) OVER() AS TOTAL_COUNT, T1.*
+      FROM(
+	 	SELECT A.MEMBER_CD														/* 사용자고유번호 */
+        	   ,A.USER_ID                                                       /* 담당자ID */
+           	   ,A.USER_NM                                                       /* 신청인성명 */
+           	   ,A.TEL_NO                                                        /* 전화번호 */
+           	   ,A.HP_NO                                                         /* 핸드폰번호 */
+           	   ,A.EMAIL                                                         /* 이메일 */
+           	   ,A.MASTER_ID                                                     /* 소속회사코드 */
+           	   ,B.COMP_NM                                                       /* 소속회사명칭 */
+           	   ,A.POSITION_NM                                                   /* 직책명 */
+           	   ,A.CLASS_NM                                                      /* 직급명 */
+           	   ,A.USER_TYPE                                                     /* 사용자타입 코드[9001] */
+           	   ,FN_CODE_RTN('9001', A.USER_TYPE) AS USER_TYPE_NM            /* 사용자타입명 */ 
+           	   ,A.USE_YN                                                        /* 사용여부 */ 
+       	FROM TCM_MEMBER A 
+       	INNER JOIN VCM_COMPINFO B  ON A.MASTER_ID = B.MASTER_ID
+
+		<where>
+				-- A.USER_TYPE IN ('SA', 'SU','FA','FU')
+				A.USER_TYPE IN ('SA', 'SU')
+	    	<if test='findMember_userId != null and findMember_userId != ""'>
+		        AND A.USER_ID LIKE CONCAT('%', #{findMember_userId},'%')
+		    </if>
+		    <if test='findMember_userNm != null and findMember_userNm != ""'>
+	        	AND A.USER_NM LIKE CONCAT('%', #{findMember_userNm},'%')
+	    	</if>
+	    	<if test='findMember_compNm != null and findMember_compNm != ""'>
+	        	AND B.COMP_NM LIKE CONCAT('%',#{findMember_compNm},'%')
+		    </if>
+			/* 가맹계약 검토요청 사용자찾기 시 특정인원만 검색 */
+	    	<if test='findMember_examiner != null and findMember_examiner != ""'>
+	        	AND A.MEMBER_CD IN (SELECT EXTENT01 FROM TCM_CODE_DTL  WHERE COM_CD = '5229')
+		    </if>
+		</where>
+		)T1
+		)T2
+		<if test='startRowNo != null and startRowNo != ""'>
+   		   			WHERE T2.RNUM between #{startRowNo} and #{endRowNo}
+   	     </if>
+	</select>
+
+	 <!-- 중분류 코드 조회 List -->
+	 <select id="selectCommonLargeCdCodeSub" resultMap="customCodeMap" parameterType="com.doppio.common.model.CustomCodeVo">
+		  /* CommonMapper.selectCommonLargeCdCodeSub */
+		  SELECT  T1.DTL_CD  AS VAL
+	       		 ,T1.DTL_NM  AS TEXT
+	 		FROM TCM_CODE_DTL T1 
+				      INNER JOIN ( SELECT EXTENT01
+				                      FROM TCM_CODE_DTL 
+				                     WHERE COM_CD = #{parentCd}
+				                       AND DTL_CD  = #{keyValue}
+				                 ) T2 ON T1.COM_CD = T2.EXTENT01
+					            	 AND T1.USE_YN = 'Y'
+	 	 ORDER BY SORT_NO
+	 </select>
+	 
+	<!-- 사용자이메일 카운트   -->
+	<select id="selectUserEmailValidation" parameterType="String" resultType="Integer">
+		/*CommonMapper.selectUserEmailValidation*/
+		SELECT COUNT(*) AS CNT FROM TCM_MEMBER  WHERE EMAIL = #{email}
+	</select>
+	
+	<!-- 게시판 글 조회 -->
+	<select id="selectCommunityPopupList" resultMap="userCommunityMap" parameterType="com.doppio.community.service.CmtBoardVo">
+		/* ContCommonMapper.selectCommunityPopupList */
+		SELECT   S.BOARD_IDX							/* 게시인덱스 */
+		             ,S.BOARD_CD                        /* 게시판코드 */
+		             ,S.BOARD_TITLE                     /* 게시제목 */
+		             ,S.BOARD_CONTENT                   /* 게시내용 */
+		             ,S.USER_NM                         /* 등록자명 */
+		             ,S.REG_DT                          /* 일시 */
+		             ,S.ALERT_FR_DT                     /* 팝업공지시작일시 */
+					 ,S.ALERT_TO_DT                     /* 팝업공지종료일시 */
+		       FROM (SELECT ROW_NUMBER()OVER(ORDER BY REG_DT DESC) AS ROWCNT
+		                ,BOARD_IDX
+		                ,BOARD_CD
+		                ,BOARD_TITLE
+		                ,BOARD_CONTENT
+		                ,USER_NM
+		                ,REG_DT
+		                ,ALERT_FR_DT
+						,ALERT_TO_DT
+		           FROM TCM_BOARD_MST 
+	           <where>
+	           	<if test="boardCd != null and boardCd != ''">
+					AND BOARD_CD = #{boardCd}
+	           	</if>
+	           	<if test='alertYn == "Y"'>
+			    	AND CONVERT(VARCHAR, NOW(), 112) BETWEEN ALERT_FR_DT AND ALERT_TO_DT
+	           	</if>
+	           </where>
+				  ) S
+				   WHERE S.ROWCNT BETWEEN 1
+				<if test='rowCount != null and rowCount != ""'>
+					AND #{rowCount}
+				</if>
+				<if test='rowCount == null or rowCount == ""'>
+					AND 5
+				</if>
+	</select>
+	 
+	<!-- 로그인 사용자 정보 조회 -->
+	<select id="selectCustomUser"	parameterType="java.util.Map" resultMap="securityMap">
+	 	/* CommonMapper.selectCustomUser */
+		SELECT
+			T1.USER_ID												/* 로그인아이디 */
+			, T1.USER_PW											/* 로그인비밃런호 */
+			, T1.USER_NM											/* 사용자명 */
+			, T1.EMAIL												/* 이메일 */
+			, T1.MEMBER_CD											/* 멤버코드 */
+			, T1.MASTER_ID											/* 회사코드 */
+			, T2.COMP_NM											/* 회사명 */
+			, T1.USER_TYPE											/* 사용자타입[9001] */
+			, T1.USER_ROLES											/* ROLE */
+			, T1.PASS_FAIL_CNT										/* 비밀번호실패횟수 */
+			, T1.LOCK_YN											/* LOCK유무 */
+			, T1.USE_YN												/* 사용여부 */
+			, T1.HP_NO												/* 핸드폰번호 */
+			, T1.TEL_NO												/* 전화번호 */
+			, T1.PASS_CHG_YN										/* 비밀번호필수변경유무 */
+			, T1.PASS_LAST_DY										/* 비밀번호최종변경일자 */
+			, T1.ID_TYPE_CD											/* 아이디타입코드 */
+			, CASE WHEN T1.PASS_CHG_YN = 'Y' THEN 'Y'
+					ELSE CASE WHEN DATEDIFF(dd, CONVERT(DATETIME, PASS_LAST_DY), NOW()) > 90 THEN 'Y'
+							ELSE 'N'
+							END
+					END PASS_CHG_NEED_YN							/* 비밀번호변경필요여부(90일) */
+			, T1.STR_CD												/* 점포코드 */
+			, T1.WORKNG_SE_CD										/* 재직구분코드[SAL123] */
+			, T2.APRV_DIVN_CD										/* 승인구분코드[9068] */
+			, 'N' AS IF_YN											/* 인터페이스여부 */
+			, T1.DEPT_CD
+			, T1.DEPT_NM
+		FROM TCM_MEMBER T1 
+		LEFT OUTER JOIN VCM_COMPINFO T2 
+			ON T1.MASTER_ID = T2.MASTER_ID
+		WHERE T1.MEMBER_CD = #{memberCd}
+	</select>
+	
+	
+	<!-- 계약서 작성 엑셀 업로드 업체 검색 -->
+	<select id="selectContWriteExcelUploadCompany" parameterType="java.util.Map" resultMap="commonCompInfoMap">
+	/*CommonMapper.selectContWriteExcelUploadCompany*/
+		SELECT A.MASTER_ID								/* 회사코드 */
+				,A.PARENT_COMP_CD						/* 부모회사코드 */
+				,A.COMP_NM                              /* 회사명 */
+				,A.BMAN_NO                              /* 사업자등록번호 */
+				,A.CORPN_NO                             /* 법인번호 */
+				,A.BMAN_DIVN_CD                         /* 사업자구분코드  */
+				,A.CEO_NM                               /* 대표자명     */
+				,A.BTYP_NM                              /* 업태코드     */
+				,A.BIZ_ITM_NM                           /* 업종       */
+				,A.REP_BRAND                            /* 대표브랜드    */
+				,A.FOU_DY                               /* 설립일자     */
+				,A.REP_TEL_NO                           /* 대표전화     */
+				,A.FAX_TEL_NO                           /* 팩스전화번호   */
+				,A.ZIP_NO                               /* 우편번호     */
+				,A.ZIP_ADDR                             /* 우편주소     */
+				,A.DTL_ADDR                             /* 상세주소     */
+				,B.USER_NM   AS REC_NAME                /* 담당자명     */
+		FROM VCM_COMPINFO A 
+		LEFT OUTER JOIN
+			(	SELECT MASTER_ID, USER_NM
+				FROM TCM_MEMBER 
+				<if test='recName == null or recName == ""'>
+					WHERE MEMBER_CD = '0'
+				</if>
+				GROUP BY MASTER_ID, USER_NM
+			) B ON A.MASTER_ID = B.MASTER_ID
+		WHERE A.MASTER_ID IN
+		<foreach collection="masterIds" item="masterId" open="(" close=")" separator=",">
+			#{masterId}
+		</foreach>	
+	
+	</select>
+	
+	<!-- 공통 코드 상세 조회  -->
+	<select id="selectCodeName" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		/* CommonMapper.selectCodeName */
+		SELECT
+			DTL_CD  AS CODE_ID
+			, DTL_NM+' ('+DTL_CD+')' AS CODE_NAME_S1
+			, DTL_NM AS CODE_NAME
+		FROM KRMC.TCM_CODE_DTL
+		WHERE USE_YN='Y'
+			AND COM_CD = #{parentId}
+			<if test='dtlCode != null and dtlCode != ""'>
+				AND DTL_CD
+			     <choose>
+					<when test='dtlNotIn == "Y"'><![CDATA[<>]]></when>
+					<otherwise>=</otherwise>
+				</choose>
+					#{dtlCode}
+			</if>
+			<if test='dtlCodes != null and dtlCodes != ""'>
+				AND DTL_CD
+				<choose>
+			    	<when test='dtlNotIn == "Y"'>
+			    		NOT IN
+			    	</when>
+					<otherwise>IN</otherwise>
+				</choose>
+				<foreach collection="dtlCodes" item="dtlCodes" index="index" open="(" close=")" separator=",">
+					#{dtlCodes}
+				</foreach>
+			</if>
+			<if test='subCode != null and subCode != ""'>
+				AND EXTENT01
+			     <choose>
+					<when test='notIn == "Y"'><![CDATA[<>]]></when>
+					<otherwise>=</otherwise>
+				</choose>
+			    	#{subCode}
+			</if>
+			<if test='subCodes != null and subCodes != ""'>
+			    AND EXTENT01
+			    <choose>
+			    	<when test='notIn == "Y"'>
+			    		NOT IN
+			    	</when>
+					<otherwise>IN</otherwise>
+				</choose>
+			    <foreach collection="subCodes" item="subCodes" index="index" open="(" close=")" separator=",">
+					#{subCodes}
+				</foreach>
+			</if>
+			<if test='subCode2 != null and subCode2 != ""'>
+				AND EXTENT02
+			     <choose>
+					<when test='notIn2 == "Y"'><![CDATA[<>]]></when>
+					<otherwise>=</otherwise>
+				</choose>
+			    	#{subCode2}
+			</if>
+			<if test='subCodes2 != null and subCodes2 != ""'>
+			    AND EXTENT02
+			    <choose>
+			    	<when test='notIn2 == "Y"'>
+			    		NOT IN
+			    	</when>
+					<otherwise>IN</otherwise>
+				</choose>
+			    <foreach collection="subCodes2" item="subCodes2" index="index" open="(" close=")" separator=",">
+					#{subCodes2}
+				</foreach>
+			</if>
+		ORDER BY SORT_NO
+	</select>
+	
+</mapper>

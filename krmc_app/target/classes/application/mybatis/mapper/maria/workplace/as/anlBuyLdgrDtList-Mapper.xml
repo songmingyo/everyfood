@@ -1,0 +1,1020 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.AnlBuyLdgrDtListMapper">
+
+	<!-- 매입처처원장(일별) 조회 -->
+	<select id="selectAnlBuyLdgrDtList" parameterType="com.doppio.workplace.as.service.AnlBuyLdgrDtListVo" resultType="com.doppio.workplace.as.service.AnlBuyLdgrDtListVo">
+	/*AnlBuyLdgrDtListMapper.selectAnlBuyLdgrDtList*/	
+      SELECT A.DT_CLASS
+      		 , TBM.BUY_CD
+             , TBM.BUY_NM
+             , A.SUB_CLASS  
+             , A.PRDT_NM
+             , A.PRDT_STD
+             , TBM.SETL_CON
+             , SUM(IFNULL(A.QTY,0)) AS QTY
+             , IFNULL(A.COST,0) AS COST
+             , SUM(IFNULL(A.PURE_AMT,0)) AS PURE_AMT
+             , SUM(IFNULL(A.VAT_AMT,0)) AS VAT_AMT
+             , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+             , SUM(IFNULL(A.PAID_AMT1,0)) AS PAID_AMT1
+             , SUM(IFNULL(A.PAID_AMT2,0)) AS PAID_AMT2
+             , SUM(IFNULL(A.PAID_AMT3,0)) AS PAID_AMT3
+             , SUM(IFNULL(A.PAID_AMT4,0)) AS PAID_AMT4
+             , SUM(IFNULL(A.BAL_AMT,0)) AS BAL_AMT
+             , A.SORT
+        FROM (SELECT '1' AS SORT
+                     , '' AS DT
+                     , BUY_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS SUB_CLASS
+                     , BAL_AMT AS BAL_AMT 
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS COST
+                     , 0 AS QTY
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                     , '전월이월' AS DT_CLASS
+                FROM TMH_MON_BUY_PAYMENT
+               WHERE YEAR_MON =  DATE_FORMAT(DATE_ADD(CONCAT(#{searchStartDt}), INTERVAL -1 month),'%Y%m')
+               <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			     AND BUY_CD = #{searchBuyCd}
+	           </if>
+            UNION ALL
+              SELECT '2' AS SORT
+                     , TPR.BUY_DT AS DT
+                     , TPR.BUY_CD
+                     , TPM.PRDT_NM
+                     , TPM.PRDT_STD
+                     , '매입' AS SUB_CLASS
+                     , SUM(TPR.TOT_AMT) AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , TPR.COST AS COST
+                     , SUM(TPR.BUY_QTY) AS QTY
+                     , SUM(TPR.PURE_AMT) AS PURE_AMT
+                     , SUM(TPR.VAT_AMT) AS VAT_AMT
+                     , SUM(TPR.TOT_AMT) AS TOT_AMT
+                     , CONCAT(SUBSTRING(TPR.BUY_DT,5,2),'-',SUBSTRING(TPR.BUY_DT,7,2)) AS DT_CLASS
+                FROM TBH_PRDT_RCPT AS TPR
+                     JOIN TFM_PRDT_MST AS TPM
+                         ON TPM.PRDT_CD = TPR.PRDT_CD
+               WHERE TPR.BUY_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                 AND TPR.BUY_CONF_YN = 'Y'
+                 AND TPR.BUY_QTY != 0
+               <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			     AND TPR.BUY_CD = #{searchBuyCd}
+	           </if>
+               GROUP BY TPR.BUY_DT
+                        , TPR.BUY_CD
+                        , TPM.PRDT_NM
+                        , TPM.PRDT_STD
+            UNION ALL
+              SELECT '3' AS SORT
+                     , TPR.RTN_DT AS DT
+                     , TPR.BUY_CD
+                     , TPM.PRDT_NM
+                     , TPM.PRDT_STD
+                     , '반품' AS SUB_CLASS
+                     , SUM(TPR.TOT_AMT)*-1 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , TPR.COST AS COST
+                     , SUM(TPR.RTN_QTY)*-1 AS QTY
+                     , SUM(TPR.PURE_AMT)*-1 AS PURE_AMT
+                     , SUM(TPR.VAT_AMT)*-1 AS VAT_AMT
+                     , SUM(TPR.TOT_AMT)*-1 AS TOT_AMT
+                     , CONCAT(SUBSTRING(TPR.RTN_DT,5,2),'-',SUBSTRING(TPR.RTN_DT,7,2)) AS DT_CLASS
+                FROM TBH_PRDT_RETURN AS TPR
+                     JOIN TFM_PRDT_MST AS TPM
+                         ON TPM.PRDT_CD = TPR.PRDT_CD
+               WHERE TPR.RTN_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                 AND TPR.RTN_QTY != 0
+               <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			     AND TPR.BUY_CD = #{searchBuyCd}
+	           </if>
+               GROUP BY TPR.RTN_DT
+                        , TPR.BUY_CD
+                        , TPM.PRDT_NM
+                        , TPM.PRDT_STD
+
+          UNION ALL
+              SELECT '4' AS SORT
+                     , WDRL_DT AS DT
+                     , BUY_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '지급' AS SUB_CLASS
+                     , 0 AS BAL_AMT
+                     , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                     , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                     , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                     , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                     , 0 AS COST
+                     , 0 AS QTY
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                     , CONCAT(SUBSTRING(WDRL_DT,5,2),'-',SUBSTRING(WDRL_DT,7,2)) AS DT_CLASS
+                FROM TBH_BUY_WDRL
+               WHERE WDRL_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+               <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			     AND BUY_CD = #{searchBuyCd}
+	           </if>
+               GROUP BY WDRL_DT, BUY_CD
+          UNION ALL
+              SELECT '5' AS SORT 
+                     , A.DT
+                     , A.BUY_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS SUB_CLASS
+                     , 0 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS COST
+                     , 0 AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , '일계' AS DT_CLASS
+                FROM (SELECT BUY_DT AS DT
+                             , BUY_CD
+                             , SUM(PURE_AMT) AS PURE_AMT
+                             , SUM(VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TBH_PRDT_RCPT
+                       WHERE BUY_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                         AND BUY_CONF_YN = 'Y'
+                       <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                   </if>
+	                     AND BUY_QTY != 0
+                       GROUP BY BUY_DT, BUY_CD
+                    UNION ALL
+                      SELECT RTN_DT AS DT
+                             , BUY_CD
+                             , SUM(PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TBH_PRDT_RETURN
+                       WHERE RTN_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                       <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                   </if>
+	                     AND RTN_QTY != 0
+                       GROUP BY RTN_DT, BUY_CD
+                     ) A
+               GROUP BY A.DT, A.BUY_CD
+           UNION ALL
+               SELECT '6' AS SORT 
+                     , A.DT
+                     , A.BUY_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS SUB_CLASS
+                     , 0 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS COST
+                     , 0 AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , '월계' AS DT_CLASS
+                FROM (SELECT CONCAT(LEFT(BUY_DT,6),'31') AS DT
+                             , BUY_CD
+                             , SUM(PURE_AMT) AS PURE_AMT
+                             , SUM(VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TBH_PRDT_RCPT
+                       WHERE BUY_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                       <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                   </if>
+                         AND BUY_CONF_YN = 'Y'
+                         AND BUY_QTY != 0
+                       GROUP BY CONCAT(LEFT(BUY_DT,6),'31'), BUY_CD
+                    UNION ALL
+                      SELECT CONCAT(LEFT(RTN_DT,6),'31') AS DT
+                             , BUY_CD
+                             , SUM(PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TBH_PRDT_RETURN
+                       WHERE RTN_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                       <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                   </if>
+	                     AND RTN_QTY != 0
+                       GROUP BY CONCAT(LEFT(RTN_DT,6),'31'), BUY_CD
+                     ) A
+               GROUP BY A.DT, A.BUY_CD
+          UNION ALL
+              SELECT '7' AS SORT 
+                      , #{searchEndDt} AS DT
+                      , A.BUY_CD AS BUY_CD
+                      , '' AS PRDT_NM
+                      , '' AS PRDT_STD
+                      , '' AS SUB_CLASS
+                      , SUM(A.BAL_AMT) AS BAL_AMT
+                      , SUM(A.PAID_AMT1) AS PAID_AMT1
+                      , SUM(A.PAID_AMT2) AS PAID_AMT2
+                      , SUM(A.PAID_AMT3) AS PAID_AMT3
+                      , SUM(A.PAID_AMT4) AS PAID_AMT4
+                      , 0 AS COST
+                      , SUM(A.QTY) AS QTY
+                      , SUM(A.PURE_AMT) AS PURE_AMT
+                      , SUM(A.VAT_AMT) AS VAT_AMT
+                      , SUM(TOT_AMT) AS TOT_AMT
+                      , '합계' AS DT_CLASS
+                FROM  (SELECT BUY_CD
+                              , BAL_AMT AS BAL_AMT 
+                              , 0 AS PAID_AMT1
+                              , 0 AS PAID_AMT2
+                              , 0 AS PAID_AMT3
+                              , 0 AS PAID_AMT4
+                              , 0 AS QTY
+                              , 0 AS PURE_AMT
+                              , 0 AS VAT_AMT
+                              , 0 AS TOT_AMT
+                         FROM TMH_MON_BUY_PAYMENT
+                        WHERE YEAR_MON =  DATE_FORMAT(DATE_ADD(CONCAT(#{searchStartDt}), INTERVAL -1 month),'%Y%m')
+                        <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                    </if>
+                     UNION ALL
+                       SELECT TPR.BUY_CD
+                              , SUM(TPR.TOT_AMT) AS BAL_AMT
+                              , 0 AS PAID_AMT1
+                              , 0 AS PAID_AMT2
+                              , 0 AS PAID_AMT3
+                              , 0 AS PAID_AMT4
+                              , SUM(TPR.BUY_QTY) AS QTY
+                              , SUM(TPR.PURE_AMT) AS PURE_AMT
+                              , SUM(TPR.VAT_AMT) AS VAT_AMT
+                              , SUM(TPR.TOT_AMT) AS TOT_AMT
+                         FROM TBH_PRDT_RCPT AS TPR
+                        WHERE TPR.BUY_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                        <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                    </if>
+                          AND TPR.BUY_CONF_YN = 'Y'
+                          AND BUY_QTY != 0
+                        GROUP BY TPR.BUY_CD
+                     UNION ALL
+                       SELECT TPR.BUY_CD
+                              , SUM(TPR.TOT_AMT)*-1 AS BAL_AMT
+                              , 0 AS PAID_AMT1
+                              , 0 AS PAID_AMT2
+                              , 0 AS PAID_AMT3
+                              , 0 AS PAID_AMT4
+                              , SUM(TPR.RTN_QTY)*-1 AS QTY
+                              , SUM(TPR.PURE_AMT)*-1 AS PURE_AMT
+                              , SUM(TPR.VAT_AMT)*-1 AS VAT_AMT
+                              , SUM(TPR.TOT_AMT)*-1 AS TOT_AMT
+                         FROM TBH_PRDT_RETURN AS TPR
+                        WHERE TPR.RTN_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                        <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			              AND BUY_CD = #{searchBuyCd}
+	                    </if>
+	                      AND RTN_QTY != 0
+                        GROUP BY TPR.BUY_CD
+                     UNION ALL
+                       SELECT BUY_CD
+                              , 0 AS BAL_AMT
+                              , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                              , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                              , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                              , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                              , 0 AS QTY
+                              , 0 AS PURE_AMT
+                              , 0 AS VAT_AMT
+                              , 0 AS TOT_AMT
+                         FROM TBH_BUY_WDRL
+                        WHERE WDRL_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                        <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                    </if>
+                        GROUP BY BUY_CD
+                      ) AS A
+                GROUP BY A.BUY_CD
+              ) AS A
+              JOIN TFM_BUY_MST AS TBM
+                  ON TBM.BUY_CD = A.BUY_CD
+     GROUP BY A.DT_CLASS
+              , A.BUY_CD
+              , TBM.BUY_NM
+              , A.SUB_CLASS
+              , A.PRDT_NM
+              , A.COST
+              , A.PRDT_STD
+              , A.DT
+              , A.SORT
+              , TBM.SETL_CON
+              , A.SORT
+     HAVING SUM(IFNULL(A.PURE_AMT,0)) != 0 OR SUM(IFNULL(A.VAT_AMT,0)) != 0 OR SUM(IFNULL(A.TOT_AMT,0))  != 0 OR SUM(IFNULL(A.PAID_AMT1,0))  != 0 OR SUM(IFNULL(A.PAID_AMT2,0)) != 0 OR SUM(IFNULL(A.PAID_AMT3,0)) != 0 OR SUM(IFNULL(A.PAID_AMT4,0)) != 0 OR SUM(IFNULL(A.BAL_AMT,0)) != 0
+     ORDER BY A.BUY_CD, A.DT, A.SORT
+
+	</select>
+	
+	
+	<!-- 매입처처원장(일별) 출력 -->
+	<select id="selectbuyLdgrListPrint" parameterType="com.doppio.workplace.as.service.AnlBuyLdgrDtListVo" resultType="com.doppio.workplace.as.service.AnlBuyLdgrDtListVo">
+	/*AnlBuyLdgrDtListMapper.selectbuyLdgrListPrint*/	
+      SELECT A.DT_CLASS
+      		 , TBM.BUY_CD
+             , A.SUB_CLASS  
+             , A.PRDT_NM
+             , A.PRDT_STD
+             , SUM(IFNULL(A.QTY,0)) AS PRT_QTY
+             , IFNULL(A.COST,0) AS PRT_COST
+             , SUM(IFNULL(A.PURE_AMT,0)) AS PRT_PURE_AMT
+             , SUM(IFNULL(A.VAT_AMT,0)) AS PRT_VAT_AMT
+             , SUM(IFNULL(A.TOT_AMT,0)) AS PRT_TOT_AMT
+             , SUM(IFNULL(A.PAID_AMT1,0)) AS PRT_PAID_AMT1
+             , SUM(IFNULL(A.PAID_AMT2,0)) AS PRT_PAID_AMT2
+             , SUM(IFNULL(A.PAID_AMT3,0)) AS PRT_PAID_AMT3
+             , SUM(IFNULL(A.PAID_AMT4,0)) AS PRT_PAID_AMT4
+             , SUM(IFNULL(A.BAL_AMT,0)) AS PRT_BAL_AMT
+             , A.SORT
+             
+             , CONCAT(TBM.BUY_NM,' 매입처 원장') AS TITLE
+             , DATE_FORMAT(#{searchStartDt},'%Y-%m-%d') AS START_DT
+             , DATE_FORMAT(#{searchEndDt},'%Y-%m-%d') AS END_DT
+             , TBM.SETL_CON
+             , TBM.BANK_ACC_NUM
+             , NOW() AS PRINT_DT
+             
+        FROM (SELECT '1' AS SORT
+                     , '' AS DT
+                     , BUY_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS SUB_CLASS
+                     , BAL_AMT AS BAL_AMT 
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS COST
+                     , 0 AS QTY
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                     , '전월이월' AS DT_CLASS
+                FROM TMH_MON_BUY_PAYMENT
+               WHERE YEAR_MON =  DATE_FORMAT(DATE_ADD(CONCAT(REPLACE(#{searchStartDt},'-','')), INTERVAL -1 month),'%Y%m')
+               <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			     AND BUY_CD = #{searchBuyCd}
+	           </if>
+            UNION ALL
+              SELECT '2' AS SORT
+                     , TPR.BUY_DT AS DT
+                     , TPR.BUY_CD
+                     , TPM.PRDT_NM
+                     , TPM.PRDT_STD
+                     , '매입' AS SUB_CLASS
+                     , SUM(TPR.TOT_AMT) AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , TPR.COST AS COST
+                     , SUM(TPR.BUY_QTY) AS QTY
+                     , SUM(TPR.PURE_AMT) AS PURE_AMT
+                     , SUM(TPR.VAT_AMT) AS VAT_AMT
+                     , SUM(TPR.TOT_AMT) AS TOT_AMT
+                     , CONCAT(SUBSTRING(TPR.BUY_DT,5,2),'-',SUBSTRING(TPR.BUY_DT,7,2)) AS DT_CLASS
+                FROM TBH_PRDT_RCPT AS TPR
+                     JOIN TFM_PRDT_MST AS TPM
+                         ON TPM.PRDT_CD = TPR.PRDT_CD
+               WHERE TPR.BUY_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                 AND TPR.BUY_CONF_YN = 'Y'
+               <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			     AND TPR.BUY_CD = #{searchBuyCd}
+	           </if>
+	             AND TPR.BUY_QTY != 0
+               GROUP BY TPR.BUY_DT
+                        , TPR.BUY_CD
+                        , TPM.PRDT_NM
+                        , TPM.PRDT_STD
+            UNION ALL
+              SELECT '3' AS SORT
+                     , TPR.RTN_DT AS DT
+                     , TPR.BUY_CD
+                     , TPM.PRDT_NM
+                     , TPM.PRDT_STD
+                     , '반품' AS SUB_CLASS
+                     , SUM(TPR.TOT_AMT)*-1 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , TPR.COST AS COST
+                     , SUM(TPR.RTN_QTY)*-1 AS QTY
+                     , SUM(TPR.PURE_AMT)*-1 AS PURE_AMT
+                     , SUM(TPR.VAT_AMT)*-1 AS VAT_AMT
+                     , SUM(TPR.TOT_AMT)*-1 AS TOT_AMT
+                     , CONCAT(SUBSTRING(TPR.RTN_DT,5,2),'-',SUBSTRING(TPR.RTN_DT,7,2)) AS DT_CLASS
+                FROM TBH_PRDT_RETURN AS TPR
+                     JOIN TFM_PRDT_MST AS TPM
+                         ON TPM.PRDT_CD = TPR.PRDT_CD
+               WHERE TPR.RTN_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+               <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			     AND TPR.BUY_CD = #{searchBuyCd}
+	           </if>
+	             AND TPR.RTN_QTY != 0
+               GROUP BY TPR.RTN_DT
+                        , TPR.BUY_CD
+                        , TPM.PRDT_NM
+                        , TPM.PRDT_STD
+
+          UNION ALL
+              SELECT '4' AS SORT
+                     , WDRL_DT AS DT
+                     , BUY_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '지급' AS SUB_CLASS
+                     , 0 AS BAL_AMT
+                     , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                     , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                     , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                     , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                     , 0 AS COST
+                     , 0 AS QTY
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                     , CONCAT(SUBSTRING(WDRL_DT,5,2),'-',SUBSTRING(WDRL_DT,7,2)) AS DT_CLASS
+                FROM TBH_BUY_WDRL
+               WHERE WDRL_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+               <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			     AND BUY_CD = #{searchBuyCd}
+	           </if>
+               GROUP BY WDRL_DT, BUY_CD
+          UNION ALL
+              SELECT '5' AS SORT 
+                     , A.DT
+                     , A.BUY_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS SUB_CLASS
+                     , 0 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS COST
+                     , 0 AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , '일계' AS DT_CLASS
+                FROM (SELECT BUY_DT AS DT
+                             , BUY_CD
+                             , SUM(PURE_AMT) AS PURE_AMT
+                             , SUM(VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TBH_PRDT_RCPT
+                       WHERE BUY_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                         AND BUY_CONF_YN = 'Y'
+                       <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                   </if>
+	                     AND BUY_QTY != 0
+                       GROUP BY BUY_DT, BUY_CD
+                    UNION ALL
+                      SELECT RTN_DT AS DT
+                             , BUY_CD
+                             , SUM(PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TBH_PRDT_RETURN
+                       WHERE RTN_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                       <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                   </if>
+	                     AND RTN_QTY != 0
+                       GROUP BY RTN_DT, BUY_CD
+                     ) A
+               GROUP BY A.DT, A.BUY_CD
+           UNION ALL
+               SELECT '6' AS SORT 
+                     , A.DT
+                     , A.BUY_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS SUB_CLASS
+                     , 0 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS COST
+                     , 0 AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , '월계' AS DT_CLASS
+                FROM (SELECT CONCAT(LEFT(BUY_DT,6),'31') AS DT
+                             , BUY_CD
+                             , SUM(PURE_AMT) AS PURE_AMT
+                             , SUM(VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TBH_PRDT_RCPT
+                       WHERE BUY_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                       <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                   </if>
+                         AND BUY_CONF_YN = 'Y'
+                         AND BUY_QTY != 0
+                       GROUP BY CONCAT(LEFT(BUY_DT,6),'31'), BUY_CD
+                    UNION ALL
+                      SELECT CONCAT(LEFT(RTN_DT,6),'31') AS DT
+                             , BUY_CD
+                             , SUM(PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TBH_PRDT_RETURN
+                       WHERE RTN_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                       <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                   </if>
+	                     AND RTN_QTY != 0
+                       GROUP BY CONCAT(LEFT(RTN_DT,6),'31'), BUY_CD
+                     ) A
+               GROUP BY A.DT, A.BUY_CD
+          UNION ALL
+              SELECT '7' AS SORT 
+                      , REPLACE(#{searchEndDt},'-','') AS DT
+                      , A.BUY_CD
+                      , '' AS PRDT_NM
+                      , '' AS PRDT_STD
+                      , '' AS SUB_CLASS
+                      , SUM(A.BAL_AMT) AS BAL_AMT
+                      , SUM(A.PAID_AMT1) AS PAID_AMT1
+                      , SUM(A.PAID_AMT2) AS PAID_AMT2
+                      , SUM(A.PAID_AMT3) AS PAID_AMT3
+                      , SUM(A.PAID_AMT4) AS PAID_AMT4
+                      , 0 AS COST
+                      , SUM(A.QTY) AS QTY
+                      , SUM(A.PURE_AMT) AS PURE_AMT
+                      , SUM(A.VAT_AMT) AS VAT_AMT
+                      , SUM(TOT_AMT) AS TOT_AMT
+                      , '합계' AS DT_CLASS
+                FROM  (SELECT BUY_CD
+                              , BAL_AMT AS BAL_AMT 
+                              , 0 AS PAID_AMT1
+                              , 0 AS PAID_AMT2
+                              , 0 AS PAID_AMT3
+                              , 0 AS PAID_AMT4
+                              , 0 AS QTY
+                              , 0 AS PURE_AMT
+                              , 0 AS VAT_AMT
+                              , 0 AS TOT_AMT
+                         FROM TMH_MON_BUY_PAYMENT
+                        WHERE YEAR_MON =  DATE_FORMAT(DATE_ADD(CONCAT(REPLACE(#{searchStartDt},'-','')), INTERVAL -1 month),'%Y%m')
+                        <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                    </if>
+                     UNION ALL
+                       SELECT TPR.BUY_CD
+                              , SUM(TPR.TOT_AMT) AS BAL_AMT
+                              , 0 AS PAID_AMT1
+                              , 0 AS PAID_AMT2
+                              , 0 AS PAID_AMT3
+                              , 0 AS PAID_AMT4
+                              , SUM(TPR.BUY_QTY) AS QTY
+                              , SUM(TPR.PURE_AMT) AS PURE_AMT
+                              , SUM(TPR.VAT_AMT) AS VAT_AMT
+                              , SUM(TPR.TOT_AMT) AS TOT_AMT
+                         FROM TBH_PRDT_RCPT AS TPR
+                        WHERE TPR.BUY_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                        <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                    </if>
+                          AND TPR.BUY_CONF_YN = 'Y'
+                          AND TPR.BUY_QTY != 0
+                        GROUP BY TPR.BUY_CD
+                     UNION ALL
+                       SELECT TPR.BUY_CD
+                              , SUM(TPR.TOT_AMT)*-1 AS BAL_AMT
+                              , 0 AS PAID_AMT1
+                              , 0 AS PAID_AMT2
+                              , 0 AS PAID_AMT3
+                              , 0 AS PAID_AMT4
+                              , SUM(TPR.RTN_QTY)*-1 AS QTY
+                              , SUM(TPR.PURE_AMT)*-1 AS PURE_AMT
+                              , SUM(TPR.VAT_AMT)*-1 AS VAT_AMT
+                              , SUM(TPR.TOT_AMT)*-1 AS TOT_AMT
+                         FROM TBH_PRDT_RETURN AS TPR
+                        WHERE TPR.RTN_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                        <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			              AND BUY_CD = #{searchBuyCd}
+	                    </if>
+	                      AND RTN_QTY != 0
+                        GROUP BY TPR.BUY_CD
+                     UNION ALL
+                       SELECT BUY_CD
+                              , 0 AS BAL_AMT
+                              , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                              , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                              , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                              , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                              , 0 AS QTY
+                              , 0 AS PURE_AMT
+                              , 0 AS VAT_AMT
+                              , 0 AS TOT_AMT
+                         FROM TBH_BUY_WDRL
+                        WHERE WDRL_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                        <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                    </if>
+                        GROUP BY BUY_CD
+                      ) AS A
+                GROUP BY A.BUY_CD
+              ) AS A
+              JOIN TFM_BUY_MST AS TBM
+                  ON TBM.BUY_CD = A.BUY_CD
+     GROUP BY A.DT_CLASS
+              , A.BUY_CD
+              , TBM.BUY_NM
+              , A.SUB_CLASS
+              , A.PRDT_NM
+              , A.COST
+              , A.PRDT_STD
+              , A.DT
+              , A.SORT
+              , TBM.SETL_CON
+              , A.SORT
+     HAVING SUM(IFNULL(A.PURE_AMT,0)) != 0 OR SUM(IFNULL(A.VAT_AMT,0)) != 0 OR SUM(IFNULL(A.TOT_AMT,0))  != 0 OR SUM(IFNULL(A.PAID_AMT1,0))  != 0 OR SUM(IFNULL(A.PAID_AMT2,0)) != 0 OR SUM(IFNULL(A.PAID_AMT3,0)) != 0 OR SUM(IFNULL(A.PAID_AMT4,0)) != 0 OR SUM(IFNULL(A.BAL_AMT,0)) != 0
+     ORDER BY A.BUY_CD, A.DT, A.SORT
+
+	</select>
+
+	<!-- 매입처처원장(일별) 엑셀 -->
+	<select id="selectAnlBuyLdgrDtListExcelDown" parameterType="com.doppio.workplace.as.service.AnlBuyLdgrDtListVo" resultType="java.util.HashMap">
+	/*AnlBuyLdgrDtListMapper.selectAnlBuyLdgrDtListExcelDown*/	
+      SELECT A.DT_CLASS
+      		 , TBM.BUY_NM
+             , A.SUB_CLASS  
+             , A.PRDT_NM
+             , A.PRDT_STD
+             , SUM(IFNULL(A.QTY,0)) AS QTY
+             , IFNULL(A.COST,0) AS COST
+             , SUM(IFNULL(A.PURE_AMT,0)) AS PURE_AMT
+             , SUM(IFNULL(A.VAT_AMT,0)) AS VAT_AMT
+             , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+             , SUM(IFNULL(A.PAID_AMT1,0)) AS PAID_AMT1
+             , SUM(IFNULL(A.PAID_AMT2,0)) AS PAID_AMT2
+             , SUM(IFNULL(A.PAID_AMT3,0)) AS PAID_AMT3
+             , SUM(IFNULL(A.PAID_AMT4,0)) AS PAID_AMT4
+             , SUM(IFNULL(A.BAL_AMT,0)) AS BAL_AMT
+        FROM (SELECT '1' AS SORT
+                     , '' AS DT
+                     , BUY_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS SUB_CLASS
+                     , BAL_AMT AS BAL_AMT 
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS COST
+                     , 0 AS QTY
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                     , '전월이월' AS DT_CLASS
+                FROM TMH_MON_BUY_PAYMENT
+               WHERE YEAR_MON =  DATE_FORMAT(DATE_ADD(CONCAT(#{searchStartDt}), INTERVAL -1 month),'%Y%m')
+               <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			     AND BUY_CD = #{searchBuyCd}
+	           </if>
+            UNION ALL
+              SELECT '2' AS SORT
+                     , TPR.BUY_DT AS DT
+                     , TPR.BUY_CD
+                     , TPM.PRDT_NM
+                     , TPM.PRDT_STD
+                     , '매입' AS SUB_CLASS
+                     , SUM(TPR.TOT_AMT) AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , TPR.COST AS COST
+                     , SUM(TPR.BUY_QTY) AS QTY
+                     , SUM(TPR.PURE_AMT) AS PURE_AMT
+                     , SUM(TPR.VAT_AMT) AS VAT_AMT
+                     , SUM(TPR.TOT_AMT) AS TOT_AMT
+                     , CONCAT(SUBSTRING(TPR.BUY_DT,5,2),'-',SUBSTRING(TPR.BUY_DT,7,2)) AS DT_CLASS
+                FROM TBH_PRDT_RCPT AS TPR
+                     JOIN TFM_PRDT_MST AS TPM
+                         ON TPM.PRDT_CD = TPR.PRDT_CD
+               WHERE TPR.BUY_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                 AND TPR.BUY_CONF_YN = 'Y'
+                 AND TPR.BUY_QTY != 0
+               <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			     AND TPR.BUY_CD = #{searchBuyCd}
+	           </if>
+               GROUP BY TPR.BUY_DT
+                        , TPR.BUY_CD
+                        , TPM.PRDT_NM
+                        , TPM.PRDT_STD
+            UNION ALL
+              SELECT '3' AS SORT
+                     , TPR.RTN_DT AS DT
+                     , TPR.BUY_CD
+                     , TPM.PRDT_NM
+                     , TPM.PRDT_STD
+                     , '반품' AS SUB_CLASS
+                     , SUM(TPR.TOT_AMT)*-1 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , TPR.COST AS COST
+                     , SUM(TPR.RTN_QTY)*-1 AS QTY
+                     , SUM(TPR.PURE_AMT)*-1 AS PURE_AMT
+                     , SUM(TPR.VAT_AMT)*-1 AS VAT_AMT
+                     , SUM(TPR.TOT_AMT)*-1 AS TOT_AMT
+                     , CONCAT(SUBSTRING(TPR.RTN_DT,5,2),'-',SUBSTRING(TPR.RTN_DT,7,2)) AS DT_CLASS
+                FROM TBH_PRDT_RETURN AS TPR
+                     JOIN TFM_PRDT_MST AS TPM
+                         ON TPM.PRDT_CD = TPR.PRDT_CD
+               WHERE TPR.RTN_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                 AND TPR.RTN_QTY != 0
+               <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			     AND TPR.BUY_CD = #{searchBuyCd}
+	           </if>
+               GROUP BY TPR.RTN_DT
+                        , TPR.BUY_CD
+                        , TPM.PRDT_NM
+                        , TPM.PRDT_STD
+
+          UNION ALL
+              SELECT '4' AS SORT
+                     , WDRL_DT AS DT
+                     , BUY_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '지급' AS SUB_CLASS
+                     , 0 AS BAL_AMT
+                     , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                       + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                     , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                     , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                     , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                     , 0 AS COST
+                     , 0 AS QTY
+                     , 0 AS PURE_AMT
+                     , 0 AS VAT_AMT
+                     , 0 AS TOT_AMT
+                     , CONCAT(SUBSTRING(WDRL_DT,5,2),'-',SUBSTRING(WDRL_DT,7,2)) AS DT_CLASS
+                FROM TBH_BUY_WDRL
+               WHERE WDRL_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+               <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			     AND BUY_CD = #{searchBuyCd}
+	           </if>
+               GROUP BY WDRL_DT, BUY_CD
+          UNION ALL
+              SELECT '5' AS SORT 
+                     , A.DT
+                     , A.BUY_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS SUB_CLASS
+                     , 0 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS COST
+                     , 0 AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , '일계' AS DT_CLASS
+                FROM (SELECT BUY_DT AS DT
+                             , BUY_CD
+                             , SUM(PURE_AMT) AS PURE_AMT
+                             , SUM(VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TBH_PRDT_RCPT
+                       WHERE BUY_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                         AND BUY_CONF_YN = 'Y'
+                       <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                   </if>
+	                     AND BUY_QTY != 0
+                       GROUP BY BUY_DT, BUY_CD
+                    UNION ALL
+                      SELECT RTN_DT AS DT
+                             , BUY_CD
+                             , SUM(PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TBH_PRDT_RETURN
+                       WHERE RTN_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                       <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                   </if>
+	                     AND RTN_QTY != 0
+                       GROUP BY RTN_DT, BUY_CD
+                     ) A
+               GROUP BY A.DT, A.BUY_CD
+           UNION ALL
+               SELECT '6' AS SORT 
+                     , A.DT
+                     , A.BUY_CD
+                     , '' AS PRDT_NM
+                     , '' AS PRDT_STD
+                     , '' AS SUB_CLASS
+                     , 0 AS BAL_AMT
+                     , 0 AS PAID_AMT1
+                     , 0 AS PAID_AMT2
+                     , 0 AS PAID_AMT3
+                     , 0 AS PAID_AMT4
+                     , 0 AS COST
+                     , 0 AS QTY
+                     , SUM(A.PURE_AMT) AS PURE_AMT
+                     , SUM(A.VAT_AMT) AS VAT_AMT
+                     , SUM(A.TOT_AMT) AS TOT_AMT
+                     , '월계' AS DT_CLASS
+                FROM (SELECT CONCAT(LEFT(BUY_DT,6),'31') AS DT
+                             , BUY_CD
+                             , SUM(PURE_AMT) AS PURE_AMT
+                             , SUM(VAT_AMT) AS VAT_AMT
+                             , SUM(TOT_AMT) AS TOT_AMT
+                        FROM TBH_PRDT_RCPT
+                       WHERE BUY_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                       <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                   </if>
+                         AND BUY_CONF_YN = 'Y'
+                         AND BUY_QTY != 0
+                       GROUP BY CONCAT(LEFT(BUY_DT,6),'31'), BUY_CD
+                    UNION ALL
+                      SELECT CONCAT(LEFT(RTN_DT,6),'31') AS DT
+                             , BUY_CD
+                             , SUM(PURE_AMT)*-1 AS PURE_AMT
+                             , SUM(VAT_AMT)*-1 AS VAT_AMT
+                             , SUM(TOT_AMT)*-1 AS TOT_AMT
+                        FROM TBH_PRDT_RETURN
+                       WHERE RTN_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                       <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                   </if>
+	                     AND RTN_QTY != 0
+                       GROUP BY CONCAT(LEFT(RTN_DT,6),'31'), BUY_CD
+                     ) A
+               GROUP BY A.DT, A.BUY_CD
+          UNION ALL
+              SELECT '7' AS SORT 
+                      , #{searchEndDt} AS DT
+                      , A.BUY_CD AS BUY_CD
+                      , '' AS PRDT_NM
+                      , '' AS PRDT_STD
+                      , '' AS SUB_CLASS
+                      , SUM(A.BAL_AMT) AS BAL_AMT
+                      , SUM(A.PAID_AMT1) AS PAID_AMT1
+                      , SUM(A.PAID_AMT2) AS PAID_AMT2
+                      , SUM(A.PAID_AMT3) AS PAID_AMT3
+                      , SUM(A.PAID_AMT4) AS PAID_AMT4
+                      , 0 AS COST
+                      , SUM(A.QTY) AS QTY
+                      , SUM(A.PURE_AMT) AS PURE_AMT
+                      , SUM(A.VAT_AMT) AS VAT_AMT
+                      , SUM(TOT_AMT) AS TOT_AMT
+                      , '합계' AS DT_CLASS
+                FROM  (SELECT BUY_CD
+                              , BAL_AMT AS BAL_AMT 
+                              , 0 AS PAID_AMT1
+                              , 0 AS PAID_AMT2
+                              , 0 AS PAID_AMT3
+                              , 0 AS PAID_AMT4
+                              , 0 AS QTY
+                              , 0 AS PURE_AMT
+                              , 0 AS VAT_AMT
+                              , 0 AS TOT_AMT
+                         FROM TMH_MON_BUY_PAYMENT
+                        WHERE YEAR_MON =  DATE_FORMAT(DATE_ADD(CONCAT(#{searchStartDt}), INTERVAL -1 month),'%Y%m')
+                        <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                    </if>
+                     UNION ALL
+                       SELECT TPR.BUY_CD
+                              , SUM(TPR.TOT_AMT) AS BAL_AMT
+                              , 0 AS PAID_AMT1
+                              , 0 AS PAID_AMT2
+                              , 0 AS PAID_AMT3
+                              , 0 AS PAID_AMT4
+                              , SUM(TPR.BUY_QTY) AS QTY
+                              , SUM(TPR.PURE_AMT) AS PURE_AMT
+                              , SUM(TPR.VAT_AMT) AS VAT_AMT
+                              , SUM(TPR.TOT_AMT) AS TOT_AMT
+                         FROM TBH_PRDT_RCPT AS TPR
+                        WHERE TPR.BUY_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                        <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                    </if>
+                          AND TPR.BUY_CONF_YN = 'Y'
+                          AND BUY_QTY != 0
+                        GROUP BY TPR.BUY_CD
+                     UNION ALL
+                       SELECT TPR.BUY_CD
+                              , SUM(TPR.TOT_AMT)*-1 AS BAL_AMT
+                              , 0 AS PAID_AMT1
+                              , 0 AS PAID_AMT2
+                              , 0 AS PAID_AMT3
+                              , 0 AS PAID_AMT4
+                              , SUM(TPR.RTN_QTY)*-1 AS QTY
+                              , SUM(TPR.PURE_AMT)*-1 AS PURE_AMT
+                              , SUM(TPR.VAT_AMT)*-1 AS VAT_AMT
+                              , SUM(TPR.TOT_AMT)*-1 AS TOT_AMT
+                         FROM TBH_PRDT_RETURN AS TPR
+                        WHERE TPR.RTN_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                        <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			              AND BUY_CD = #{searchBuyCd}
+	                    </if>
+	                      AND RTN_QTY != 0
+                        GROUP BY TPR.BUY_CD
+                     UNION ALL
+                       SELECT BUY_CD
+                              , 0 AS BAL_AMT
+                              , IFNULL(SUM(CASE WHEN SETL_CLASS='01' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='02' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='05' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='06' THEN SETL_AMT END),0)
+                                + IFNULL(SUM(CASE WHEN SETL_CLASS='07' THEN SETL_AMT END),0) AS PAID_AMT1
+                              , SUM(CASE WHEN SETL_CLASS='03' THEN SETL_AMT END) AS PAID_AMT2
+                              , SUM(CASE WHEN SETL_CLASS='04' THEN SETL_AMT END) AS PAID_AMT3
+                              , SUM(CASE WHEN SETL_CLASS='08' THEN SETL_AMT END) AS PAID_AMT4
+                              , 0 AS QTY
+                              , 0 AS PURE_AMT
+                              , 0 AS VAT_AMT
+                              , 0 AS TOT_AMT
+                         FROM TBH_BUY_WDRL
+                        WHERE WDRL_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                        <if test='searchBuyCd != null and searchBuyCd != ""'> 
+			             AND BUY_CD = #{searchBuyCd}
+	                    </if>
+                        GROUP BY BUY_CD
+                      ) AS A
+                GROUP BY A.BUY_CD
+              ) AS A
+              JOIN TFM_BUY_MST AS TBM
+                  ON TBM.BUY_CD = A.BUY_CD
+     GROUP BY A.DT_CLASS
+              , A.BUY_CD
+              , TBM.BUY_NM
+              , A.SUB_CLASS
+              , A.PRDT_NM
+              , A.COST
+              , A.PRDT_STD
+              , A.DT
+              , A.SORT
+              , TBM.SETL_CON
+              , A.SORT
+     HAVING SUM(IFNULL(A.PURE_AMT,0)) != 0 OR SUM(IFNULL(A.VAT_AMT,0)) != 0 OR SUM(IFNULL(A.TOT_AMT,0))  != 0 OR SUM(IFNULL(A.PAID_AMT1,0))  != 0 OR SUM(IFNULL(A.PAID_AMT2,0)) != 0 OR SUM(IFNULL(A.PAID_AMT3,0)) != 0 OR SUM(IFNULL(A.PAID_AMT4,0)) != 0 OR SUM(IFNULL(A.BAL_AMT,0)) != 0
+     ORDER BY A.BUY_CD, A.DT, A.SORT
+
+	</select>
+
+</mapper>

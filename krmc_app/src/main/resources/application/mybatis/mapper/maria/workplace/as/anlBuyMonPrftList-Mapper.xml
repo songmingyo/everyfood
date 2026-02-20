@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.AnlBuyMonPrftListMapper">
+
+	<!-- 매입처월별이익현황 조회 -->
+	<select id="selectAnlBuyMonPrftList" parameterType="com.doppio.workplace.as.service.AnlBuyMonPrftListVo" resultType="com.doppio.workplace.as.service.AnlBuyMonPrftListVo">
+	/*AnlBuyMonPrftListMapper.selectAnlBuyMonPrftList*/	
+	    WITH 
+	    SALES AS (
+	        SELECT SUBSTRING(TMST.YEAR_MON,5,2) AS SALES_MON
+	               , TMST.PRDT_CD
+	               , TMSC.PRICE AS PRICE
+	               , SUM(TMST.SALES_QTY) AS SALES_QTY
+	               , SUM(TMST.PURE_AMT) AS SALES_AMT
+	          FROM TMH_MON_SALES_TOT AS TMST
+	          
+	               JOIN TMH_MON_SALES_PRICE AS TMSC
+	                   ON TMSC.YEAR_MON = TMST.YEAR_MON
+	                  AND TMSC.PRDT_CD = TMST.PRDT_CD
+	                  
+	         WHERE TMST.YEAR_MON BETWEEN #{searchYearMnSt} AND #{searchYearMnEt}
+	        
+             <if test='searchPrdtCd != null and searchPrdtCd != ""'>
+	           AND TMST.PRDT_CD = #{searchPrdtCd}
+             </if>
+	         
+	         GROUP BY SUBSTRING(TMST.YEAR_MON,5,2), TMST.PRDT_CD, TMSC.PRICE
+	    ),
+	    BUY AS (
+	        SELECT SUBSTRING(TMBT.YEAR_MON,5,2) AS BUY_MON
+	               , TBM.BUY_CD
+	               , TBM.BUY_NM
+	               , TMBT.PRDT_CD
+	               , TMBC.COST AS COST
+	               , SUM(TMBT.PURE_AMT) AS BUY_AMT
+	          FROM TMH_MON_BUY_TOT AS TMBT
+	          
+	               JOIN TMH_MON_BUY_COST AS TMBC
+	                   ON TMBC.YEAR_MON = TMBT.YEAR_MON
+	                  AND TMBC.PRDT_CD = TMBT.PRDT_CD
+	               
+	               JOIN TFM_BUY_MST AS TBM
+	                   ON TBM.BUY_CD = TMBT.BUY_CD
+	                   
+	         WHERE TMBT.YEAR_MON BETWEEN #{searchYearMnSt} AND #{searchYearMnEt}
+	         
+	         <if test='searchBuyCd != null and searchBuyCd != ""'>
+	           AND TMBT.BUY_CD = #{searchBuyCd}
+             </if>
+             <if test='searchPrdtCd != null and searchPrdtCd != ""'>
+	           AND TMBT.PRDT_CD = #{searchPrdtCd}
+             </if>
+             
+             GROUP BY SUBSTRING(TMBT.YEAR_MON,5,2)
+	                  , TBM.BUY_CD
+	                  , TBM.BUY_NM
+	                  , TMBT.PRDT_CD
+	                  , TMBC.COST
+	    )
+	    SELECT A.BUY_CD
+	           , A.SORT
+	           , A.BUY_NM
+	           , CASE WHEN A.SORT='1' THEN '입고금액'
+				      WHEN A.SORT='2' THEN '출고금액'
+				      WHEN A.SORT='3' THEN '매출이익'
+				      WHEN A.SORT='4' THEN '마진율(%)' END AS CLASS_NM
+	           , IFNULL(A.MON_1,0) AS MON_1
+	           , IFNULL(A.MON_2,0) AS MON_2
+	           , IFNULL(A.MON_3,0) AS MON_3
+	           , IFNULL(A.MON_4,0) AS MON_4
+	           , IFNULL(A.MON_5,0) AS MON_5
+	           , IFNULL(A.MON_6,0) AS MON_6
+	           , IFNULL(A.MON_7,0) AS MON_7
+	           , IFNULL(A.MON_8,0) AS MON_8
+	           , IFNULL(A.MON_9,0) AS MON_9
+	           , IFNULL(A.MON_10,0) AS MON_10
+	           , IFNULL(A.MON_11,0) AS MON_11
+	           , IFNULL(A.MON_12,0) AS MON_12
+	           , IFNULL(A.TOT_AMT,0) AS TOT_AMT
+	      FROM (SELECT '1' AS SORT
+	                   , A.BUY_CD
+	                   , A.BUY_NM
+	                   , SUM(CASE WHEN A.BUY_MON='01' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_1
+	                   , SUM(CASE WHEN A.BUY_MON='02' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_2
+	                   , SUM(CASE WHEN A.BUY_MON='03' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_3
+	                   , SUM(CASE WHEN A.BUY_MON='04' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_4
+	                   , SUM(CASE WHEN A.BUY_MON='05' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_5
+	                   , SUM(CASE WHEN A.BUY_MON='06' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_6
+	                   , SUM(CASE WHEN A.BUY_MON='07' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_7
+	                   , SUM(CASE WHEN A.BUY_MON='08' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_8
+	                   , SUM(CASE WHEN A.BUY_MON='09' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_9
+	                   , SUM(CASE WHEN A.BUY_MON='10' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_10
+	                   , SUM(CASE WHEN A.BUY_MON='11' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_11
+	                   , SUM(CASE WHEN A.BUY_MON='12' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_12
+	                   , SUM(IFNULL(B.SALES_QTY,0) * A.COST) AS TOT_AMT
+	              FROM BUY A
+	                       LEFT OUTER JOIN SALES B
+	                           ON B.PRDT_CD = A.PRDT_CD
+	                          AND B.SALES_MON = A.BUY_MON
+	             GROUP BY A.BUY_CD, A.BUY_NM
+	          UNION ALL
+	            SELECT '2' AS SORT
+	                   , A.BUY_CD
+	                   , A.BUY_NM
+	                   , SUM(CASE WHEN A.BUY_MON='01' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_1
+	                   , SUM(CASE WHEN A.BUY_MON='02' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_2
+	                   , SUM(CASE WHEN A.BUY_MON='03' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_3
+	                   , SUM(CASE WHEN A.BUY_MON='04' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_4
+	                   , SUM(CASE WHEN A.BUY_MON='05' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_5
+	                   , SUM(CASE WHEN A.BUY_MON='06' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_6
+	                   , SUM(CASE WHEN A.BUY_MON='07' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_7
+	                   , SUM(CASE WHEN A.BUY_MON='08' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_8
+	                   , SUM(CASE WHEN A.BUY_MON='09' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_9
+	                   , SUM(CASE WHEN A.BUY_MON='10' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_10
+	                   , SUM(CASE WHEN A.BUY_MON='11' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_11
+	                   , SUM(CASE WHEN A.BUY_MON='12' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_12
+	                   , SUM(IFNULL(B.SALES_QTY,0) * B.PRICE) AS TOT_AMT
+	              FROM BUY A
+	                       LEFT OUTER JOIN SALES B
+	                           ON B.PRDT_CD = A.PRDT_CD
+	                          AND B.SALES_MON = A.BUY_MON
+	             GROUP BY A.BUY_CD, A.BUY_NM
+	         UNION ALL
+	            SELECT '3' AS SORT
+	                   , A.BUY_CD
+	                   , A.BUY_NM
+	                   , SUM(CASE WHEN A.BUY_MON='01' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_1
+	                   , SUM(CASE WHEN A.BUY_MON='02' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_2
+	                   , SUM(CASE WHEN A.BUY_MON='03' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_3
+	                   , SUM(CASE WHEN A.BUY_MON='04' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_4
+	                   , SUM(CASE WHEN A.BUY_MON='05' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_5
+	                   , SUM(CASE WHEN A.BUY_MON='06' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_6
+	                   , SUM(CASE WHEN A.BUY_MON='07' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_7
+	                   , SUM(CASE WHEN A.BUY_MON='08' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_8
+	                   , SUM(CASE WHEN A.BUY_MON='09' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_9
+	                   , SUM(CASE WHEN A.BUY_MON='10' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_10
+	                   , SUM(CASE WHEN A.BUY_MON='11' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_11
+	                   , SUM(CASE WHEN A.BUY_MON='12' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_12
+	                   , SUM(IFNULL(B.SALES_QTY,0) * B.PRICE) - SUM(IFNULL(B.SALES_QTY,0) * A.COST) AS TOT_AMT
+	              FROM BUY A
+	                       LEFT OUTER JOIN SALES B
+	                           ON B.PRDT_CD = A.PRDT_CD
+	                          AND B.SALES_MON = A.BUY_MON
+	             GROUP BY A.BUY_CD, A.BUY_NM
+	           UNION ALL
+	            SELECT '4' AS SORT
+	                   , A.BUY_CD
+	                   , A.BUY_NM
+	                   , SUM(CASE WHEN A.BUY_MON='01' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_1
+	                   , SUM(CASE WHEN A.BUY_MON='02' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_2
+	                   , SUM(CASE WHEN A.BUY_MON='03' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_3
+	                   , SUM(CASE WHEN A.BUY_MON='04' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_4
+	                   , SUM(CASE WHEN A.BUY_MON='05' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_5
+	                   , SUM(CASE WHEN A.BUY_MON='06' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_6
+	                   , SUM(CASE WHEN A.BUY_MON='07' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_7
+	                   , SUM(CASE WHEN A.BUY_MON='08' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_8
+	                   , SUM(CASE WHEN A.BUY_MON='09' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_9
+	                   , SUM(CASE WHEN A.BUY_MON='10' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_10
+	                   , SUM(CASE WHEN A.BUY_MON='11' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_11
+	                   , SUM(CASE WHEN A.BUY_MON='12' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_12
+	                   , SUM(A.SALES_AMT - A.BUY_AMT) / SUM(A.BUY_AMT) * 100 AS TOT_AMT
+	              FROM (SELECT A.BUY_MON
+	                           , A.BUY_CD
+	                           , A.BUY_NM
+	                           , SUM(IFNULL(B.SALES_QTY,0) * A.COST) AS BUY_AMT
+	                           , SUM(IFNULL(B.SALES_QTY,0) * B.PRICE) AS SALES_AMT	                           
+	                      FROM BUY A
+	                           LEFT OUTER JOIN SALES B
+	                               ON B.PRDT_CD = A.PRDT_CD
+	                              AND B.SALES_MON = A.BUY_MON
+	                    GROUP BY A.BUY_MON, A.BUY_CD, A.BUY_NM
+	                  ) AS A	                              
+	             GROUP BY A.BUY_CD, A.BUY_NM
+	           ) AS A
+	     ORDER BY A.BUY_CD, A.SORT
+
+	</select>
+	
+	<!-- 매입처월별이익현황 다운 -->
+	<select id="selectAnlBuyMonPrftListExcelDown" parameterType="com.doppio.workplace.as.service.AnlBuyMonPrftListVo" resultType="java.util.HashMap">
+	/*AnlBuyMonPrftListMapper.selectAnlBuyMonPrftListExcelDown*/	
+	    WITH 
+	    SALES AS (
+	        SELECT SUBSTRING(TMST.YEAR_MON,5,2) AS SALES_MON
+	               , TMST.PRDT_CD
+	               , TMSC.PRICE AS PRICE
+	               , SUM(TMST.SALES_QTY) AS SALES_QTY
+	               , SUM(TMST.PURE_AMT) AS SALES_AMT
+	          FROM TMH_MON_SALES_TOT AS TMST
+	          
+	               JOIN TMH_MON_SALES_PRICE AS TMSC
+	                   ON TMSC.YEAR_MON = TMST.YEAR_MON
+	                  AND TMSC.PRDT_CD = TMST.PRDT_CD
+	                  
+	         WHERE TMST.YEAR_MON BETWEEN REPLACE(#{searchYearMnSt},'-','') AND REPLACE(#{searchYearMnEt},'-','')
+	        
+             <if test='searchPrdtCd != null and searchPrdtCd != ""'>
+	           AND TMST.PRDT_CD = #{searchPrdtCd}
+             </if>
+	         
+	         GROUP BY SUBSTRING(TMST.YEAR_MON,5,2), TMST.PRDT_CD, TMSC.PRICE
+	    ),
+	    BUY AS (
+	        SELECT SUBSTRING(TMBT.YEAR_MON,5,2) AS BUY_MON
+	               , TBM.BUY_CD
+	               , TBM.BUY_NM
+	               , TMBT.PRDT_CD
+	               , TMBC.COST AS COST
+	               , SUM(TMBT.PURE_AMT) AS BUY_AMT
+	          FROM TMH_MON_BUY_TOT AS TMBT
+	          
+	               JOIN TMH_MON_BUY_COST AS TMBC
+	                   ON TMBC.YEAR_MON = TMBT.YEAR_MON
+	                  AND TMBC.PRDT_CD = TMBT.PRDT_CD
+	               
+	               JOIN TFM_BUY_MST AS TBM
+	                   ON TBM.BUY_CD = TMBT.BUY_CD
+	                   
+	         WHERE TMBT.YEAR_MON BETWEEN REPLACE(#{searchYearMnSt},'-','') AND REPLACE(#{searchYearMnEt},'-','')
+	         
+	         <if test='searchBuyCd != null and searchBuyCd != ""'>
+	           AND TMBT.BUY_CD = #{searchBuyCd}
+             </if>
+             <if test='searchPrdtCd != null and searchPrdtCd != ""'>
+	           AND TMBT.PRDT_CD = #{searchPrdtCd}
+             </if>
+             
+             GROUP BY SUBSTRING(TMBT.YEAR_MON,5,2)
+	                  , TBM.BUY_CD
+	                  , TBM.BUY_NM
+	                  , TMBT.PRDT_CD
+	                  , TMBC.COST
+	    )
+	    SELECT A.BUY_NM
+	           , CASE WHEN A.SORT='1' THEN '입고금액'
+				      WHEN A.SORT='2' THEN '출고금액'
+				      WHEN A.SORT='3' THEN '매출이익'
+				      WHEN A.SORT='4' THEN '마진율(%)' END AS CLASS_NM
+	           , IFNULL(A.MON_1,0) AS MON_1
+	           , IFNULL(A.MON_2,0) AS MON_2
+	           , IFNULL(A.MON_3,0) AS MON_3
+	           , IFNULL(A.MON_4,0) AS MON_4
+	           , IFNULL(A.MON_5,0) AS MON_5
+	           , IFNULL(A.MON_6,0) AS MON_6
+	           , IFNULL(A.MON_7,0) AS MON_7
+	           , IFNULL(A.MON_8,0) AS MON_8
+	           , IFNULL(ROUND(A.MON_9, 2),0) AS MON_9
+	           , IFNULL(A.MON_10,0) AS MON_10
+	           , IFNULL(A.MON_11,0) AS MON_11
+	           , IFNULL(A.MON_12,0) AS MON_12
+	           , IFNULL(A.TOT_AMT,0) AS TOT_AMT
+	      FROM (SELECT '1' AS SORT
+	                   , A.BUY_CD
+	                   , A.BUY_NM
+	                   , SUM(CASE WHEN A.BUY_MON='01' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_1
+	                   , SUM(CASE WHEN A.BUY_MON='02' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_2
+	                   , SUM(CASE WHEN A.BUY_MON='03' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_3
+	                   , SUM(CASE WHEN A.BUY_MON='04' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_4
+	                   , SUM(CASE WHEN A.BUY_MON='05' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_5
+	                   , SUM(CASE WHEN A.BUY_MON='06' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_6
+	                   , SUM(CASE WHEN A.BUY_MON='07' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_7
+	                   , SUM(CASE WHEN A.BUY_MON='08' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_8
+	                   , SUM(CASE WHEN A.BUY_MON='09' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_9
+	                   , SUM(CASE WHEN A.BUY_MON='10' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_10
+	                   , SUM(CASE WHEN A.BUY_MON='11' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_11
+	                   , SUM(CASE WHEN A.BUY_MON='12' THEN IFNULL(B.SALES_QTY,0) * A.COST END) AS MON_12
+	                   , SUM(IFNULL(B.SALES_QTY,0) * A.COST) AS TOT_AMT
+	              FROM BUY A
+	                       LEFT OUTER JOIN SALES B
+	                           ON B.PRDT_CD = A.PRDT_CD
+	                          AND B.SALES_MON = A.BUY_MON
+	             GROUP BY A.BUY_CD, A.BUY_NM
+	          UNION ALL
+	            SELECT '2' AS SORT
+	                   , A.BUY_CD
+	                   , A.BUY_NM
+	                   , SUM(CASE WHEN A.BUY_MON='01' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_1
+	                   , SUM(CASE WHEN A.BUY_MON='02' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_2
+	                   , SUM(CASE WHEN A.BUY_MON='03' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_3
+	                   , SUM(CASE WHEN A.BUY_MON='04' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_4
+	                   , SUM(CASE WHEN A.BUY_MON='05' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_5
+	                   , SUM(CASE WHEN A.BUY_MON='06' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_6
+	                   , SUM(CASE WHEN A.BUY_MON='07' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_7
+	                   , SUM(CASE WHEN A.BUY_MON='08' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_8
+	                   , SUM(CASE WHEN A.BUY_MON='09' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_9
+	                   , SUM(CASE WHEN A.BUY_MON='10' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_10
+	                   , SUM(CASE WHEN A.BUY_MON='11' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_11
+	                   , SUM(CASE WHEN A.BUY_MON='12' THEN IFNULL(B.SALES_QTY,0) * B.PRICE END) AS MON_12
+	                   , SUM(IFNULL(B.SALES_QTY,0) * B.PRICE) AS TOT_AMT
+	              FROM BUY A
+	                       LEFT OUTER JOIN SALES B
+	                           ON B.PRDT_CD = A.PRDT_CD
+	                          AND B.SALES_MON = A.BUY_MON
+	             GROUP BY A.BUY_CD, A.BUY_NM
+	         UNION ALL
+	            SELECT '3' AS SORT
+	                   , A.BUY_CD
+	                   , A.BUY_NM
+	                   , SUM(CASE WHEN A.BUY_MON='01' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_1
+	                   , SUM(CASE WHEN A.BUY_MON='02' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_2
+	                   , SUM(CASE WHEN A.BUY_MON='03' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_3
+	                   , SUM(CASE WHEN A.BUY_MON='04' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_4
+	                   , SUM(CASE WHEN A.BUY_MON='05' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_5
+	                   , SUM(CASE WHEN A.BUY_MON='06' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_6
+	                   , SUM(CASE WHEN A.BUY_MON='07' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_7
+	                   , SUM(CASE WHEN A.BUY_MON='08' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_8
+	                   , SUM(CASE WHEN A.BUY_MON='09' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_9
+	                   , SUM(CASE WHEN A.BUY_MON='10' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_10
+	                   , SUM(CASE WHEN A.BUY_MON='11' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_11
+	                   , SUM(CASE WHEN A.BUY_MON='12' THEN (IFNULL(B.SALES_QTY,0) * B.PRICE) - (IFNULL(B.SALES_QTY,0) * A.COST) END) AS MON_12
+	                   , SUM(IFNULL(B.SALES_QTY,0) * B.PRICE) - SUM(IFNULL(B.SALES_QTY,0) * A.COST) AS TOT_AMT
+	              FROM BUY A
+	                       LEFT OUTER JOIN SALES B
+	                           ON B.PRDT_CD = A.PRDT_CD
+	                          AND B.SALES_MON = A.BUY_MON
+	             GROUP BY A.BUY_CD, A.BUY_NM
+	           UNION ALL
+	            SELECT '4' AS SORT
+	                   , A.BUY_CD
+	                   , A.BUY_NM
+	                   , SUM(CASE WHEN A.BUY_MON='01' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_1
+	                   , SUM(CASE WHEN A.BUY_MON='02' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_2
+	                   , SUM(CASE WHEN A.BUY_MON='03' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_3
+	                   , SUM(CASE WHEN A.BUY_MON='04' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_4
+	                   , SUM(CASE WHEN A.BUY_MON='05' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_5
+	                   , SUM(CASE WHEN A.BUY_MON='06' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_6
+	                   , SUM(CASE WHEN A.BUY_MON='07' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_7
+	                   , SUM(CASE WHEN A.BUY_MON='08' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_8
+	                   , SUM(CASE WHEN A.BUY_MON='09' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_9
+	                   , SUM(CASE WHEN A.BUY_MON='10' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_10
+	                   , SUM(CASE WHEN A.BUY_MON='11' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_11
+	                   , SUM(CASE WHEN A.BUY_MON='12' THEN (A.SALES_AMT - A.BUY_AMT) / A.SALES_AMT * 100 END) AS MON_12
+	                   , SUM(A.SALES_AMT - A.BUY_AMT) / SUM(A.BUY_AMT) * 100 AS TOT_AMT
+	              FROM (SELECT A.BUY_MON
+	                           , A.BUY_CD
+	                           , A.BUY_NM
+	                           , SUM(IFNULL(B.SALES_QTY,0) * A.COST) AS BUY_AMT
+	                           , SUM(IFNULL(B.SALES_QTY,0) * B.PRICE) AS SALES_AMT	                           
+	                      FROM BUY A
+	                           LEFT OUTER JOIN SALES B
+	                               ON B.PRDT_CD = A.PRDT_CD
+	                              AND B.SALES_MON = A.BUY_MON
+	                    GROUP BY A.BUY_MON, A.BUY_CD, A.BUY_NM
+	                  ) AS A	                              
+	             GROUP BY A.BUY_CD, A.BUY_NM
+	           ) AS A
+	     ORDER BY A.BUY_CD, A.SORT
+
+	</select>
+</mapper>

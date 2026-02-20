@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.management.service.impl.MgrTermsMapper">
+
+	<resultMap id = "termsMap" type = "com.doppio.management.service.MgrTermsVo">
+		<result column = "TERMS_DIVN_CD"					property = "termsDivnCd"			/>
+		<result column = "SEQ"								property = "seq"					/>
+		<result column = "TERMS_VERSION_INFO"				property = "termsVersionInfo"		/>
+		<result column = "TERMS_CONTENT"					property = "termsContent"			/>
+		<result column = "REG_DT"							property = "regDt"					/>
+		<result column = "REG_ID"							property = "regId"					/>
+	</resultMap>
+	
+	<!-- [약관관리] 약관 리스트 불러오기 -->
+	<select id="selectVersion" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		/* mgrTermsMapper.selectVersion */
+		SELECT	A.DTL_CD  AS CODE_ID
+		<choose>
+			<when test='language == "EN"'>
+				,NVL(A.DTL_SUB_NM,DTL_NM) AS CODE_NAME
+			</when>
+			<when test='language == "VN"'>
+				,NVL(A.DTL_EXTEND_NM,DTL_NM) AS CODE_NAME
+			</when>
+			<when test='language == "KO"'>
+				,A.DTL_NM AS CODE_NAME
+			</when>
+			<otherwise>
+				,IFNULL(A.DTL_EXTEND_NM,DTL_NM) AS CODE_NAME
+			</otherwise>
+		</choose>
+		, B.TERMS_CONTENT
+		<choose>
+			<when test='language == "EN"'>
+			,DATE_FORMAT(B.REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT
+			</when>
+			<when test='language == "VN"'>
+			,DATE_FORMAT(B.REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT
+			</when>
+			<when test='language == "KO"'>
+			,DATE_FORMAT(B.REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT
+			</when>
+		</choose>
+		, B.REG_ID
+		FROM 	TCM_CODE_DTL A
+		LEFT OUTER JOIN TCM_TERMS B ON A.DTL_CD = B.TERMS_DIVN_CD AND A.DTL_NM = B.TERMS_VERSION_INFO
+		WHERE	A.USE_YN='Y'
+		AND	A.DTL_CD = #{termsDivnCd}
+		<if test='extent01 != null and extent01 != ""'>
+			AND A.EXTENT01 = #{extent01}
+		</if>
+		ORDER BY B.SEQ DESC;
+	</select>
+
+	<!-- 약관정보 저장 -->
+	<insert id = "insertTerms" parameterType = "com.doppio.management.service.MgrTermsVo">
+		/*mgrTermsMapper.insertTerms*/
+		<selectKey keyProperty="seq" resultType="String" order="BEFORE">
+			SELECT IFNULL(COUNT(SEQ),0)+1 AS seq FROM TCM_TERMS
+			WHERE TERMS_DIVN_CD = #{termsDivnCd}
+		</selectKey>
+		INSERT INTO TCM_TERMS
+		(
+			TERMS_DIVN_CD
+			, SEQ
+			, TERMS_VERSION_INFO
+			, TERMS_CONTENT
+			, REG_DT
+			, REG_ID
+		)
+		VALUES
+		(
+			#{termsDivnCd}
+			, #{seq}
+			, #{termsVersionInfo}
+			, #{termsContent}
+			, NOW()
+			, #{workId}
+		)
+	</insert>
+
+	<!-- 버전정보 업데이트 -->
+	<update id = "updateVersion" parameterType = "com.doppio.management.service.MgrTermsVo">
+		/*mgrTermsMapper.updateVersion*/
+		UPDATE TCM_CODE_DTL
+		SET DTL_NM = #{termsVersionInfo}
+			, DTL_SUB_NM = #{termsVersionInfo}
+			, DTL_EXTEND_NM = #{termsVersionInfo}
+		WHERE DTL_CD = #{termsDivnCd}
+		AND USE_YN = 'Y'
+	</update>
+
+	<!-- 버전정보 가져오기 -->
+	<select id = "selectTermsVersion" parameterType = "com.doppio.management.service.MgrTermsVo" resultType = "String">
+		/*mgrTermsMapper.selectTermsVersion*/
+		SELECT A.DTL_NM AS CODE_NAME
+		FROM TCM_CODE_DTL A
+		LEFT OUTER JOIN TCM_TERMS B ON A.DTL_CD = B.TERMS_DIVN_CD AND A.DTL_NM = B.TERMS_VERSION_INFO
+			WHERE	A.USE_YN='Y'
+			AND	A.DTL_CD=#{termsVersionInfo}
+			AND B.SEQ IN (SELECT MAX(CAST(SEQ AS INT)) FROM TCM_TERMS WHERE TERMS_DIVN_CD = #{termsVersionInfo} GROUP BY TERMS_DIVN_CD)
+			ORDER BY B.SEQ DESC;
+	</select>
+	
+	<!-- 기등록된 약관정보 존재여부 확인 (TCM_TERMS) -->
+	<select id = "selectTerms" parameterType = "com.doppio.management.service.MgrTermsVo" resultType = "int">
+		/*mgrTermsMapper.selectTerms*/
+		SELECT COUNT(*) AS CNT
+		FROM TCM_TERMS
+		WHERE TERMS_DIVN_CD = #{termsDivnCd}
+	</select>
+	
+	<!-- 협력사용 약관동의 정보 리스트 조회 -->
+	<select id = "selectTermsList" parameterType = "com.doppio.management.service.MgrTermsVo" resultMap = "termsMap">
+		/*mgrTermsMapper.selectTermsList*/
+		SELECT
+			T.TERMS_DIVN_CD					/* 정보동의구분코드[9012] */
+			, T.SEQ 						/* 약관 순번 */
+			, T.TERMS_VERSION_INFO 			/* 정보동의버전정보 */
+			, T.TERMS_CONTENT				/* 정보동의내용 */
+			, T.TERMS_ST_DY 				/* 정보동의시행일자 */
+		FROM
+		(
+			SELECT
+				ROW_NUMBER() OVER(PARTITION BY A.TERMS_DIVN_CD) AS RNUM
+				, A.TERMS_DIVN_CD				/* 정보동의구분코드[9012] */
+				, A.SEQ 						/* 약관 순번 */
+				, A.TERMS_VERSION_INFO 			/* 정보동의버전정보 */
+				, A.TERMS_CONTENT				/* 정보동의내용 */
+				, A.TERMS_ST_DY 				/* 정보동의시행일자 */
+			FROM TCM_TERMS A
+			LEFT OUTER JOIN TCM_CODE_DTL B 
+				ON B.COM_CD = '9012' 
+				AND A.TERMS_DIVN_CD = B.DTL_CD
+				AND B.USE_YN = 'Y'
+			<where>
+				<if test='termsDivnCd != null and termsDivnCd != ""'>
+					AND A.TERMS_DIVN_CD = #{termsDivnCd}
+				</if>
+				<if test='termsDivnCds != null'>
+					AND A.TERMS_DIVN_CD IN 
+					<foreach collection="termsDivnCds" item="item" separator="," close=")" open="(">
+						#{item}
+					</foreach>
+				</if>
+				<if test='extent01 != null and extent01 != ""'>
+					AND B.EXTENT01 = #{extent01}
+				</if>
+				<if test='extent02 != null and extent02 != ""'>
+					AND B.EXTENT02 = #{extent02}
+				</if>
+				<if test='extent03 != null and extent03 != ""'>
+					AND B.EXTENT03 = #{extent03}
+				</if>
+				<if test='extentArr01 != null'>
+					AND B.EXTENT01 IN
+					<foreach collection="extentArr01" item="item" separator="," close=")" open="(">
+						#{item}
+					</foreach>
+				</if>
+				<if test='extentArr02 != null'>
+					AND B.EXTENT02 IN
+					<foreach collection="extentArr02" item="item" separator="," close=")" open="(">
+						#{item}
+					</foreach>
+				</if>
+				<if test='extentArr03 != null'>
+					AND B.EXTENT03 IN
+					<foreach collection="extentArr03" item="item" separator="," close=")" open="(">
+						#{item}
+					</foreach>
+				</if>
+			</where>
+		)T
+		WHERE RNUM = '1'
+	</select>
+	
+	<!-- 약관동의여부 확인 -->
+	<select id = "selectAgreeTermsChk" parameterType = "com.doppio.management.service.MgrTermsVo" resultType = "int">
+		/* MgrTermsMapper.selectAgreeTermsChk */
+		SELECT COUNT(*) AS CNT
+		FROM TCM_TERMS_AGREE
+		WHERE TERMS_DIVN_CD = #{termsDivnCd}
+		AND	TERMS_PCL_NO = #{termsPclNo}
+		AND	AGREE_YN = 'Y'
+	</select>
+	
+	<!-- 약관 동의 저장 -->
+	<insert id = "insertTermsAgree" parameterType = "com.doppio.management.service.MgrTermsVo">
+		/* MgrTermsMapper.insertTermsAgree */
+		<!-- 약관동의구분(gbnType) : D/기기인증, T/약관동의 -->
+		<selectKey resultType = "String" keyProperty = "agreeRegNo" order = "BEFORE">
+			<choose>
+				<when test='gbnType != null and gbnType != ""'>
+					SELECT CONCAT(#{gbnType}, DATE_FORMAT(SYSDATE(), '%y%m%d'), LPAD(CONCAT(NEXTVAL(SQ_TERMS_REG_NO)), 3, '0')) AS agreeRegNo
+				</when>
+				<otherwise>
+					SELECT CONCAT('T', DATE_FORMAT(SYSDATE(), '%y%m%d'), LPAD(CONCAT(NEXTVAL(SQ_TERMS_REG_NO)), 3, '0')) AS agreeRegNo
+				</otherwise>
+			</choose>
+		</selectKey>
+		INSERT INTO TCM_TERMS_AGREE (
+			AGREE_REG_NO			/* 약관동의고유번호 */
+			, TERMS_DIVN_CD			/* 정보동의구분코드[9012] */
+			, SEQ					/* 동의한 약관의 버전 seq (약관이 아닐 경우, seq 1로 셋팅) */
+			, TERMS_PCL_NO			/* 약관동의자고유번호 */
+			, TERMS_PCL_IDX			/* 정보동의자식별값(없을경우 Y로 셋팅) */
+			, AGREE_YN				/* 동의여부 */
+			, SYS_NM				/* 시스템명 */
+			, TERMS_AGREE_DT		/* 정보동의 변경일시 */
+		)
+		VALUES
+		(
+			#{agreeRegNo}
+			, #{termsDivnCd}
+			, #{seq}
+			, #{termsPclNo}
+			<choose>
+				<when test='termsPclIdx != null and termsPclIdx != ""'>
+					, #{termsPclIdx}
+				</when>
+				<otherwise>
+					, 'Y'
+				</otherwise>
+			</choose>
+			<choose>
+				<when test='agreeYn != null and agreeYn != ""'>
+					, #{agreeYn}
+				</when>
+				<otherwise>
+					, 'Y'
+				</otherwise>
+			</choose>			
+			, 'PLS'
+			, SYSDATE()
+		)
+	</insert>
+	
+	<!-- [필수약관체크용] 필수 동의가 필요한 정보동의 구분코드 조회 -->
+	<select id="selectTcmTermsRequired" parameterType="com.doppio.management.service.MgrTermsVo" resultType="String">
+		/* MgrTermsMapper.selectTcmTermsRequired */
+		SELECT
+			A.DTL_CD AS TERMS_DIVN_CD
+		FROM
+			TCM_CODE_DTL A
+		LEFT OUTER JOIN TCM_TERMS B 
+		ON
+			A.COM_CD = '9012'
+			AND A.DTL_CD = B.TERMS_DIVN_CD
+		WHERE
+			A.COM_CD = '9012'
+			AND A.USE_YN = 'Y'
+			<if test='extent01 != null and extent01 != ""'>
+				AND A.EXTENT01 = #{extent01}
+			</if>
+			<if test='extent02 != null and extent02 != ""'>
+				AND A.EXTENT02 = #{extent02}
+			</if>
+			<if test='extent03 != null and extent03 != ""'>
+				AND A.EXTENT03 = #{extent03}
+			</if>
+			<if test='extentArr01 != null'>
+				AND A.EXTENT01 IN
+				<foreach collection="extentArr01" item="item" separator="," close=")" open="(">
+					#{item}
+				</foreach>
+			</if>
+			<if test='extentArr02 != null'>
+				AND A.EXTENT02 IN
+				<foreach collection="extentArr02" item="item" separator="," close=")" open="(">
+					#{item}
+				</foreach>
+			</if>
+			<if test='extentArr03 != null'>
+				AND A.EXTENT03 IN
+				<foreach collection="extentArr03" item="item" separator="," close=")" open="(">
+					#{item}
+				</foreach>
+			</if>
+		GROUP BY
+			A.DTL_CD
+	</select>
+</mapper>

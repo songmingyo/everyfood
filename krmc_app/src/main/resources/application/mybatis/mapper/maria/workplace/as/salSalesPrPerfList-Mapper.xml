@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.SalSalesPrPerfListMapper">
+	
+	<!-- 영업 실적 현황 조회 -->
+	<select id="selectSalSalesPrPerfList" parameterType="com.doppio.workplace.as.service.SalSalesPrPerfListVo" resultType="com.doppio.workplace.as.service.SalSalesPrPerfListVo">
+	/*SalSalesPrPerfListMapper.selectSalSalesPrPerfList*/	
+		SELECT TSPM.SALES_PR_NM
+		       , IFNULL(A.GOAL_AMT,0) AS GOAL_AMT
+               , IFNULL(B.THIS_DAY_AMT,0) AS THIS_DAY_AMT
+               , IFNULL(B.THIS_MON_AMT,0) AS THIS_MON_AMT
+               , IFNULL(B.THIS_MON_AMT,0) - IFNULL(A.GOAL_AMT,0) AS THIS_MON_DIFF
+               , ROUND(CASE WHEN IFNULL(A.GOAL_AMT,0)=0 THEN 0 ELSE IFNULL(B.THIS_MON_AMT,0) / IFNULL(A.GOAL_AMT,0) * 100 END, 1) AS THIS_MON_RATE
+               , IFNULL(B.PREV_MON_AMT,0) AS PREV_MON_AMT
+               , ROUND(CASE WHEN IFNULL(B.PREV_MON_AMT,0)=0 THEN 0 ELSE IFNULL(B.THIS_MON_AMT,0) / IFNULL(B.PREV_MON_AMT,0) * 100 END, 1) AS PREV_MON_RATE
+		       , IFNULL(B.PREV_YEAR_AMT,0) AS PREV_YEAR_AMT
+		       , ROUND(CASE WHEN IFNULL(B.PREV_YEAR_AMT,0)=0 THEN 0 ELSE IFNULL(B.THIS_MON_AMT,0) / IFNULL(B.PREV_YEAR_AMT,0) * 100 END, 1) AS PREV_YEAR_RATE
+		  FROM (SELECT TSG.SALES_PR_CD
+		               , TSG.GOAL_AMT
+		          FROM TSH_SALES_GOAL AS TSG 
+		         WHERE TSG.GOAL_YEAR = SUBSTRING(#{searchStartDt},1,4)
+		           AND TSG.GOAL_MON = SUBSTRING(#{searchStartDt},5,2)
+		           <if test='salesPrCd != null and salesPrCd != ""'> 
+	                 AND TSG.SALES_PR_CD = #{salesPrCd}
+                   </if>
+               ) AS A
+               LEFT OUTER JOIN
+                   (SELECT TSAI.SALES_PR_CD
+		                   , SUM(A.PREV_YEAR_AMT) AS PREV_YEAR_AMT
+		            	   , SUM(A.PREV_MON_AMT) AS PREV_MON_AMT
+		            	   , SUM(A.THIS_MON_AMT) AS THIS_MON_AMT
+		            	   , SUM(A.THIS_DAY_AMT) AS THIS_DAY_AMT
+		              FROM (
+		            		SELECT SALES_CD
+		            	           <if test='vatYn == "Y"'> 
+	                                 , SUM(TOT_AMT) AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , SUM(PURE_AMT) AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_DLV
+		            		 WHERE SALES_DT BETWEEN DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 year),'%Y%m%d') AND DATE_FORMAT(DATE_ADD(#{searchEndDt}, INTERVAL -1 year),'%Y%m%d')
+		            		 GROUP BY SALES_CD
+		            	  UNION ALL
+		            	    SELECT SALES_CD
+		            		       <if test='vatYn == "Y"'> 
+	                                 , SUM(TOT_AMT)*-1 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , SUM(PURE_AMT)*-1 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_RETURN
+		            		 WHERE RTN_DT BETWEEN DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 year),'%Y%m%d') AND DATE_FORMAT(DATE_ADD(#{searchEndDt}, INTERVAL -1 year),'%Y%m%d')
+		            		 GROUP BY SALES_CD
+		            	  UNION ALL
+		            	    SELECT SALES_CD
+		            	           <if test='vatYn == "Y"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , SUM(TOT_AMT) AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , SUM(PURE_AMT) AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_DLV
+		            		 WHERE SALES_DT BETWEEN DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 month),'%Y%m%d') AND DATE_FORMAT(DATE_ADD(#{searchEndDt}, INTERVAL -1 month),'%Y%m%d')
+		            		 GROUP BY SALES_CD
+		            	  UNION ALL
+		            	    SELECT SALES_CD
+		            		       <if test='vatYn == "Y"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , SUM(TOT_AMT)*-1 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , SUM(PURE_AMT)*-1 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_RETURN
+		            		 WHERE RTN_DT BETWEEN DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 month),'%Y%m%d') AND DATE_FORMAT(DATE_ADD(#{searchEndDt}, INTERVAL -1 month),'%Y%m%d')
+		            		 GROUP BY SALES_CD
+		                  UNION ALL
+		            	    SELECT SALES_CD
+		            	           <if test='vatYn == "Y"'>
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , SUM(TOT_AMT) AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , SUM(PURE_AMT) AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_DLV
+		            		 WHERE SALES_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+		            		 GROUP BY SALES_CD
+		            	  UNION ALL
+		            	    SELECT SALES_CD
+		            	           <if test='vatYn == "Y"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , SUM(TOT_AMT)*-1 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , SUM(PURE_AMT)*-1 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_RETURN
+		            		 WHERE RTN_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+		            		 GROUP BY SALES_CD
+		            	  UNION ALL
+		            	    SELECT SALES_CD
+		            	           <if test='vatYn == "Y"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , SUM(TOT_AMT) AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , SUM(PURE_AMT) AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_DLV
+		            		 WHERE SALES_DT = #{searchEndDt}
+		            		 GROUP BY SALES_CD
+		            	  UNION ALL
+		            	    SELECT SALES_CD
+		            	           <if test='vatYn == "Y"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , SUM(TOT_AMT)*-1 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , SUM(PURE_AMT)*-1 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_RETURN
+		            		 WHERE RTN_DT = #{searchEndDt}
+		            		 GROUP BY SALES_CD
+		            	   ) A 
+		            	   JOIN TFM_SALES_ADD_INFO AS TSAI
+		            	     ON TSAI.SALES_CD = A.SALES_CD
+	                 GROUP BY TSAI.SALES_PR_CD
+	               ) AS B
+	            ON A.SALES_PR_CD = B.SALES_PR_CD
+	          JOIN TFM_SALES_PR_MST AS TSPM
+	            ON TSPM.SALES_PR_CD = A.SALES_PR_CD AND TSPM.USE_YN <![CDATA[<>]]>	'N'
+	     ORDER BY A.SALES_PR_CD
+	</select>
+	
+	
+	<!-- 영업 실적현황 엑셀 다운로드 -->
+	<select id="selectSalSalesPrPerfListExcelDown" parameterType="com.doppio.workplace.as.service.SalSalesPrPerfListVo" resultType="java.util.HashMap">
+	/*SalSalesPrPerfListMapper.selectSalSalesPrPerfListExcelDown*/	
+		SELECT TSPM.SALES_PR_NM
+		       , IFNULL(A.GOAL_AMT,0) AS GOAL_AMT
+               , IFNULL(B.THIS_DAY_AMT,0) AS THIS_DAY_AMT
+               , IFNULL(B.THIS_MON_AMT,0) AS THIS_MON_AMT
+               , IFNULL(B.THIS_MON_AMT,0) - IFNULL(A.GOAL_AMT,0) AS THIS_MON_DIFF
+               , ROUND(CASE WHEN IFNULL(A.GOAL_AMT,0)=0 THEN 0 ELSE IFNULL(B.THIS_MON_AMT,0) / IFNULL(A.GOAL_AMT,0) * 100 END, 1) AS THIS_MON_RATE
+               , IFNULL(B.PREV_MON_AMT,0) AS PREV_MON_AMT
+               , ROUND(CASE WHEN IFNULL(B.PREV_MON_AMT,0)=0 THEN 0 ELSE IFNULL(B.THIS_MON_AMT,0) / IFNULL(B.PREV_MON_AMT,0) * 100 END, 1) AS PREV_MON_RATE
+		       , IFNULL(B.PREV_YEAR_AMT,0) AS PREV_YEAR_AMT
+		       , ROUND(CASE WHEN IFNULL(B.PREV_YEAR_AMT,0)=0 THEN 0 ELSE IFNULL(B.THIS_MON_AMT,0) / IFNULL(B.PREV_YEAR_AMT,0) * 100 END, 1) AS PREV_YEAR_RATE
+		  FROM (SELECT TSG.SALES_PR_CD
+		               , TSG.GOAL_AMT
+		          FROM TSH_SALES_GOAL AS TSG 
+		         WHERE TSG.GOAL_YEAR = SUBSTRING(REPLACE(#{searchStartDt},'-',''),1,4)
+		           AND TSG.GOAL_MON = SUBSTRING(REPLACE(#{searchStartDt},'-',''),5,2)
+		           <if test='salesPrCd != null and salesPrCd != ""'> 
+	                 AND TSG.SALES_PR_CD = #{salesPrCd}
+                   </if>
+               ) AS A
+               LEFT OUTER JOIN
+                   (SELECT TSAI.SALES_PR_CD
+		                   , SUM(A.PREV_YEAR_AMT) AS PREV_YEAR_AMT
+		            	   , SUM(A.PREV_MON_AMT) AS PREV_MON_AMT
+		            	   , SUM(A.THIS_MON_AMT) AS THIS_MON_AMT
+		            	   , SUM(A.THIS_DAY_AMT) AS THIS_DAY_AMT
+		              FROM (
+		            		SELECT SALES_CD
+		            	           <if test='vatYn == "Y"'> 
+	                                 , SUM(TOT_AMT) AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , SUM(PURE_AMT) AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_DLV
+		            		 WHERE SALES_DT BETWEEN DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 year),'%Y%m%d') AND DATE_FORMAT(DATE_ADD(#{searchEndDt}, INTERVAL -1 year),'%Y%m%d')
+		            		 GROUP BY SALES_CD
+		            	  UNION ALL
+		            	    SELECT SALES_CD
+		            		       <if test='vatYn == "Y"'> 
+	                                 , SUM(TOT_AMT)*-1 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , SUM(PURE_AMT)*-1 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_RETURN
+		            		 WHERE RTN_DT BETWEEN DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 year),'%Y%m%d') AND DATE_FORMAT(DATE_ADD(#{searchEndDt}, INTERVAL -1 year),'%Y%m%d')
+		            		 GROUP BY SALES_CD
+		            	  UNION ALL
+		            	    SELECT SALES_CD
+		            	           <if test='vatYn == "Y"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , SUM(TOT_AMT) AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , SUM(PURE_AMT) AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_DLV
+		            		 WHERE SALES_DT BETWEEN DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 month),'%Y%m%d') AND DATE_FORMAT(DATE_ADD(#{searchEndDt}, INTERVAL -1 month),'%Y%m%d')
+		            		 GROUP BY SALES_CD
+		            	  UNION ALL
+		            	    SELECT SALES_CD
+		            		       <if test='vatYn == "Y"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , SUM(TOT_AMT)*-1 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , SUM(PURE_AMT)*-1 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_RETURN
+		            		 WHERE RTN_DT BETWEEN DATE_FORMAT(DATE_ADD(#{searchStartDt}, INTERVAL -1 month),'%Y%m%d') AND DATE_FORMAT(DATE_ADD(#{searchEndDt}, INTERVAL -1 month),'%Y%m%d')
+		            		 GROUP BY SALES_CD
+		                  UNION ALL
+		            	    SELECT SALES_CD
+		            	           <if test='vatYn == "Y"'>
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , SUM(TOT_AMT) AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , SUM(PURE_AMT) AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_DLV
+		            		 WHERE SALES_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+		            		 GROUP BY SALES_CD
+		            	  UNION ALL
+		            	    SELECT SALES_CD
+		            	           <if test='vatYn == "Y"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , SUM(TOT_AMT)*-1 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , SUM(PURE_AMT)*-1 AS THIS_MON_AMT
+		            		         , 0 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_RETURN
+		            		 WHERE RTN_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+		            		 GROUP BY SALES_CD
+		            	  UNION ALL
+		            	    SELECT SALES_CD
+		            	           <if test='vatYn == "Y"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , SUM(TOT_AMT) AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , SUM(PURE_AMT) AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_DLV
+		            		 WHERE SALES_DT = REPLACE(#{searchEndDt},'-','')
+		            		 GROUP BY SALES_CD
+		            	  UNION ALL
+		            	    SELECT SALES_CD
+		            	           <if test='vatYn == "Y"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , SUM(TOT_AMT)*-1 AS THIS_DAY_AMT
+                                   </if>
+		            		       <if test='vatYn == "N"'> 
+	                                 , 0 AS PREV_YEAR_AMT
+		            		         , 0 AS PREV_MON_AMT
+		            		         , 0 AS THIS_MON_AMT
+		            		         , SUM(PURE_AMT)*-1 AS THIS_DAY_AMT
+                                   </if>
+ 		            		  FROM TSH_SALES_RETURN
+		            		 WHERE RTN_DT = REPLACE(#{searchEndDt},'-','')
+		            		 GROUP BY SALES_CD
+		            	   ) A 
+		            	   JOIN TFM_SALES_ADD_INFO AS TSAI
+		            	     ON TSAI.SALES_CD = A.SALES_CD
+	                 GROUP BY TSAI.SALES_PR_CD
+	               ) AS B
+	            ON A.SALES_PR_CD = B.SALES_PR_CD
+	          JOIN TFM_SALES_PR_MST AS TSPM
+	            ON TSPM.SALES_PR_CD = A.SALES_PR_CD
+	     ORDER BY A.SALES_PR_CD
+	</select>	
+	
+</mapper>
+

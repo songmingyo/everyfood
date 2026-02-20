@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.SalSalesGoalRegMapper">
+	
+	<!-- 영업목표 조회 -->
+	<select id="selectSalSalesGoalRegList" parameterType="com.doppio.workplace.as.service.SalSalesGoalRegVo" resultType="com.doppio.workplace.as.service.SalSalesGoalRegVo">
+	/*SalSalesGoalRegMapper.selectSalSalesGoalRegList*/	
+		SELECT TSPM.SALES_PR_CD
+		       , TSPM.SALES_PR_NM
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '01' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT01
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '02' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT02
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '03' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT03
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '04' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT04
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '05' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT05
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '06' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT06
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '07' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT07
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '08' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT08
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '09' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT09
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '10' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT10
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '11' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT11
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '12' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT12
+		       
+		       , SUM(IFNULL(TSG.GOAL_AMT,0)) AS GOAL_TOT
+		       
+		  FROM TFM_SALES_PR_MST AS TSPM
+		       LEFT OUTER JOIN TSH_SALES_GOAL AS TSG
+		           ON TSG.SALES_PR_CD = TSPM.SALES_PR_CD
+		          AND GOAL_YEAR = #{goalYear}
+		 WHERE TSPM.USE_YN = 'Y'
+		 GROUP BY TSPM.SALES_PR_CD
+		          , TSPM.SALES_PR_NM
+	</select>
+	
+	
+	
+	<!-- 영업목표 등록 -->
+	<insert  id="insertSalesGoalReg" parameterType="com.doppio.workplace.as.service.SalSalesGoalRegVo">
+	/*SalSalesGoalRegMapper.insertSalesGoalReg*/
+    INSERT INTO TSH_SALES_GOAL
+	(
+		GOAL_YEAR
+		, GOAL_MON
+		, SALES_PR_CD
+		, GOAL_AMT
+		, REG_ID
+		, REG_DT		
+	)
+	VALUES
+	(   #{goalYear}
+	    , #{goalMon}
+	    , #{salesPrCd}
+	    , #{goalAmt}
+	    , #{workId}
+	    ,  NOW()
+	)
+	ON DUPLICATE KEY UPDATE
+	    GOAL_AMT = #{goalAmt}
+	    , REG_ID = #{workId}
+	    , REG_DT = NOW()
+			 
+	</insert>
+	
+	
+	<!-- 영업목표 엑셀 다운로드 -->
+	<select id="selectSalSalesGoalRegExcelDown" parameterType="com.doppio.workplace.as.service.SalSalesGoalRegVo" resultType="java.util.HashMap">
+	/*SalSalesGoalRegMapper.selectSalSalesGoalRegExcelDown*/	
+		SELECT TSPM.SALES_PR_NM
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '01' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT01
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '02' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT02
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '03' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT03
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '04' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT04
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '05' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT05
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '06' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT06
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '07' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT07
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '08' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT08
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '09' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT09
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '10' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT10
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '11' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT11
+		       , IFNULL(SUM(CASE WHEN GOAL_MON = '12' THEN TSG.GOAL_AMT END),0) AS GOAL_AMT12
+		       
+		       , SUM(IFNULL(TSG.GOAL_AMT,0)) AS GOAL_TOT
+		       
+		  FROM TFM_SALES_PR_MST AS TSPM
+		       LEFT OUTER JOIN TSH_SALES_GOAL AS TSG
+		           ON TSG.SALES_PR_CD = TSPM.SALES_PR_CD
+		          AND GOAL_YEAR = #{goalYear}
+		 WHERE TSPM.USE_YN = 'Y'
+		 GROUP BY TSPM.SALES_PR_NM
+		 ORDER BY TSPM.SALES_PR_CD
+	</select>
+	
+</mapper>
+

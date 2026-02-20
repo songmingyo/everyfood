@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.userInfo.service.impl.UserInfo001Mapper">
+	
+	<!-- 사용자 정보 조회(정보관리-개인정보) MAP -->
+	<resultMap id="userInfoMap"   type="com.doppio.workplace.common.model.UserInfoVo">
+		<result column="MEMBER_CD"		property="memberCd"  		/> <!--사용자고유번호        	-->
+		<result column="USER_ID"		property="userId"  			/> <!--담당자ID               -->
+		<result column="USER_NM"		property="userNm"  			/> <!--신청인성명              -->
+		<result column="TEL_NO"			property="telNo"  			/> <!--전화번호               -->
+		<result column="HP_NO"			property="hpNo"  			/> <!--핸드폰번호             -->
+		<result column="EMAIL"			property="email"  			/> <!--이메일                -->
+		<result column="MASTER_ID"		property="masterId"  		/> <!--소속회사코드   	     	-->
+		<result column="COMP_NM"		property="compNm"  			/> <!--소속회사명칭            -->
+		<result column="USER_TYPE"		property="userType"  		/> <!--사용자타입             -->
+		<result column="USE_YN"			property="useYn"  			/> <!--사용유무                -->
+		<result column="USER_TYPE_NM"	property="userTypeNm"		/>
+		<result column="TEAM_LIST"		property="teamList"			/>
+	</resultMap>
+	
+	<resultMap id = "compInfoMap"	type = "com.doppio.common.model.CommonCompInfoVo">
+		<result column="MASTER_ID"		property="masterId"			/>
+		<result column="COMP_NM"		property="compNm"			/>
+		<result column="BMAN_NO"		property="bmanNo"			/>
+		<result column="CEO_NM"			property="ceoNm"			/>
+		<result column="BTYP_NM"		property="btypNm"			/>
+		<result column="BIZ_ITM_NM"		property="bizItmNm"			/>
+		<result column="FAX_TEL_NO"		property="faxTelNo"			/>
+		<result column="REP_TEL_NO"		property="repTelNo"			/>
+		<result column="ZIP_NO"			property="zipNo"			/>
+		<result column="ZIP_ADDR"		property="zipAddr"			/>
+		<result column="DTL_ADDR"		property="dtlAddr"			/>
+	</resultMap>
+	
+	<!-- 사용자 정보 조회 -->
+	<select id = "selectUserData" resultMap = "userInfoMap" parameterType = "com.doppio.workplace.common.model.UserInfoVo">
+		/* UserInfo001Mapper.selectUserData */
+		SELECT
+				A.MEMBER_CD
+				,A.USER_ID
+				,A.USER_NM
+				,CASE WHEN NVL(#{psnInfoYn},'') IN('Y') THEN A.TEL_NO
+					ELSE '**********' END AS TEL_NO
+				,CASE WHEN NVL(#{psnInfoYn},'') IN('Y') THEN A.HP_NO
+					ELSE '**********' END AS HP_NO
+				,CASE WHEN NVL(#{psnInfoYn},'') IN('Y') THEN A.EMAIL
+					ELSE '**********' END AS EMAIL
+				,A.MASTER_ID
+				,B.COMP_NM
+				,A.USER_TYPE
+				,A.USE_YN
+				,FN_CODE_RTN('9001', A.USER_TYPE) AS USER_TYPE_NM
+				, GROUP_CONCAT(DISTINCT D.TEAM_NM) AS TEAM_LIST
+		FROM	TCM_MEMBER A
+		LEFT OUTER JOIN VCM_COMPINFO B ON A.MASTER_ID = B.MASTER_ID
+		LEFT OUTER JOIN TCM_MEMBER_TEAM_AUTH C ON A.USER_ID = C.USER_ID 
+		LEFT OUTER JOIN TCM_TEAMINFO D ON C.TEAM_CD = D.TEAM_CD 
+		WHERE	A.USER_ID = #{userId}
+	</select>
+	
+	<!-- 회사 정보 조회 -->
+	<select id = "selectCompData" resultMap = "compInfoMap" parameterType = "com.doppio.common.model.CommonCompInfoVo">
+		/* UserInfo001Mapper.selectCompData */
+		SELECT
+				 A.MASTER_ID
+				,A.COMP_NM
+				,A.BMAN_NO
+				,A.CEO_NM
+				,A.BTYP_NM
+				,A.BIZ_ITM_NM
+				,CASE WHEN NVL(#{psnInfoYn},'') IN('Y') THEN A.FAX_TEL_NO ELSE '**********' END AS FAX_TEL_NO
+				,CASE WHEN NVL(#{psnInfoYn},'') IN('Y') THEN A.REP_TEL_NO ELSE '**********' END AS REP_TEL_NO
+				,A.ZIP_NO
+				,A.ZIP_ADDR
+				,A.DTL_ADDR
+		FROM
+				VCM_COMPINFO A
+		WHERE	A.MASTER_ID = #{masterId}
+	</select>
+</mapper>

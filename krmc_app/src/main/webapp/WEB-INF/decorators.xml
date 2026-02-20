@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<decorators defaultdir="/WEB-INF/views/common/decorators">
+
+	<excludes>
+		<pattern>**/*.htm</pattern>
+        <pattern>**/*.html</pattern>
+        <pattern>**/*.jsp</pattern>
+        <pattern>/exclude/*</pattern>
+        <pattern>/resources/*</pattern>
+        <pattern>/sample/*</pattern>
+        <pattern>/test/*</pattern>
+        <pattern>/common/layer/*</pattern>
+         <pattern>**/common/fileUpload*</pattern>
+        <pattern>**/*Tab.do*</pattern>
+        <pattern>**/*.inc</pattern>
+	</excludes>
+	
+	<!-- 로그인, 전체페이지 화면 UI -->
+	<decorator name="layout-basics" page="layout-basics.jsp">
+	    <pattern>/security/*</pattern>
+	</decorator>
+	
+	
+ 	<!-- 내부사용자용 업무구분별 메인 대쉬보드  DECORATOR-PC -->
+ 	<decorator name="layout-inDashboard" page="layout-frDashboard.jsp">
+		<pattern>/main/*</pattern>				
+ 	</decorator>
+	<decorator name="layout-main-inHeader" 	page="layout-main-inHeader.jsp" />
+	<decorator name="layout-main-inFooter" 	page="layout-main-inFooter.jsp" />
+
+	<!-- 내부사용자 일반 업무화면 DECORATOR-PC -->
+	<decorator name="layout-inDefault" 		page="layout-inDefault.jsp">
+	    <pattern>/*</pattern>
+ 	</decorator>
+	<decorator name="layout-sub-inHeader" 	page="layout-sub-inHeader.jsp" />
+	<decorator name="layout-sub-inLeft" 	page="layout-sub-inLeft.jsp" />
+
+
+	<!-- DECORATOR-MOBILE -->
+	<decorator name="layout-responsive" page="layout-responsive.jsp">
+	    <pattern>*/res/*</pattern>
+ 	</decorator>
+ 	
+
+ 	
+	<!-- MOBILE/PC responsive -->
+ 	<decorator name="incResHeader"			page="layout-inc-res-header.jsp" 		/>
+ 	<decorator name="incResMenu"			page="layout-inc-res-menu.jsp" 			/>
+ 	<decorator name="incResFooter"			page="layout-inc-res-footer.jsp" 		/>
+ 	<decorator name="incResSidebar"			page="layout-inc-res-sidebar.jsp" 		/>
+ 	
+ 	<!-- 상세보기팝업 -->
+ 	<decorator name="layout-inNewWindow" page="layout-inNewWindow.jsp">
+ 		<pattern>/*.po</pattern>
+ 	</decorator>
+		
+</decorators>

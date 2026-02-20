@@ -1,0 +1,1004 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusShipDtlListMapper">
+
+	<!-- 매출처 출고 상세 조회 append by song minkyo 2025.04.25 -->
+	<select id="selectCusShipDtlListExcelDownSum" parameterType="com.doppio.workplace.sm.service.CusShipDtlListVo" resultType="java.util.HashMap">
+	/*CusShipDtlListMapper.selectCusShipDtlListExcelDownSum */	
+		SELECT 	A.DT
+			,	ROUND(A.QTY)	AS QTY
+			,	A.PURE_AMT
+		  	,	A.VAT_AMT
+		  	,	A.TOT_AMT
+		FROM
+		( 	
+	    SELECT  IFNULL(A.DT	,'합계') AS DT	
+			,	SUM(A.QTY)		AS QTY
+			,	SUM(A.PURE_AMT)	AS PURE_AMT
+			,	SUM(A.VAT_AMT)	AS VAT_AMT
+			,	SUM(A.TOT_AMT)	AS TOT_AMT
+          FROM (
+               <if test='taxYn == ""'>
+                   SELECT '1' AS SORT
+                          , SUBSTRING(TSD.SALES_DT,1,6) AS YEARMON
+                          , TSD.SALES_DT AS DT
+                          , TSD.SALES_SLIP_NO
+                          , TSD.SALES_SEQ
+                          , TSD.SALES_CD
+                          , TSD.PRDT_CD
+                          , TSD.PRICE
+                          , TSD.SALES_QTY AS QTY
+                          , TSD.PURE_AMT
+                          , TSD.VAT_AMT
+                          , TSD.TOT_AMT
+                          , '정상' AS GUBUN
+                          , TSD.WH_CD
+                     FROM TSH_SALES_DLV AS TSD
+                     
+                          JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSD.SALES_CD
+			                  
+                    WHERE TSD.SALES_DT BETWEEN  REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                    <if test='whCd != null and whCd != ""'>
+                      AND TSD.WH_CD = #{whCd}
+                    </if>
+                    <if test='hqClass == "10"'>
+                      AND TSHC.HQ_CD = #{salesCd}
+                    </if>
+                    <if test='hqClass == "20"'>
+                      AND TSHC.SALES_CD = #{salesCd}
+                    </if>
+                    <if test='prdtCd != null and prdtCd != ""'>
+                      AND TSD.PRDT_CD = #{prdtCd}
+                    </if>
+                  UNION ALL
+                   SELECT
+                          '2' AS SORT
+                          , SUBSTRING(TSR.RTN_DT,1,6) AS YEARMON
+                          , TSR.RTN_DT AS DT
+                          , TSR.SALES_SLIP_NO
+                          , TSR.SALES_SEQ
+                          , TSR.SALES_CD
+                          , TSR.PRDT_CD
+                          , TSR.PRICE
+                          , TSR.RTN_QTY*-1 AS QTY
+                          , TSR.PURE_AMT*-1 AS PURE_AMT
+                          , TSR.VAT_AMT*-1 AS VAT_AMT
+                          , TSR.TOT_AMT*-1 AS TOT_AMT
+                          , '반품' AS GUBUN
+                          , TSR.WH_CD
+                     FROM TSH_SALES_RETURN AS TSR
+                            
+                          JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSR.SALES_CD
+                            
+                    WHERE TSR.RTN_DT BETWEEN  REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                    <if test='hqClass == "10"'>
+                      AND TSHC.HQ_CD = #{salesCd}
+                    </if>
+                    <if test='hqClass == "20"'>
+                      AND TSHC.SALES_CD = #{salesCd}
+                    </if> 
+                    <if test='whCd != null and whCd != ""'>
+                      AND TSR.WH_CD = #{whCd}
+                    </if>
+                    <if test='prdtCd != null and prdtCd != ""'>
+                      AND TSR.PRDT_CD = #{prdtCd}
+                    </if>
+               </if>
+               
+               <if test='taxYn == "1" or taxYn == "2" '>
+                   SELECT '1' AS SORT
+                          , SUBSTRING(TSD.SALES_DT,1,6) AS YEARMON
+                          , TSD.SALES_DT AS DT
+                          , TSD.SALES_SLIP_NO
+                          , TSD.SALES_SEQ
+                          , TSD.SALES_CD
+                          , TSD.PRDT_CD
+                          , TSD.PRICE
+                          , TSD.SALES_QTY AS QTY
+                          , TSD.PURE_AMT
+                          , TSD.VAT_AMT
+                          , TSD.TOT_AMT
+                          , '정상' AS GUBUN
+                          , TSD.WH_CD
+                     FROM TSH_SALES_DLV AS TSD
+                     
+                          JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSD.SALES_CD
+                     
+                    WHERE TSD.SALES_DT BETWEEN  REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                    <if test='whCd != null and whCd != ""'>
+                      AND TSD.WH_CD = #{whCd}
+                    </if>
+                    <if test='hqClass == "10"'>
+                      AND TSHC.HQ_CD = #{salesCd}
+                    </if>
+                    <if test='hqClass == "20"'>
+                      AND TSHC.SALES_CD = #{salesCd}
+                    </if>
+                      AND (TSD.VAT_AMT > CASE WHEN #{taxYn}='1' THEN 0 END
+                           OR TSD.VAT_AMT = CASE WHEN #{taxYn}='2' THEN 0 END)
+                    <if test='prdtCd != null and prdtCd != ""'>
+                      AND TSD.PRDT_CD = #{prdtCd}
+                    </if>
+                  UNION ALL
+                   SELECT
+                          '2' AS SORT
+                          , SUBSTRING(TSR.RTN_DT,1,6) AS YEARMON
+                          , TSR.RTN_DT AS DT
+                          , TSR.SALES_SLIP_NO
+                          , TSR.SALES_SEQ
+                          , TSR.SALES_CD
+                          , TSR.PRDT_CD
+                          , TSR.PRICE
+                          , TSR.RTN_QTY*-1 AS QTY
+                          , TSR.PURE_AMT*-1 AS PURE_AMT
+                          , TSR.VAT_AMT*-1 AS VAT_AMT
+                          , TSR.TOT_AMT*-1 AS TOT_AMT
+                          , '반품' AS GUBUN
+                          , TSR<!--  -->.WH_CD
+                     FROM TSH_SALES_RETURN AS TSR
+                     
+                          JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSR.SALES_CD
+                     
+                    WHERE TSR.RTN_DT BETWEEN  REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                    <if test='hqClass == "10"'>
+                      AND TSHC.HQ_CD = #{salesCd}
+                    </if>
+                    <if test='hqClass == "20"'>
+                      AND TSHC.SALES_CD = #{salesCd}
+                    </if>
+                    <if test='whCd != null and whCd != ""'>
+                      AND TSR.WH_CD = #{whCd}
+                    </if>
+                      AND (TSR.VAT_AMT > CASE WHEN #{taxYn}='1' THEN 0 END
+                           OR TSR.VAT_AMT = CASE WHEN #{taxYn}='2' THEN 0 END)
+                    <if test='prdtCd != null and prdtCd != ""'>
+                      AND TSR.PRDT_CD = #{prdtCd}
+                    </if>
+               </if>
+               
+               <if test='taxYn == "3"'>
+                SELECT
+                       '2' AS SORT
+                       , SUBSTRING(TSR.RTN_DT,1,6) AS YEARMON
+                       , TSR.RTN_DT AS DT
+                       , TSR.SALES_SLIP_NO
+                       , TSR.SALES_SEQ
+                       , TSR.SALES_CD
+                       , TSR.PRDT_CD
+                       , TSR.PRICE
+                       , TSR.RTN_QTY*-1 AS QTY
+                       , TSR.PURE_AMT*-1 AS PURE_AMT
+                       , TSR.VAT_AMT*-1 AS VAT_AMT
+                       , TSR.TOT_AMT*-1 AS TOT_AMT
+                       , '반품' AS GUBUN
+                       , TSR.WH_CD
+                  FROM TSH_SALES_RETURN AS TSR
+                  
+                       JOIN TFM_SALES_HQ_CLASS AS TSHC
+			               ON TSHC.SALES_CD = TSR.SALES_CD
+                  
+                 WHERE TSR.RTN_DT BETWEEN  REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                 <if test='hqClass == "10"'>
+                   AND TSHC.HQ_CD = #{salesCd}
+                 </if>
+                 <if test='hqClass == "20"'>
+                   AND TSHC.SALES_CD = #{salesCd}
+                 </if>
+                 <if test='whCd != null and whCd != ""'>
+                   AND TSR.WH_CD = #{whCd}
+                 </if>
+                 <if test='prdtCd != null and prdtCd != ""'>
+                   AND TSR.PRDT_CD = #{prdtCd}
+                 </if>
+               </if>
+               
+                ) AS A
+                
+                LEFT OUTER JOIN TSH_SALES_REMARK AS TSM
+                    ON TSM.SALES_SLIP_NO = A.SALES_SLIP_NO
+                   AND TSM.SALES_SEQ = A.SALES_SEQ
+                   
+                JOIN TFM_WH_MST AS TWM
+                    ON TWM.WH_CD = A.WH_CD
+                    
+                JOIN TFM_SALES_ADD_INFO AS TSAI
+                    ON TSAI.SALES_CD = A.SALES_CD
+                    
+                LEFT OUTER JOIN TCM_CODE_DTL AS TCD_1
+                    ON TSAI.SALES_CLASS = TCD_1.DTL_CD
+                   AND TCD_1.COM_CD = 'M013'
+                   
+                LEFT OUTER JOIN TFM_DLVR_MST AS TDM
+                    ON TSAI.CAR_CD = TDM.CAR_CD
+                    
+                JOIN TFM_PRDT_MST AS TPM
+                    ON TPM.PRDT_CD = A.PRDT_CD
+                    
+                LEFT OUTER JOIN TCM_CODE_DTL AS TCD_2
+                    ON TPM.STRG_TYPE = TCD_2.DTL_CD
+                   AND TCD_2.COM_CD = 'M001'
+                   
+                LEFT OUTER JOIN TCM_CODE_DTL AS TCD_3
+                    ON TPM.ORD_UNIT = TCD_3.DTL_CD
+                   AND TCD_3.COM_CD = 'M006'
+         WHERE 1=1
+         AND  A.QTY != 0
+            <if test='salesClass != null and salesClass != ""'> 
+              AND TSAI.SALES_CLASS LIKE CONCAT('%',#{salesClass},'%')
+            </if>
+            <if test='lCd != null and lCd != ""'>
+              AND TPM.L_CD = #{lCd}
+            </if>
+            <if test='mCd != null and mCd != ""'>
+              AND TPM.M_CD = #{mCd}
+            </if>
+            <if test='salesPrCd != null and salesPrCd != ""'>
+              AND TSAI.SALES_PR_CD = #{salesPrCd}
+            </if>
+            <if test='prdtCd == null or prdtCd == ""'>
+              <if test='prdtNm != null and prdtNm != ""'>
+                AND TPM.PRDT_NM LIKE CONCAT('%', #{prdtNm}, '%')
+              </if>
+            </if>
+         GROUP BY A.DT
+		 WITH ROLLUP
+	) A		   
+	</select>
+	
+	<!-- 매출처 출고 상세 조회 -->
+	<select id="selectCusShipDtlList" parameterType="com.doppio.workplace.sm.service.CusShipDtlListVo" resultType="com.doppio.workplace.sm.service.CusShipDtlListVo">
+	/*CusShipDtlListMapper.selectCusShipDtlList*/	
+		
+	    SELECT A.YEARMON
+               , A.DT
+               , A.SALES_SLIP_NO
+               , A.SALES_CD
+               , TSAI.SALES_NM
+               , A.PRDT_CD
+               , TPM.PRDT_NM
+               , TPM.PRDT_STD
+               , A.PRICE
+               , A.QTY
+               , A.PURE_AMT
+               , A.VAT_AMT
+               , A.TOT_AMT
+               , A.GUBUN
+               , TCD_1.DTL_NM AS SALES_CLASS_NM
+               , TWM.WH_NM
+               , TDM.CAR_NM
+               , TCD_3.DTL_NM AS ORD_UNIT_NM
+               , TPM.LACK_NO_1
+               , TCD_2.DTL_NM AS SAVE_KIND_NM
+               , TSM.REMARKS_1
+               , SUM(A.QTY) OVER (PARTITION BY 1) AS QTY_TOT
+               , SUM(A.PURE_AMT) OVER (PARTITION BY 1) AS PURE_AMT_TOT
+               , SUM(A.VAT_AMT) OVER (PARTITION BY 1) AS VAT_AMT_TOT
+               , SUM(A.TOT_AMT) OVER (PARTITION BY 1) AS TOT_AMT_TOT
+          FROM (
+               <if test='taxYn == ""'>
+                   SELECT '1' AS SORT
+                          , SUBSTRING(TSD.SALES_DT,1,6) AS YEARMON
+                          , TSD.SALES_DT AS DT
+                          , TSD.SALES_SLIP_NO
+                          , TSD.SALES_SEQ
+                          , TSD.SALES_CD
+                          , TSD.PRDT_CD
+                          , TSD.PRICE
+                          , TSD.SALES_QTY AS QTY
+                          , TSD.PURE_AMT
+                          , TSD.VAT_AMT
+                          , TSD.TOT_AMT
+                          , '정상' AS GUBUN
+                          , TSD.WH_CD
+                     FROM TSH_SALES_DLV AS TSD
+                     
+                          JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSD.SALES_CD
+			                  
+                    WHERE TSD.SALES_DT BETWEEN  #{buyStartDt} AND #{buyEndDt}
+                    <if test='whCd != null and whCd != ""'>
+                      AND TSD.WH_CD = #{whCd}
+                    </if>
+                    <if test='hqClass == "10"'>
+                      AND TSHC.HQ_CD = #{salesCd}
+                    </if>
+                    <if test='hqClass == "20"'>
+                      AND TSHC.SALES_CD = #{salesCd}
+                    </if>
+                    <if test='prdtCd != null and prdtCd != ""'>
+                      AND TSD.PRDT_CD = #{prdtCd}
+                    </if>
+                  UNION ALL
+                   SELECT
+                          '2' AS SORT
+                          , SUBSTRING(TSR.RTN_DT,1,6) AS YEARMON
+                          , TSR.RTN_DT AS DT
+                          , TSR.SALES_SLIP_NO
+                          , TSR.SALES_SEQ
+                          , TSR.SALES_CD
+                          , TSR.PRDT_CD
+                          , TSR.PRICE
+                          , TSR.RTN_QTY*-1 AS QTY
+                          , TSR.PURE_AMT*-1 AS PURE_AMT
+                          , TSR.VAT_AMT*-1 AS VAT_AMT
+                          , TSR.TOT_AMT*-1 AS TOT_AMT
+                          , '반품' AS GUBUN
+                          , TSR.WH_CD
+                     FROM TSH_SALES_RETURN AS TSR
+                            
+                          JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSR.SALES_CD
+                            
+                    WHERE TSR.RTN_DT BETWEEN #{buyStartDt} AND #{buyEndDt}
+                    <if test='hqClass == "10"'>
+                      AND TSHC.HQ_CD = #{salesCd}
+                    </if>
+                    <if test='hqClass == "20"'>
+                      AND TSHC.SALES_CD = #{salesCd}
+                    </if> 
+                    <if test='whCd != null and whCd != ""'>
+                      AND TSR.WH_CD = #{whCd}
+                    </if>
+                    <if test='prdtCd != null and prdtCd != ""'>
+                      AND TSR.PRDT_CD = #{prdtCd}
+                    </if>
+               </if>
+               
+               <if test='taxYn == "1" or taxYn == "2" '>
+                   SELECT '1' AS SORT
+                          , SUBSTRING(TSD.SALES_DT,1,6) AS YEARMON
+                          , TSD.SALES_DT AS DT
+                          , TSD.SALES_SLIP_NO
+                          , TSD.SALES_SEQ
+                          , TSD.SALES_CD
+                          , TSD.PRDT_CD
+                          , TSD.PRICE
+                          , TSD.SALES_QTY AS QTY
+                          , TSD.PURE_AMT
+                          , TSD.VAT_AMT
+                          , TSD.TOT_AMT
+                          , '정상' AS GUBUN
+                          , TSD.WH_CD
+                     FROM TSH_SALES_DLV AS TSD
+                     
+                          JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSD.SALES_CD
+                     
+                    WHERE TSD.SALES_DT BETWEEN  #{buyStartDt} AND #{buyEndDt}
+                    <if test='whCd != null and whCd != ""'>
+                      AND TSD.WH_CD = #{whCd}
+                    </if>
+                    <if test='hqClass == "10"'>
+                      AND TSHC.HQ_CD = #{salesCd}
+                    </if>
+                    <if test='hqClass == "20"'>
+                      AND TSHC.SALES_CD = #{salesCd}
+                    </if>
+                      AND (TSD.VAT_AMT > CASE WHEN #{taxYn}='1' THEN 0 END
+                           OR TSD.VAT_AMT = CASE WHEN #{taxYn}='2' THEN 0 END)
+                    <if test='prdtCd != null and prdtCd != ""'>
+                      AND TSD.PRDT_CD = #{prdtCd}
+                    </if>
+                  UNION ALL
+                   SELECT
+                          '2' AS SORT
+                          , SUBSTRING(TSR.RTN_DT,1,6) AS YEARMON
+                          , TSR.RTN_DT AS DT
+                          , TSR.SALES_SLIP_NO
+                          , TSR.SALES_SEQ
+                          , TSR.SALES_CD
+                          , TSR.PRDT_CD
+                          , TSR.PRICE
+                          , TSR.RTN_QTY*-1 AS QTY
+                          , TSR.PURE_AMT*-1 AS PURE_AMT
+                          , TSR.VAT_AMT*-1 AS VAT_AMT
+                          , TSR.TOT_AMT*-1 AS TOT_AMT
+                          , '반품' AS GUBUN
+                          , TSR<!--  -->.WH_CD
+                     FROM TSH_SALES_RETURN AS TSR
+                     
+                          JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSR.SALES_CD
+                     
+                    WHERE TSR.RTN_DT BETWEEN #{buyStartDt} AND #{buyEndDt}
+                    <if test='hqClass == "10"'>
+                      AND TSHC.HQ_CD = #{salesCd}
+                    </if>
+                    <if test='hqClass == "20"'>
+                      AND TSHC.SALES_CD = #{salesCd}
+                    </if>
+                    <if test='whCd != null and whCd != ""'>
+                      AND TSR.WH_CD = #{whCd}
+                    </if>
+                      AND (TSR.VAT_AMT > CASE WHEN #{taxYn}='1' THEN 0 END
+                           OR TSR.VAT_AMT = CASE WHEN #{taxYn}='2' THEN 0 END)
+                    <if test='prdtCd != null and prdtCd != ""'>
+                      AND TSR.PRDT_CD = #{prdtCd}
+                    </if>
+               </if>
+               
+               <if test='taxYn == "3"'>
+                SELECT
+                       '2' AS SORT
+                       , SUBSTRING(TSR.RTN_DT,1,6) AS YEARMON
+                       , TSR.RTN_DT AS DT
+                       , TSR.SALES_SLIP_NO
+                       , TSR.SALES_SEQ
+                       , TSR.SALES_CD
+                       , TSR.PRDT_CD
+                       , TSR.PRICE
+                       , TSR.RTN_QTY*-1 AS QTY
+                       , TSR.PURE_AMT*-1 AS PURE_AMT
+                       , TSR.VAT_AMT*-1 AS VAT_AMT
+                       , TSR.TOT_AMT*-1 AS TOT_AMT
+                       , '반품' AS GUBUN
+                       , TSR.WH_CD
+                  FROM TSH_SALES_RETURN AS TSR
+                  
+                       JOIN TFM_SALES_HQ_CLASS AS TSHC
+			               ON TSHC.SALES_CD = TSR.SALES_CD
+                  
+                 WHERE TSR.RTN_DT BETWEEN #{buyStartDt} AND #{buyEndDt}
+                 <if test='hqClass == "10"'>
+                   AND TSHC.HQ_CD = #{salesCd}
+                 </if>
+                 <if test='hqClass == "20"'>
+                   AND TSHC.SALES_CD = #{salesCd}
+                 </if>
+                 <if test='whCd != null and whCd != ""'>
+                   AND TSR.WH_CD = #{whCd}
+                 </if>
+                 <if test='prdtCd != null and prdtCd != ""'>
+                   AND TSR.PRDT_CD = #{prdtCd}
+                 </if>
+               </if>
+               
+                ) AS A
+                
+                LEFT OUTER JOIN TSH_SALES_REMARK AS TSM
+                    ON TSM.SALES_SLIP_NO = A.SALES_SLIP_NO
+                   AND TSM.SALES_SEQ = A.SALES_SEQ
+                   
+                JOIN TFM_WH_MST AS TWM
+                    ON TWM.WH_CD = A.WH_CD
+                    
+                JOIN TFM_SALES_ADD_INFO AS TSAI
+                    ON TSAI.SALES_CD = A.SALES_CD
+                    
+                LEFT OUTER JOIN TCM_CODE_DTL AS TCD_1
+                    ON TSAI.SALES_CLASS = TCD_1.DTL_CD
+                   AND TCD_1.COM_CD = 'M013'
+                   
+                LEFT OUTER JOIN TFM_DLVR_MST AS TDM
+                    ON TSAI.CAR_CD = TDM.CAR_CD
+                    
+                JOIN TFM_PRDT_MST AS TPM
+                    ON TPM.PRDT_CD = A.PRDT_CD
+                    
+                LEFT OUTER JOIN TCM_CODE_DTL AS TCD_2
+                    ON TPM.STRG_TYPE = TCD_2.DTL_CD
+                   AND TCD_2.COM_CD = 'M001'
+                   
+                LEFT OUTER JOIN TCM_CODE_DTL AS TCD_3
+                    ON TPM.ORD_UNIT = TCD_3.DTL_CD
+                   AND TCD_3.COM_CD = 'M006'
+         WHERE A.QTY != 0
+            <if test='salesClass != null and salesClass != ""'> 
+              AND TSAI.SALES_CLASS LIKE CONCAT('%',#{salesClass},'%')
+            </if>
+            <if test='lCd != null and lCd != ""'>
+              AND TPM.L_CD = #{lCd}
+            </if>
+            <if test='mCd != null and mCd != ""'>
+              AND TPM.M_CD = #{mCd}
+            </if>
+            <if test='salesPrCd != null and salesPrCd != ""'>
+              AND TSAI.SALES_PR_CD = #{salesPrCd}
+            </if>
+            <if test='prdtCd == null or prdtCd == ""'>
+              <if test='prdtNm != null and prdtNm != ""'>
+                AND TPM.PRDT_NM LIKE CONCAT('%', #{prdtNm}, '%')
+              </if>
+            </if>
+          ORDER BY A.DT, A.SALES_SLIP_NO, A.SORT, A.SALES_CD, A.PRDT_CD
+    
+	</select>
+
+	<!-- 매출처 출고 상세 엑셀 -->
+	<select id="selectCusShipDtlListExcelDown" parameterType="com.doppio.workplace.sm.service.CusShipDtlListVo" resultType="java.util.HashMap">
+	/*CusShipDtlListMapper.selectCusShipDtlListExcelDown*/	
+		
+	    SELECT A.DT
+               , TCD_1.DTL_NM AS SALES_CLASS_NM
+               , TWM.WH_NM
+               , TPM.LACK_NO_1
+               , TCD_2.DTL_NM AS SAVE_KIND_NM
+               , TDM.CAR_NM
+               , TSAI.SALES_NM
+               , TSAI.BSNS_NUM
+               , A.SALES_SLIP_NO
+               , A.PRDT_CD
+               , TPM.PRDT_NM
+               , TPM.PRDT_STD
+               , TCD_3.DTL_NM AS ORD_UNIT_NM
+               , A.PRICE
+               , A.QTY
+               , A.PURE_AMT
+               , A.VAT_AMT
+               , A.TOT_AMT
+               , A.GUBUN
+               , IFNULL(TSM.REMARKS_1,'') AS REMARKS_1
+          FROM (
+               <if test='taxYn == ""'>
+                SELECT '1' AS SORT
+                       , SUBSTRING(TSD.SALES_DT,1,6) AS YEARMON
+                       , TSD.SALES_DT AS DT
+                       , TSD.SALES_SLIP_NO
+                       , TSD.SALES_SEQ
+                       , TSD.SALES_CD
+                       , TSD.PRDT_CD
+                       , TSD.PRICE
+                       , TSD.SALES_QTY AS QTY
+                       , TSD.PURE_AMT
+                       , TSD.VAT_AMT
+                       , TSD.TOT_AMT
+                       , '정상' AS GUBUN
+                       , TSD.WH_CD
+                  FROM TSH_SALES_DLV AS TSD
+                  
+                       JOIN TFM_SALES_HQ_CLASS AS TSHC
+			               ON TSHC.SALES_CD = TSD.SALES_CD
+			               
+                 WHERE TSD.SALES_DT BETWEEN  REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                 <if test='whCd != null and whCd != ""'>
+                   AND TSD.WH_CD = #{whCd}
+                 </if>
+                 <if test='hqClassExcel == "10"'>
+                   AND TSHC.HQ_CD = #{salesCdExcel}
+                 </if>
+                 <if test='hqClassExcel == "20"'>
+                   AND TSHC.SALES_CD = #{salesCdExcel}
+                 </if>
+                 <if test='prdtCd != null and prdtCd != ""'>
+                   AND TSD.PRDT_CD = #{prdtCd}
+                 </if>
+               UNION ALL
+                SELECT
+                       '2' AS SORT
+                       , SUBSTRING(TSR.RTN_DT,1,6) AS YEARMON
+                       , TSR.RTN_DT AS DT
+                       , TSR.SALES_SLIP_NO
+                       , TSR.SALES_SEQ
+                       , TSR.SALES_CD
+                       , TSR.PRDT_CD
+                       , TSR.PRICE
+                       , TSR.RTN_QTY*-1 AS QTY
+                       , TSR.PURE_AMT*-1 AS PURE_AMT
+                       , TSR.VAT_AMT*-1 AS VAT_AMT
+                       , TSR.TOT_AMT*-1 AS TOT_AMT
+                       , '반품' AS GUBUN
+                       , WH_CD
+                  FROM TSH_SALES_RETURN AS TSR
+                  
+                       JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSR.SALES_CD
+			                  
+                 WHERE TSR.RTN_DT BETWEEN REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                 <if test='hqClassExcel == "10"'>
+                   AND TSHC.HQ_CD = #{salesCdExcel}
+                 </if>
+                 <if test='hqClassExcel == "20"'>
+                   AND TSHC.SALES_CD = #{salesCdExcel}
+                 </if>
+                 <if test='whCd != null and whCd != ""'>
+                   AND TSR.WH_CD = #{whCd}
+                 </if>
+                 <if test='prdtCd != null and prdtCd != ""'>
+                   AND TSR.PRDT_CD = #{prdtCd}
+                 </if>
+               </if>
+               
+               <if test='taxYn == "1" or taxYn == "2" '>
+                SELECT '1' AS SORT
+                       , SUBSTRING(TSD.SALES_DT,1,6) AS YEARMON
+                       , TSD.SALES_DT AS DT
+                       , TSD.SALES_SLIP_NO
+                       , TSD.SALES_SEQ
+                       , TSD.SALES_CD
+                       , TSD.PRDT_CD
+                       , TSD.PRICE
+                       , TSD.SALES_QTY AS QTY
+                       , TSD.PURE_AMT
+                       , TSD.VAT_AMT
+                       , TSD.TOT_AMT
+                       , '정상' AS GUBUN
+                       , TSD.WH_CD
+                  FROM TSH_SALES_DLV AS TSD
+                    
+                       JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSD.SALES_CD
+			                  
+                 WHERE TSD.SALES_DT BETWEEN  REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                 <if test='whCd != null and whCd != ""'>
+                   AND TSD.WH_CD = #{whCd}
+                 </if>
+                 <if test='hqClass == "10"'>
+                   AND TSHC.HQ_CD = #{salesCd}
+                 </if>
+                 <if test='hqClass == "20"'>
+                   AND TSHC.SALES_CD = #{salesCd}
+                 </if>
+                   AND (TSD.VAT_AMT > CASE WHEN #{taxYn}='1' THEN 0 END
+                        OR TSD.VAT_AMT = CASE WHEN #{taxYn}='2' THEN 0 END)
+                 <if test='prdtCd != null and prdtCd != ""'>
+                   AND TSD.PRDT_CD = #{prdtCd}
+                 </if>
+               UNION ALL
+                SELECT
+                       '2' AS SORT
+                       , SUBSTRING(TSR.RTN_DT,1,6) AS YEARMON
+                       , TSR.RTN_DT AS DT
+                       , TSR.SALES_SLIP_NO
+                       , TSR.SALES_SEQ
+                       , TSR.SALES_CD
+                       , TSR.PRDT_CD
+                       , TSR.PRICE
+                       , TSR.RTN_QTY*-1 AS QTY
+                       , TSR.PURE_AMT*-1 AS PURE_AMT
+                       , TSR.VAT_AMT*-1 AS VAT_AMT
+                       , TSR.TOT_AMT*-1 AS TOT_AMT
+                       , '반품' AS GUBUN
+                       , TSR.WH_CD
+                  FROM TSH_SALES_RETURN AS TSR
+                  
+                       JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSR.SALES_CD
+			                  
+                 WHERE TSR.RTN_DT BETWEEN REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                 <if test='hqClass == "10"'>
+                   AND TSHC.HQ_CD = #{salesCd}
+                 </if>
+                 <if test='hqClass == "20"'>
+                   AND TSHC.SALES_CD = #{salesCd}
+                 </if>
+                 <if test='whCd != null and whCd != ""'>
+                   AND TSR.WH_CD = #{whCd}
+                 </if>
+                   AND (TSR.VAT_AMT > CASE WHEN #{taxYn}='1' THEN 0 END
+                        OR TSR.VAT_AMT = CASE WHEN #{taxYn}='2' THEN 0 END)
+                 <if test='prdtCd != null and prdtCd != ""'>
+                   AND TSR.PRDT_CD = #{prdtCd}
+                 </if>
+               </if>
+               
+               <if test='taxYn == "3"'>
+                SELECT
+                       '2' AS SORT
+                       , SUBSTRING(TSR.RTN_DT,1,6) AS YEARMON
+                       , TSR.RTN_DT AS DT
+                       , TSR.SALES_SLIP_NO
+                       , TSR.SALES_SEQ
+                       , TSR.SALES_CD
+                       , TSR.PRDT_CD
+                       , TSR.PRICE
+                       , TSR.RTN_QTY*-1 AS QTY
+                       , TSR.PURE_AMT*-1 AS PURE_AMT
+                       , TSR.VAT_AMT*-1 AS VAT_AMT
+                       , TSR.TOT_AMT*-1 AS TOT_AMT
+                       , '반품' AS GUBUN
+                       , TSR.WH_CD
+                  FROM TSH_SALES_RETURN AS TSR
+                  
+                       JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSR.SALES_CD
+			                  
+                 WHERE TSR.RTN_DT BETWEEN REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                 <if test='hqClass == "10"'>
+                   AND TSHC.HQ_CD = #{salesCd}
+                 </if>
+                 <if test='hqClass == "20"'>
+                   AND TSHC.SALES_CD = #{salesCd}
+                 </if>
+                 <if test='whCd != null and whCd != ""'>
+                   AND TSR.WH_CD = #{whCd}
+                 </if>
+                 <if test='prdtCd != null and prdtCd != ""'>
+                   AND TSR.PRDT_CD = #{prdtCd}
+                 </if>
+               </if>
+               
+                ) AS A
+                LEFT OUTER JOIN TSH_SALES_REMARK AS TSM
+                    ON TSM.SALES_SLIP_NO = A.SALES_SLIP_NO
+                   AND TSM.SALES_SEQ = A.SALES_SEQ
+                   
+                JOIN TFM_WH_MST AS TWM
+                    ON TWM.WH_CD = A.WH_CD
+
+/*                    
+                JOIN TFM_SALES_ADD_INFO AS TSAI
+                    ON TSAI.SALES_CD = A.SALES_CD
+*/
+
+				 JOIN (
+                		SELECT 	A.SALES_CD
+							,	B.SALES_NM 
+							,	A.BSNS_NUM 
+							,	B.SALES_CLASS
+							,	B.CAR_CD
+						FROM TFM_SALES_MST A
+							,TFM_SALES_ADD_INFO B
+						WHERE 1=1
+						AND A.SALES_CD = B.SALES_CD 	
+                	 ) AS TSAI 
+					ON TSAI.SALES_CD = A.SALES_CD
+                    
+                    
+                LEFT OUTER JOIN TCM_CODE_DTL AS TCD_1
+                    ON TSAI.SALES_CLASS = TCD_1.DTL_CD
+                   AND TCD_1.COM_CD = 'M013'
+                   
+                LEFT OUTER JOIN TFM_DLVR_MST AS TDM
+                    ON TSAI.CAR_CD = TDM.CAR_CD
+                    
+                JOIN TFM_PRDT_MST AS TPM
+                    ON TPM.PRDT_CD = A.PRDT_CD
+                    
+                LEFT OUTER JOIN TCM_CODE_DTL AS TCD_2
+                    ON TPM.STRG_TYPE = TCD_2.DTL_CD
+                   AND TCD_2.COM_CD = 'M001'
+                   
+                LEFT OUTER JOIN TCM_CODE_DTL AS TCD_3
+                    ON TPM.ORD_UNIT = TCD_3.DTL_CD
+                   AND TCD_3.COM_CD = 'M006'
+          WHERE A.QTY != 0
+            <if test='salesClass != null and salesClass != ""'> 
+              AND TSAI.SALES_CLASS LIKE CONCAT('%',#{salesClass},'%')
+            </if>
+            <if test='lCd != null and lCd != ""'>
+              AND TPM.L_CD = #{lCd}
+            </if>
+            <if test='mCd != null and mCd != ""'>
+              AND TPM.M_CD = #{mCd}
+            </if>
+            <if test='salesPrCd != null and salesPrCd != ""'>
+              AND TSAI.SALES_PR_CD = #{salesPrCd}
+            </if>
+            <if test='prdtCd == null or prdtCd == ""'>
+              <if test='prdtNm != null and prdtNm != ""'>
+                AND TPM.PRDT_NM LIKE CONCAT('%', #{prdtNm}, '%')
+              </if>
+            </if>
+          ORDER BY A.DT, A.SALES_SLIP_NO, A.SORT, A.SALES_CD, A.PRDT_CD
+    
+	</select>
+
+
+	<!-- 매출처 출고 상세 출력 -->
+	<select id="selectCusShipDtlPrintList" parameterType="com.doppio.workplace.sm.service.CusShipDtlListVo" resultType="com.doppio.workplace.sm.service.CusShipDtlListVo">
+	/*CusShipDtlListMapper.selectCusShipDtlPrintList*/	
+		
+	    SELECT A.DT
+               , TCD_1.DTL_NM AS SALES_CLASS_NM
+               , TSAI.SALES_NM
+               , TPM.PRDT_NM
+               , TPM.PRDT_STD
+               , A.PRICE AS PRT_PRICE
+               , A.QTY AS PRT_QTY
+               , A.PURE_AMT AS PRT_PURE_AMT
+               , A.VAT_AMT AS PRT_VAT_AMT
+               , A.TOT_AMT AS PRT_TOT_AMT
+               
+               , #{salesNmSearch} AS SALES_NM_SEARCH
+               , #{prdtNmSearch} AS PRDT_NM_SEARCH
+               , #{buyStartDt} AS BUY_START_DT
+               , #{buyEndDt} AS BUY_END_DT
+          FROM (
+                <if test='taxYn == ""'>
+                   SELECT TSD.SALES_DT AS DT
+                          , TSD.SALES_CD
+                          , TSD.PRDT_CD
+                          , TSD.PRICE
+                          , SUM(TSD.SALES_QTY) AS QTY
+                          , SUM(TSD.PURE_AMT) AS PURE_AMT
+                          , SUM(TSD.VAT_AMT) AS VAT_AMT
+                          , SUM(TSD.TOT_AMT) AS TOT_AMT
+                     FROM TSH_SALES_DLV AS TSD
+                     
+                          JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSD.SALES_CD
+			                  
+                    WHERE TSD.SALES_DT BETWEEN REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                    <if test='whCd != null and whCd != ""'>
+                      AND TSD.WH_CD = #{whCd}
+                    </if>
+                    <if test='hqClass == "10"'>
+                      AND TSHC.HQ_CD = #{salesCd}
+                    </if>
+                    <if test='hqClass == "20"'>
+                      AND TSHC.SALES_CD = #{salesCd}
+                    </if>
+                    <if test='prdtCd != null and prdtCd != ""'>
+                      AND TSD.PRDT_CD = #{prdtCd}
+                    </if>
+                    GROUP BY TSD.SALES_DT
+                             , TSD.SALES_CD
+                             , TSD.PRDT_CD
+                             , TSD.PRICE
+                  UNION ALL
+                   SELECT TSR.RTN_DT AS DT
+                          , TSR.SALES_CD
+                          , TSR.PRDT_CD
+                          , TSR.PRICE
+                          , SUM(TSR.RTN_QTY)*-1 AS QTY
+                          , SUM(TSR.PURE_AMT)*-1 AS PURE_AMT
+                          , SUM(TSR.VAT_AMT)*-1 AS VAT_AMT
+                          , SUM(TSR.TOT_AMT)*-1 AS TOT_AMT                          
+                     FROM TSH_SALES_RETURN AS TSR
+                            
+                          JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSR.SALES_CD
+                            
+                    WHERE TSR.RTN_DT BETWEEN REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                    <if test='hqClass == "10"'>
+                      AND TSHC.HQ_CD = #{salesCd}
+                    </if>
+                    <if test='hqClass == "20"'>
+                      AND TSHC.SALES_CD = #{salesCd}
+                    </if> 
+                    <if test='whCd != null and whCd != ""'>
+                      AND TSR.WH_CD = #{whCd}
+                    </if>
+                    <if test='prdtCd != null and prdtCd != ""'>
+                      AND TSR.PRDT_CD = #{prdtCd}
+                    </if>
+                    GROUP BY TSR.RTN_DT
+                             , TSR.SALES_CD
+                             , TSR.PRDT_CD
+                             , TSR.PRICE
+               </if>
+               
+               <if test='taxYn == "1" or taxYn == "2" '>
+                   SELECT TSD.SALES_DT AS DT
+                          , TSD.SALES_CD
+                          , TSD.PRDT_CD
+                          , TSD.PRICE
+                          , SUM(TSD.SALES_QTY) AS QTY
+                          , SUM(TSD.PURE_AMT) AS PURE_AMT
+                          , SUM(TSD.VAT_AMT) AS VAT_AMT
+                          , SUM(TSD.TOT_AMT) AS TOT_AMT
+                     FROM TSH_SALES_DLV AS TSD
+                     
+                          JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSD.SALES_CD
+                     
+                    WHERE TSD.SALES_DT BETWEEN REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                    <if test='whCd != null and whCd != ""'>
+                      AND TSD.WH_CD = #{whCd}
+                    </if>
+                    <if test='hqClass == "10"'>
+                      AND TSHC.HQ_CD = #{salesCd}
+                    </if>
+                    <if test='hqClass == "20"'>
+                      AND TSHC.SALES_CD = #{salesCd}
+                    </if>
+                      AND (TSD.VAT_AMT > CASE WHEN #{taxYn}='1' THEN 0 END
+                           OR TSD.VAT_AMT = CASE WHEN #{taxYn}='2' THEN 0 END)
+                    <if test='prdtCd != null and prdtCd != ""'>
+                      AND TSD.PRDT_CD = #{prdtCd}
+                    </if>
+                    GROUP BY TSD.SALES_DT
+                             , TSD.SALES_CD
+                             , TSD.PRDT_CD
+                             , TSD.PRICE
+                             
+                UNION ALL
+                  
+                   SELECT TSR.RTN_DT AS DT
+                          , TSR.SALES_CD
+                          , TSR.PRDT_CD
+                          , TSR.PRICE
+                          , SUM(TSR.RTN_QTY)*-1 AS QTY
+                          , SUM(TSR.PURE_AMT)*-1 AS PURE_AMT
+                          , SUM(TSR.VAT_AMT)*-1 AS VAT_AMT
+                          , SUM(TSR.TOT_AMT)*-1 AS TOT_AMT
+                     FROM TSH_SALES_RETURN AS TSR
+                     
+                          JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSR.SALES_CD
+                     
+                    WHERE TSR.RTN_DT BETWEEN REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                    <if test='hqClass == "10"'>
+                      AND TSHC.HQ_CD = #{salesCd}
+                    </if>
+                    <if test='hqClass == "20"'>
+                      AND TSHC.SALES_CD = #{salesCd}
+                    </if>
+                    <if test='whCd != null and whCd != ""'>
+                      AND TSR.WH_CD = #{whCd}
+                    </if>
+                      AND (TSR.VAT_AMT > CASE WHEN #{taxYn}='1' THEN 0 END
+                           OR TSR.VAT_AMT = CASE WHEN #{taxYn}='2' THEN 0 END)
+                    <if test='prdtCd != null and prdtCd != ""'>
+                      AND TSR.PRDT_CD = #{prdtCd}
+                    </if>
+                    GROUP BY TSR.RTN_DT
+                             , TSR.SALES_CD
+                             , TSR.PRDT_CD
+                             , TSR.PRICE
+               </if>
+               
+               <if test='taxYn == "3"'>
+                   SELECT TSR.RTN_DT AS DT
+                          , TSR.SALES_CD
+                          , TSR.PRDT_CD
+                          , TSR.PRICE
+                          , SUM(TSR.RTN_QTY)*-1 AS QTY
+                          , SUM(TSR.PURE_AMT)*-1 AS PURE_AMT
+                          , SUM(TSR.VAT_AMT)*-1 AS VAT_AMT
+                          , SUM(TSR.TOT_AMT)*-1 AS TOT_AMT
+                     FROM TSH_SALES_RETURN AS TSR
+                  
+                          JOIN TFM_SALES_HQ_CLASS AS TSHC
+			                  ON TSHC.SALES_CD = TSR.SALES_CD
+                  
+                    WHERE TSR.RTN_DT BETWEEN REPLACE(#{buyStartDt},'-','') AND REPLACE(#{buyEndDt},'-','')
+                    <if test='hqClass == "10"'>
+                      AND TSHC.HQ_CD = #{salesCd}
+                    </if>
+                    <if test='hqClass == "20"'>
+                      AND TSHC.SALES_CD = #{salesCd}
+                    </if> 
+                    <if test='whCd != null and whCd != ""'>
+                      AND TSR.WH_CD = #{whCd}
+                    </if>
+                    <if test='prdtCd != null and prdtCd != ""'>
+                      AND TSR.PRDT_CD = #{prdtCd}
+                    </if>
+                    GROUP BY TSR.RTN_DT
+                             , TSR.SALES_CD
+                             , TSR.PRDT_CD
+                             , TSR.PRICE
+               </if>
+               
+                ) AS A
+                   
+                JOIN TFM_SALES_ADD_INFO AS TSAI
+                    ON TSAI.SALES_CD = A.SALES_CD
+                    
+                LEFT OUTER JOIN TCM_CODE_DTL AS TCD_1
+                    ON TSAI.SALES_CLASS = TCD_1.DTL_CD
+                   AND TCD_1.COM_CD = 'M013'
+                    
+                JOIN TFM_PRDT_MST AS TPM
+                    ON TPM.PRDT_CD = A.PRDT_CD
+
+         WHERE A.QTY != 0
+            <if test='salesClass != null and salesClass != ""'> 
+              AND TSAI.SALES_CLASS LIKE CONCAT('%',#{salesClass},'%')
+            </if>
+            <if test='lCd != null and lCd != ""'>
+              AND TPM.L_CD = #{lCd}
+            </if>
+            <if test='mCd != null and mCd != ""'>
+              AND TPM.M_CD = #{mCd}
+            </if>
+            <if test='salesPrCd != null and salesPrCd != ""'>
+              AND TSAI.SALES_PR_CD = #{salesPrCd}
+            </if>
+            <if test='prdtCd == null or prdtCd == ""'>
+              <if test='prdtNm != null and prdtNm != ""'>
+                AND TPM.PRDT_NM LIKE CONCAT('%', #{prdtNm}, '%')
+              </if>
+            </if>
+
+          ORDER BY A.DT, A.SALES_CD, A.PRDT_CD
+    
+	</select>
+
+
+</mapper>

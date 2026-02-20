@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.bm.service.impl.LogisticsWarehouseMapper">
+
+	
+	<!-- 물류창고 조회 리스트 검색조건-->
+	<sql id="selectLogisticsWarehouseList_Where">
+		/*LogisticsWarehouseMapper.selectLogisticsWarehouseList_Where*/
+		<where>
+			<if test='searchWhNm != null and searchWhNm != ""'>				<!-- 창고명  --> 
+				AND TWM.WH_NM LIKE CONCAT('%',#{searchWhNm},'%')
+			</if>			
+		</where>
+	</sql>
+	
+	<!-- 물류창고 조회  카운터 -->
+	<select id="selectLogisticsWarehouseListCount" parameterType="com.doppio.workplace.bm.service.LogisticsWarehouseVo" resultType="int">
+		/* LogisticsWarehouseMapper.selectLogisticsWarehouseListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM KRMC.TFM_WH_MST AS TWM
+		<include refid="selectLogisticsWarehouseList_Where"/>
+	</select>
+	
+	
+	<!-- 물류창고 조회 -->
+	<select id="selectLogisticsWarehouseList" parameterType="com.doppio.workplace.bm.service.LogisticsWarehouseVo" resultType="com.doppio.workplace.bm.service.LogisticsWarehouseVo">
+	/*LogisticsWarehouseMapper.selectLogisticsWarehouseList*/	
+		SELECT TWM.WH_CD
+               , TWM.WH_NM 
+               , TWM.ZIP_CD
+               , TWM.ZIP_ADDR 
+               , TWM.DTL_ADDR 
+               , TWM.USE_YN
+               , TM_1.USER_NM AS REG_NM
+               , TWM.REG_DT
+               , TM_2.USER_NM AS MOD_NM
+               , TWM.MOD_DT
+		  FROM KRMC.TFM_WH_MST AS TWM
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_1
+		         ON TWM.REG_ID = TM_1.USER_ID 
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_2
+		         ON TWM.MOD_ID = TM_2.USER_ID
+		 <include refid="selectLogisticsWarehouseList_Where"/>
+	</select>
+	
+
+	<!-- 물류창고 저장 -->
+	<insert id="insertLogisticsWarehouseInfo" parameterType="com.doppio.workplace.bm.service.LogisticsWarehouseVo">
+	<selectKey keyProperty="whCd" resultType="String" order="BEFORE">
+		SELECT CAST(IFNULL(MAX(TWM.WH_CD),'10000') AS DECIMAL)+1 AS WH_CD FROM KRMC.TFM_WH_MST AS TWM
+	</selectKey>
+	/*LogisticsWarehouseMapper.insertLogisticsWarehouseInfo*/	
+		INSERT INTO KRMC.TFM_WH_MST
+			(WH_CD, WH_NM, ZIP_CD, ZIP_ADDR, DTL_ADDR, USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT)
+		VALUES
+			(#{whCd}
+			 , #{whNm}
+			 , #{zipCd}
+			 , #{zipAddr}
+			 , #{dtlAddr}
+			 , #{useYn}
+			 , #{regId, jdbcType=VARCHAR}
+			 , NOW()
+			 , #{modId, jdbcType=VARCHAR}
+			 , NOW()
+			)
+	</insert>
+	
+	
+		<!-- 물류창고 저장 -->
+	<insert id="update]LogisticsWarehouseInfo" parameterType="com.doppio.workplace.bm.service.LogisticsWarehouseVo">
+	/*LogisticsWarehouseMapper.update]LogisticsWarehouseInfo*/	
+		UPDATE KRMC.TFM_WH_MST
+		   SET WH_NM = #{whNm}
+			   , ZIP_CD = #{zipCd}
+			   , ZIP_ADDR = #{zipAddr}
+			   , DTL_ADDR = #{dtlAddr}
+			   , USE_YN = #{useYn}
+			   , MOD_ID = #{modId, jdbcType=VARCHAR}
+			   , MOD_DT = NOW()
+		 WHERE WH_CD = #{whCd}
+
+	</insert>
+	
+	
+</mapper>

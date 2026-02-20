@@ -1,0 +1,146 @@
+body {background-image:url(http://localhost:8080/images/app/ecs_background2.gif); background-repeat:no-repeat; background-position: 50% 50%;font-size: 0.9em;}
+h3 {font-size: 15px; font-weight: bold; padding:10px 0 10px 0px; margin:0 10px;}
+
+
+#headwater table {
+    height: 5%;
+    width: 630;
+}
+
+#content .content_table {
+    height: 80%;
+    width: 630;
+}
+
+#content .content_table_tr_td {
+    vertical-align: top;
+}
+
+#content .content_table_tr_td_table {
+    width: 100%;
+}
+
+#tailwater table {
+    height: 15%;
+    width: 630;
+}
+
+
+body {
+    font-size: 9pt;
+    line-height: 200%;
+    font-weight: normal;
+    font-variant: normal;
+}
+
+td {
+    font-size: 10pt;
+    color: 000000;
+    line-height: 17pt;
+}
+
+
+.tableround {
+
+    font-size: 9pt;
+    padding-left: 2px;
+
+    background-repeat: repeat;
+    border-top-width: 1;
+    border-right-width: 1;
+    border-bottom-width: 1;
+    border-left-width: 1;
+    border-color: 000000;
+    border-style: solid;
+    line-height: 17px;
+
+}
+
+
+.cell_data_00 {
+    font-size: 9pt;
+    padding-left: 2px;
+
+    background-repeat: repeat;
+    border-top-width: 1;
+    border-right-width: 1;
+    border-bottom-width: 1;
+    border-left-width: 1;
+    border-color: 000000;
+    border-style: solid;
+    line-height: 17px;
+}
+
+.cell_data {
+    font-size: 9pt;
+    padding-left: 2px;
+
+    background-repeat: repeat;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    border-color: 000000;
+    border-style: solid;
+    line-height: 17px;
+}
+
+.cell_data_01 {
+    font-size: 9pt;
+    padding-left: 2px;
+
+    background-repeat: repeat;
+    border-top-width: 0;
+    border-right-width: 1;
+    border-bottom-width: 1;
+    border-left-width: 0;
+    border-color: 000000;
+    border-style: solid;
+    line-height: 17px;
+}
+
+.cell_data_02 {
+    font-size: 9pt;
+    padding-left: 2px;
+
+    background-repeat: repeat;
+    border-top-width: 0;
+    border-right-width: 1;
+    border-bottom-width: 1;
+    border-left-width: 1;
+    border-color: 000000;
+    border-style: solid;
+    line-height: 17px;
+}
+
+.cell_data_03 {
+    font-size: 9pt;
+    padding-left: 2px;
+
+    background-repeat: repeat;
+    border-top-width: 1;
+    border-right-width: 1;
+    border-bottom-width: 1;
+    border-left-width: 0;
+    border-color: 000000;
+    border-style: solid;
+    line-height: 17px;
+}
+
+.title {
+    line-height: 50px;
+    font-size: 30;
+}
+
+.subtitle {
+    font-size: 10pt;
+    color: 000000;
+    line-height: 15pt;
+    font-weight: bold;
+}
+
+.breakhere {
+    page-break-after: always;
+    width: 640;
+    height: 10px;
+}

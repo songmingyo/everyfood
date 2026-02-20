@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.cs.service.impl.ClsTermValListMapper">
+
+	
+	<!-- 소비기한 조회 -->
+	<select id="selectClsTermValList" parameterType="com.doppio.workplace.cs.service.ClsTermValListVo" resultType="com.doppio.workplace.cs.service.ClsTermValListVo">
+	/*ClsTermValListMapper.selectClsTermValListList*/	
+		SELECT A.PRDT_CD
+		       , A.PRDT_NM
+		       , A.PRDT_STD
+		       , A.ORD_UNIT_NM
+		       , A.LACK_NO_1
+		       , A.EXPRT_DT
+		       , A.BUY_DT
+		       , A.STK_QTY
+		       , A.BUY_COST
+		       , A.BUY_QTY
+		       , A.STK_QTY * A.BUY_COST AS PURE_AMT
+		       , A.TERM_VAL
+		       
+		       , TBM.BUY_NM
+		       , TPSL.SALES_CD_LIST
+		       , TSD.SALES_LAST_DT
+		       , TMST.SALES_QTY AS PREV_SALES_QTY
+		       , A.SALES_PR_NM
+		       , A.SALES_NM
+		  FROM (SELECT TPT.TERM_VAL
+					   , TPT.PRDT_CD
+					   , TPM.PRDT_NM
+					   , TPM.PRDT_STD
+					   , TCD.DTL_NM AS ORD_UNIT_NM
+					   , TPM.LACK_NO_1
+					   , TPM.EXPRT_DT
+					   , TPM.BUY_CD
+					   , TPT.BUY_DT
+					   , CASE WHEN ROUND(TPT.PURE_AMT / TPT.BUY_QTY,0)=0 THEN TPM.COST ELSE ROUND(TPT.PURE_AMT / TPT.BUY_QTY,0) END AS BUY_COST
+					   , TPT.BUY_QTY
+					   , TPT.PURE_AMT
+					   , VWPS.STK_QTY
+					   , (SELECT SALES_PR_NM FROM TFM_SALES_PR_MST WHERE SALES_PR_CD = TPM.SALES_PR_CD)	AS SALES_PR_NM
+					   , (SELECT SALES_NM FROM TFM_SALES_ADD_INFO WHERE SALES_CD = TPM.SALES_CD)		AS SALES_NM
+				  FROM TBH_PRDT_TERM AS TPT
+				  
+				       JOIN V_WH_PRDT_STK_NEW AS VWPS
+				           ON VWPS.WH_CD = TPT.WH_CD				           
+				          AND VWPS.PRDT_CD = TPT.PRDT_CD
+				          
+				       JOIN TFM_PRDT_MST AS TPM
+				           ON TPM.PRDT_CD = TPT.PRDT_CD
+				           
+				       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+				           ON TCD.COM_CD = 'M006'
+				          AND TCD.DTL_CD = TPM.ORD_UNIT
+				          
+				 WHERE TPT.TERM_VAL BETWEEN #{searchStartDt} AND #{searchEndDt}
+				   AND TPT.WH_CD = #{searchWhCd}
+				   AND VWPS.STK_QTY != 0
+				  <if test='searchPrdtCd != null and searchPrdtCd != ""'>
+                    AND TPT.PRDT_CD = #{searchPrdtCd}
+                  </if>
+                  <if test='searchLCd != null and searchLCd != ""'> 
+                    AND TPM.L_CD = #{searchLCd}
+                  </if>
+                  <if test='searchMCd != null and searchMCd != ""'> 
+                    AND TPM.M_CD = #{searchMCd}
+                  </if>
+                  <if test='srchSalesPrCd != null and srchSalesPrCd != ""'> 
+                    AND TPM.SALES_PR_CD = #{srchSalesPrCd}
+                  </if>
+			   ) A
+			   
+			   JOIN TFM_BUY_MST AS TBM
+				   ON TBM.BUY_CD = A.BUY_CD
+				   
+		       LEFT OUTER JOIN TMH_PRDT_SALES_LIST AS TPSL
+			       ON TPSL.PRDT_CD = A.PRDT_CD
+			      AND TPSL.WH_CD = #{searchWhCd}
+			      
+			   LEFT OUTER JOIN 
+			       (SELECT WH_CD, PRDT_CD, MAX(SALES_DT) AS SALES_LAST_DT
+			          FROM TSH_SALES_DLV
+			         WHERE WH_CD = #{searchWhCd}
+			         GROUP BY WH_CD, PRDT_CD
+			       ) AS TSD
+	               ON TSD.PRDT_CD = A.PRDT_CD
+	              
+	           LEFT OUTER JOIN
+		           (SELECT PRDT_CD
+		                   , SUM(SALES_QTY) AS SALES_QTY
+		              FROM TMH_MON_SALES_TOT
+		             WHERE YEAR_MON = DATE_FORMAT(LAST_DAY(#{searchStartDt} - INTERVAL 1 MONTH),'%Y%m')
+				       AND WH_CD = #{searchWhCd}
+				     GROUP BY PRDT_CD
+				   ) AS TMST
+				       ON TMST.PRDT_CD = A.PRDT_CD
+			      
+		 ORDER BY TBM.BUY_NM, A.PRDT_CD
+	</select>
+	
+	
+	<!-- 소비기한관리 엑셀 다운로드 -->
+	<select id="selectClsTermValListExcel" parameterType="com.doppio.workplace.cs.service.ClsTermValListVo" resultType="java.util.HashMap">
+	/*ClsTermValListMapper.selectClsTermValListExcel*/	
+		SELECT A.PRDT_NM
+		       , A.PRDT_STD
+		       , A.ORD_UNIT_NM
+		       , A.LACK_NO_1
+		       , IFNULL(A.EXPRT_DT,'') AS EXPRT_DT
+		       , A.BUY_DT
+		       , A.STK_QTY
+		       , A.BUY_COST
+		       , A.BUY_QTY
+		       , A.STK_QTY * A.BUY_COST AS PURE_AMT
+		       , IFNULL(A.TERM_VAL,'') AS TERM_VAL
+		       
+		       , IFNULL(TBM.BUY_NM,'') AS BUY_NM
+		       , IFNULL(TPSL.SALES_CD_LIST,'') AS SALES_CD_LIST
+		       , IFNULL(TSD.SALES_LAST_DT,'') AS SALES_LAST_DT
+		       , IFNULL(TMST.SALES_QTY,'') AS PREV_SALES_QTY
+		       , IFNULL(A.SALES_PR_NM, '')	AS SALES_PR_NM
+		       , IFNULL(A.SALES_NM, '') AS SALES_NM
+		  FROM (SELECT TPT.TERM_VAL
+					   , TPT.PRDT_CD
+					   , TPM.PRDT_NM
+					   , TPM.PRDT_STD
+					   , TCD.DTL_NM AS ORD_UNIT_NM
+					   , TPM.LACK_NO_1
+					   , TPM.EXPRT_DT
+					   , TPM.BUY_CD
+					   , TPT.BUY_DT
+					   , CASE WHEN ROUND(TPT.PURE_AMT / TPT.BUY_QTY,0)=0 THEN TPM.COST ELSE ROUND(TPT.PURE_AMT / TPT.BUY_QTY,0) END AS BUY_COST
+					   , TPT.BUY_QTY
+					   , TPT.PURE_AMT
+					   , VWPS.STK_QTY
+					   , (SELECT SALES_PR_NM FROM TFM_SALES_PR_MST WHERE SALES_PR_CD = TPM.SALES_PR_CD)	AS SALES_PR_NM
+					   , (SELECT SALES_NM FROM TFM_SALES_ADD_INFO WHERE SALES_CD = TPM.SALES_CD)		AS SALES_NM
+				  FROM TBH_PRDT_TERM AS TPT
+				  
+				       JOIN V_WH_PRDT_STK_NEW AS VWPS
+				           ON VWPS.WH_CD = TPT.WH_CD
+				          AND VWPS.PRDT_CD = TPT.PRDT_CD
+				          
+				       JOIN TFM_PRDT_MST AS TPM
+				           ON TPM.PRDT_CD = TPT.PRDT_CD
+				           
+				       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+				           ON TCD.COM_CD = 'M006'
+				          AND TCD.DTL_CD = TPM.ORD_UNIT
+				          
+				 WHERE TPT.TERM_VAL BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+				   AND TPT.WH_CD = #{searchWhCd}
+				   AND VWPS.STK_QTY != 0
+				  <if test='searchPrdtCd != null and searchPrdtCd != ""'>
+                    AND TPT.PRDT_CD = #{searchPrdtCd}
+                  </if>
+                  <if test='searchLCd != null and searchLCd != ""'> 
+                    AND TPM.L_CD = #{searchLCd}
+                  </if>
+                  <if test='searchMCd != null and searchMCd != ""'> 
+                    AND TPM.M_CD = #{searchMCd}
+                  </if>
+                   <if test='srchSalesPrCd != null and srchSalesPrCd != ""'> 
+                    AND TPM.SALES_PR_CD = #{srchSalesPrCd}
+                  </if>
+			   ) AS A
+			   
+			   JOIN TFM_BUY_MST AS TBM
+				   ON TBM.BUY_CD = A.BUY_CD
+				   
+		       LEFT OUTER JOIN TMH_PRDT_SALES_LIST AS TPSL
+			       ON TPSL.PRDT_CD = A.PRDT_CD
+			      AND TPSL.WH_CD = #{searchWhCd}
+			      
+			   LEFT OUTER JOIN 
+			       (SELECT WH_CD, PRDT_CD, MAX(SALES_DT) AS SALES_LAST_DT
+			          FROM TSH_SALES_DLV
+			         GROUP BY WH_CD, PRDT_CD
+			       ) AS TSD
+	               ON TSD.PRDT_CD = A.PRDT_CD
+	              AND TSD.WH_CD = #{searchWhCd}
+	              
+	           LEFT OUTER JOIN
+		           (SELECT PRDT_CD
+		                   , SUM(SALES_QTY) AS SALES_QTY
+		              FROM TMH_MON_SALES_TOT
+		             WHERE YEAR_MON = DATE_FORMAT(LAST_DAY(#{searchStartDt} - INTERVAL 1 MONTH),'%Y%m')
+				       AND WH_CD = #{searchWhCd}
+				     GROUP BY PRDT_CD
+				   ) AS TMST
+				       ON TMST.PRDT_CD = A.PRDT_CD
+		 ORDER BY TBM.BUY_NM, A.PRDT_CD
+	</select>
+	
+	
+</mapper>
+

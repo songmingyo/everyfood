@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusOrdListMapper">
+
+	<!-- 매출 발주 조회 -->
+	<select id="selectCusOrdList" parameterType="com.doppio.workplace.sm.service.CusOrdListVo" resultType="com.doppio.workplace.sm.service.CusOrdListVo">
+	/*CusOrdListMapper.selectCusOrdList*/	
+		SELECT TSO.ORD_DT
+			   , TSO.SALES_SLIP_NO
+			   , TSAI.SALES_NM
+			   , TSO.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TSO.DLV_DT
+			   , TSO.PRICE
+			   , TSO.ORD_QTY
+			   , TSO.PURE_AMT
+			   , TSO.VAT_AMT
+			   , TSO.TOT_AMT
+			   , TSR.REMARKS_1
+			   , TM.USER_NM
+			   , TSO.REG_DT
+		  FROM TSH_SALES_ORDER AS TSO
+		  
+		       JOIN
+                   (SELECT DISTINCT CASE WHEN #{searchHqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                           , SALES_CD
+                      FROM V_SALES_HQ_CD
+                     <where>
+                       <if test='searchHqClass != null and searchHqClass != ""'>
+                         AND HQ_CLASS = #{searchHqClass}
+                       </if>
+                       <if test='salesCd != null and salesCd != ""'> 
+                         AND (HQ_CD = #{salesCd} OR SALES_CD = #{salesCd})
+                       </if> 
+                     </where>
+                     
+                     
+                   ) AS VSHD
+                   ON VSHD.SALES_CD = TSO.SALES_CD
+		  
+		       JOIN TFM_SALES_ADD_INFO AS TSAI
+		           ON TSAI.SALES_CD = VSHD.HQ_CD
+		           
+		       JOIN TFM_PRDT_MST AS TPM
+		           ON TPM.PRDT_CD = TSO.PRDT_CD
+		           
+		       LEFT OUTER JOIN TSH_SALES_REMARK AS TSR
+		           ON TSR.SALES_SLIP_NO = TSO.SALES_SLIP_NO
+		          AND TSR.SALES_SEQ = TSO.SALES_SEQ
+		          
+		       LEFT OUTER JOIN TCM_MEMBER AS TM
+		           ON TM.USER_ID = TSO.REG_ID
+		           
+	     WHERE TSO.SALES_CD = TSAI.SALES_CD
+	       AND TSO.PRDT_CD = TPM.PRDT_CD
+	   	   AND TSO.ORD_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+	   	 <if test='prdtCd != null and prdtCd != ""'> 
+		   AND TPM.PRDT_CD = #{prdtCd}
+	     </if>
+	 	 <if test='lCd != null and lCd != ""'> 
+		   AND TPM.L_CD = #{lCd}
+	     </if>
+		 <if test='mCd != null and mCd != ""'> 
+		   AND TPM.M_CD = #{mCd}
+		 </if>
+		 ORDER BY TSO.ORD_DT, TSO.SALES_CD, TSO.PRDT_CD
+	</select>
+
+	<!-- 매출처발주 엑셀 -->
+	<select id="selectCusOrdListExcelDown" parameterType="com.doppio.workplace.sm.service.CusOrdListVo" resultType="java.util.HashMap">
+	/*CusOrdListMapper.selectCusOrdListExcelDown*/	
+		SELECT IFNULL(TSO.ORD_DT,'') AS ORD_DT
+			   , IFNULL(TSO.SALES_SLIP_NO,'') AS SALES_SLIP_NO
+			   , IFNULL(TSAI.SALES_NM,'') AS SALES_NM
+			   , IFNULL(TSO.PRDT_CD,'') AS PRDT_CD
+			   , IFNULL(TPM.PRDT_NM,'') AS PRDT_NM
+			   , IFNULL(TPM.PRDT_STD,'') AS PRDT_STD
+			   , IFNULL(TSO.DLV_DT,'') AS DLV_DT
+			   , IFNULL(TSO.PRICE,0) AS PRICE
+			   , IFNULL(TSO.ORD_QTY,0) AS ORD_QTY
+			   , IFNULL(TSO.PURE_AMT,0) AS PURE_AMT
+			   , IFNULL(TSO.VAT_AMT,0) AS VAT_AMT
+			   , IFNULL(TSO.TOT_AMT,0) AS TOT_AMT
+			   , IFNULL(TSR.REMARKS_1,'') AS REMARKS_1
+			   , IFNULL(TM.USER_NM,'') AS USER_NM
+			   , IFNULL(TSO.REG_DT,'') AS REG_DT
+		  FROM TSH_SALES_ORDER AS TSO
+		       JOIN TFM_SALES_ADD_INFO AS TSAI
+		           ON TSAI.SALES_CD = TSO.SALES_CD
+		       JOIN TFM_PRDT_MST AS TPM
+		           ON TPM.PRDT_CD = TSO.PRDT_CD
+		       LEFT OUTER JOIN TSH_SALES_REMARK AS TSR
+		           ON TSR.SALES_SLIP_NO = TSO.SALES_SLIP_NO
+		          AND TSR.SALES_SEQ = TSO.SALES_SEQ
+		       LEFT OUTER JOIN TCM_MEMBER AS TM
+		           ON TM.USER_ID = TSO.REG_ID
+	     WHERE TSO.SALES_CD = TSAI.SALES_CD
+	       AND TSO.PRDT_CD = TPM.PRDT_CD
+	   	   AND TSO.ORD_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+	   	 <if test='prdtCd != null and prdtCd != ""'> 
+		   AND TPM.PRDT_CD = #{prdtCd}
+	     </if>
+	     <if test='salesCd != null and salesCd != ""'> 
+	   	   AND TSO.SALES_CD = #{salesCd}
+	 	 </if>
+	 	 <if test='lCd != null and lCd != ""'> 
+		   AND TPM.L_CD = #{lCd}
+	     </if>
+		 <if test='mCd != null and mCd != ""'> 
+		   AND TPM.M_CD = #{mCd}
+		 </if>
+		 ORDER BY TSO.ORD_DT, TSO.SALES_CD, TSO.PRDT_CD
+	</select>
+
+	
+</mapper>

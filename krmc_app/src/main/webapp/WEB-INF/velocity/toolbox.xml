@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Velocity Tool Define.. 
+-->
+
+<toolbox>
+    <!-- 수학식 표현 -->
+	<tool>
+		<key>math</key>
+		<scope>application</scope>
+        <class>org.apache.velocity.tools.generic.MathTool</class>
+	</tool>
+	<!-- numberFomat -->
+	<tool>
+		<key>number</key>
+		<scope>application</scope>
+		<class>org.apache.velocity.tools.generic.NumberTool</class>
+		<parameter name="format" value="#,##0.00"/>
+	</tool>
+	<!-- Date Format -->
+	<tool>
+		<key>date</key>
+		<scope>application</scope>
+		<class>org.apache.velocity.tools.generic.ComparisonDateTool</class>
+		<parameter name="format" value="yyyy-MM-dd"/>
+		<parameter name="depth" value="2"/>
+		<parameter name="skip" value="month"/>
+	</tool>
+	<!-- Html escape 문자 처리 -->
+	<tool>
+		<key>esc</key>
+		<scope>application</scope>
+		<class>org.apache.velocity.tools.generic.EscapeTool</class>
+	</tool>
+	<tool>
+		<key>text</key>
+		<scope>request</scope>
+		<class>org.apache.velocity.tools.view.tools.ViewResourceTool</class>
+		<parameter name="bundles" value="resources,otherStuff"/>
+	</tool>
+</toolbox>

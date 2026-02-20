@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.cs.service.impl.LogWhMvListMapper">
+
+	
+	<!-- 센터이동 조회 -->
+	<select id="selectLogWhMvList" parameterType="com.doppio.workplace.cs.service.LogWhMvListVo" resultType="com.doppio.workplace.cs.service.LogWhMvListVo">
+	/*LogWhMvListMapper.selectLogWhMvList*/	
+		SELECT TWMP.MV_DT
+		       , TWMP.OUT_WH_CD
+		       , TWM_1.WH_NM AS OUT_WH_NM
+		       , TWMP.IN_WH_CD
+		       , TWM_2.WH_NM AS IN_WH_NM
+		       , TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD.DTL_NM AS ORD_UNIT_NM
+		       , TWMP.MV_QTY
+		       , TWMP.TERM_VAL
+		       , TWMP.REMARKS
+		       , TM.USER_NM AS REG_NM
+		       , DATE_FORMAT(TWMP.REG_DT,'%Y-%m-%d %T') AS REG_DT
+		  FROM TBH_WH_MV_PRDT AS TWMP
+		  
+		       JOIN TFM_PRDT_MST AS TPM
+		           ON TPM.PRDT_CD = TWMP.PRDT_CD
+		           
+		       JOIN TFM_WH_MST AS TWM_1
+		           ON TWM_1.WH_CD = TWMP.OUT_WH_CD
+		           
+		       JOIN TFM_WH_MST AS TWM_2
+		           ON TWM_2.WH_CD = TWMP.IN_WH_CD
+		           
+		       LEFT OUTER JOIN TCM_MEMBER AS TM
+		           ON TM.USER_ID = TWMP.REG_ID
+		           
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = TPM.ORD_UNIT
+		          AND TCD.COM_CD = 'M006'
+		          
+         WHERE TWMP.MV_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+           AND TWMP.MV_CONF_YN = 'Y'
+           AND TWMP.MV_QTY != 0
+         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+           AND TWMP.PRDT_CD = #{searchPrdtCd}
+         </if>
+         <if test='searchWhCd != null and searchWhCd != ""'> 
+           AND TWMP.OUT_WH_CD = #{searchWhCd}
+         </if>
+         <if test='searchLCd != null and searchLCd != ""'> 
+           AND TPM.L_CD = #{searchLCd}
+         </if>
+         <if test='searchMCd != null and searchMCd != ""'> 
+           AND TPM.M_CD = #{searchMCd}
+         </if>
+         ORDER BY TWMP.MV_DT
+		          , TWMP.OUT_WH_CD
+         
+	</select>
+	
+	
+	<!-- 센터이동 엑셀 다운로드 -->
+	<select id="selectLogWhMvListExcel" parameterType="com.doppio.workplace.cs.service.LogWhMvListVo" resultType="java.util.HashMap">
+	/*LogWhMvListMapper.selectLogWhMvListExcel*/	
+		SELECT TWMP.MV_DT
+		       , TWMP.OUT_WH_CD
+		       , TWM_1.WH_NM AS OUT_WH_NM
+		       , TWMP.IN_WH_CD
+		       , TWM_2.WH_NM AS IN_WH_NM
+		       , TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD.DTL_NM AS ORD_UNIT_NM
+		       , TWMP.MV_QTY
+		       , TWMP.TERM_VAL
+		       , TWMP.REMARKS
+		       , TM.USER_NM AS REG_NM
+		       , DATE_FORMAT(TWMP.REG_DT,'%Y-%m-%d %T') AS REG_DT
+		  FROM TBH_WH_MV_PRDT AS TWMP
+		  
+		       JOIN TFM_PRDT_MST AS TPM
+		           ON TPM.PRDT_CD = TWMP.PRDT_CD
+		           
+		       JOIN TFM_WH_MST AS TWM_1
+		           ON TWM_1.WH_CD = TWMP.OUT_WH_CD
+		           
+		       JOIN TFM_WH_MST AS TWM_2
+		           ON TWM_2.WH_CD = TWMP.IN_WH_CD
+		           
+		       LEFT OUTER JOIN TCM_MEMBER AS TM
+		           ON TM.USER_ID = TWMP.REG_ID
+		           
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = TPM.ORD_UNIT
+		          AND TCD.COM_CD = 'M006'
+		          
+         WHERE TWMP.MV_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+           AND TWMP.MV_CONF_YN = 'Y'
+           AND TWMP.MV_QTY != 0
+         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+           AND TWMP.PRDT_CD = #{searchPrdtCd}
+         </if>
+         <if test='searchWhCd != null and searchWhCd != ""'> 
+           AND TWMP.OUT_WH_CD = #{searchWhCd}
+         </if>
+         <if test='searchLCd != null and searchLCd != ""'> 
+           AND TPM.L_CD = #{searchLCd}
+         </if>
+         <if test='searchMCd != null and searchMCd != ""'> 
+           AND TPM.M_CD = #{searchMCd}
+         </if>
+	</select>
+	
+	
+	<!-- 센터이동 출력 -->
+	<select id="selectLogWhMvListPrint" parameterType="com.doppio.workplace.cs.service.LogWhMvListVo" resultType="com.doppio.workplace.cs.service.LogWhMvListVo">
+	/*LogWhMvListMapper.selectLogWhMvListExcel*/	
+		SELECT TWMP.MV_DT
+		       , TWM.WH_NM AS OUT_WH_NM
+		       , TPM.LACK_NO_1
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       , TCD.DTL_NM AS ORD_UNIT_NM
+		       , TWMP.MV_QTY
+		       , TWMP.TERM_VAL
+		       , TWMP.REMARKS
+		       
+		       , CASE WHEN TPM.STD_YN='2' THEN CONCAT((CASE WHEN MOD(TWMP.MV_QTY,1) = 0 THEN FORMAT(TWMP.MV_QTY,0) ELSE FORMAT(TWMP.MV_QTY,2) END), TCD.DTL_NM)
+    	  	   
+    	  	                              ELSE CASE WHEN TWMP.MV_QTY <![CDATA[<]]> TPM.QTY_BOX THEN CONCAT((CASE WHEN MOD(TWMP.MV_QTY,1) = 0 THEN FORMAT(TWMP.MV_QTY,0) ELSE FORMAT(TWMP.MV_QTY,2) END), TCD.DTL_NM)
+    	  	                              
+    	  	                                                                                     ELSE CASE WHEN MOD(TWMP.MV_QTY, TPM.QTY_BOX)=0 THEN CASE WHEN TPM.QTY_BOX <![CDATA[>]]> 1 THEN CONCAT(TRUNCATE(TWMP.MV_QTY / TPM.QTY_BOX,0), 'BOX')
+    	  	                                                                                                                                                                         ELSE CONCAT((CASE WHEN MOD(TWMP.MV_QTY,1) = 0 THEN FORMAT(TWMP.MV_QTY,0) ELSE FORMAT(TWMP.MV_QTY,2) END), TCD.DTL_NM)
+     	  	                                                                                                                                               END
+    	  	                                                                                                                                           
+    	  	                                                                                                                                         ELSE CONCAT(TRUNCATE(TWMP.MV_QTY / TPM.QTY_BOX,0), 'BOX/', CASE WHEN MOD(MOD(TWMP.MV_QTY, TPM.QTY_BOX),1) = 0 THEN FORMAT(MOD(TWMP.MV_QTY, TPM.QTY_BOX), 0) ELSE FORMAT(MOD(TWMP.MV_QTY, TPM.QTY_BOX), 2) END , TCD.DTL_NM)          
+    	  	                                                                                          END
+    	  	                                                                                          
+    	  	                                   END
+    	  	     END AS BOX_QTY_COMP
+
+		  FROM TBH_WH_MV_PRDT AS TWMP
+		  
+		       JOIN TFM_PRDT_MST AS TPM
+		           ON TPM.PRDT_CD = TWMP.PRDT_CD
+		           
+		       JOIN TFM_WH_MST AS TWM
+		           ON TWM.WH_CD = TWMP.OUT_WH_CD
+		           
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = TPM.ORD_UNIT
+		          AND TCD.COM_CD = 'M006'
+		          
+         WHERE TWMP.MV_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+           AND TWMP.MV_CONF_YN = 'Y'
+           AND TWMP.MV_QTY != 0
+         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+           AND TWMP.PRDT_CD = #{searchPrdtCd}
+         </if>
+         <if test='searchWhCd != null and searchWhCd != ""'> 
+           AND TWMP.OUT_WH_CD = #{searchWhCd}
+         </if>
+         <if test='searchLCd != null and searchLCd != ""'> 
+           AND TPM.L_CD = #{searchLCd}
+         </if>
+         <if test='searchMCd != null and searchMCd != ""'> 
+           AND TPM.M_CD = #{searchMCd}
+         </if>
+         ORDER BY TWMP.MV_DT
+	</select>
+	
+</mapper>
+

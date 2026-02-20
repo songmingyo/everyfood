@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusPeriodListMapper">
+
+
+	<!-- 기간별출고현황 조회 -->
+	<select id="selectCusPeriodList" parameterType="com.doppio.workplace.sm.service.CusPeriodListVo" resultType="com.doppio.workplace.sm.service.CusPeriodListVo">
+	/*CusPeriodListMapper.selectCusPeriodList*/	
+		SELECT TCD_1.DTL_NM AS SALES_CLASS_NM
+			   , TSAI.SALES_NM
+			   , TWM.WH_NM
+			   , TBM.BUY_NM
+			   , TPM.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , A.QTY AS SALES_QTY
+			   , TPM.COST
+			   , A.PRICE
+			   , A.PURE_AMT
+			   , A.VAT_AMT
+			   , A.TOT_AMT
+			   
+			   , TPM.QTY_BOX
+			   , TCD.DTL_NM AS ORD_UNIT
+			   , TPM.STD_YN
+			   
+			   , SUM(A.QTY) OVER(PARTITION BY 1) AS SALES_QTY_TOT
+			   , SUM(A.PURE_AMT) OVER(PARTITION BY 1) AS PURE_AMT_TOT
+			   , SUM(A.VAT_AMT) OVER(PARTITION BY 1) AS VAT_AMT_TOT
+			   , SUM(A.TOT_AMT) OVER(PARTITION BY 1) AS TOT_AMT_TOT
+			   
+			   , TPM.LACK_NO_1
+			   , TPM.LACK_NO_2
+			   
+		  FROM (SELECT A.WH_CD
+		               , A.SALES_CD
+		               , A.PRDT_CD
+		               , A.PRICE
+		               , SUM(A.QTY) AS QTY
+		               , SUM(A.PURE_AMT) AS PURE_AMT
+		               , SUM(A.VAT_AMT) AS VAT_AMT
+		               , SUM(A.TOT_AMT) AS TOT_AMT
+		          FROM (SELECT WH_CD
+		                       , SALES_CD
+		                       , PRDT_CD
+		                       , PRICE
+		                       , SUM(SALES_QTY) AS QTY
+	                           , SUM(PURE_AMT) AS PURE_AMT
+		                       , SUM(VAT_AMT) AS VAT_AMT
+		                       , SUM(TOT_AMT) AS TOT_AMT
+		                  FROM TSH_SALES_DLV
+		                 WHERE SALES_DT BETWEEN #{startDt} AND #{endDt}
+		       	         <if test='whCd != null and whCd != ""'> 
+			   	           AND WH_CD = #{whCd}
+	   		   	         </if>
+	   		   	         <if test='prdtCd != null and prdtCd != ""'> 
+		                   AND PRDT_CD = #{prdtCd}
+	                     </if>
+		                 <if test='taxYn == "1"'> 
+		                   AND VAT_AMT > 0
+	                     </if>
+	                     <if test='taxYn == "2"'> 
+		                   AND VAT_AMT = 0
+	                     </if>
+		                 GROUP BY WH_CD, SALES_CD, PRDT_CD, PRICE
+		               UNION ALL
+		                SELECT WH_CD
+		                       , SALES_CD
+		                       , PRDT_CD
+		                       , PRICE
+		                       , SUM(RTN_QTY)*-1 AS QTY
+		                       , SUM(PURE_AMT)*-1 AS PURE_AMT
+		                       , SUM(VAT_AMT)*-1 AS VAT_AMT
+		                       , SUM(TOT_AMT)*-1 AS TOT_AMT
+		                  FROM TSH_SALES_RETURN
+		                 WHERE RTN_DT BETWEEN #{startDt} AND #{endDt}
+		                 <if test='whCd != null and whCd != ""'> 
+			   	           AND WH_CD = #{whCd}
+	   		   	         </if>
+	   		   	         <if test='prdtCd != null and prdtCd != ""'> 
+		                   AND PRDT_CD = #{prdtCd}
+	                     </if>
+		                 <if test='taxYn == "1"'> 
+		                   AND VAT_AMT > 0
+	                     </if>
+	                     <if test='taxYn == "2"'> 
+		                   AND VAT_AMT = 0
+	                     </if>
+		                  GROUP BY WH_CD, SALES_CD, PRDT_CD, PRICE
+		               ) AS A
+		         GROUP BY A.WH_CD
+		                  , A.SALES_CD
+		                  , A.PRDT_CD
+		                  , A.PRICE
+		      ) AS A
+		        
+		        LEFT OUTER JOIN TFM_WH_MST AS TWM
+				    ON TWM.WH_CD = A.WH_CD
+		        
+		        JOIN TFM_SALES_ADD_INFO AS TSAI
+		            ON TSAI.SALES_CD = A.SALES_CD
+		        
+		        LEFT OUTER JOIN TCM_CODE_DTL AS TCD_1
+                    ON TCD_1.DTL_CD = TSAI.SALES_CLASS
+                   AND TCD_1.COM_CD = 'M013'
+			    
+			    JOIN TFM_PRDT_MST AS TPM
+		            ON TPM.PRDT_CD = A.PRDT_CD
+		            
+		        LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		            ON TCD.DTL_CD = TPM.ORD_UNIT
+		           AND TCD.COM_CD = 'M006'
+		        
+		        LEFT OUTER JOIN TFM_BUY_MST AS TBM
+		            ON TBM.BUY_CD = TPM.BUY_CD
+		            
+		        JOIN TFM_SALES_HQ_CLASS AS TSHC
+			       ON TSHC.SALES_CD = A.SALES_CD
+			       
+		<where>
+		  <if test='salesClass != null and salesClass != ""'> 
+		    AND TSAI.SALES_CLASS = #{salesClass}
+		  </if>
+		  <if test='lCd != null and lCd != ""'> 
+		    AND TPM.L_CD = #{lCd}
+	      </if>
+		  <if test='mCd != null and mCd != ""'> 
+		    AND TPM.M_CD = #{mCd}
+		  </if>
+		  <if test='hqClass == "10"'>
+		    AND TSHC.HQ_CD = #{salesCd} 
+	      </if>
+	      <if test='hqClass == "20"'>
+		    AND TSHC.SALES_CD = #{salesCd} 
+	      </if>
+	      <if test='srchSalesPrCd != null and srchSalesPrCd != ""'> 
+		    AND TSAI.SALES_PR_CD = #{srchSalesPrCd}
+		  </if>
+		</where>
+
+		ORDER BY TCD_1.DTL_NM, TSAI.SALES_NM
+	</select>
+
+	<!-- 기간별출고현황 조회 -->
+	<select id="selectCusPeriodListExcelDown" parameterType="com.doppio.workplace.sm.service.CusPeriodListVo" resultType="java.util.HashMap">
+	/*CusPeriodListMapper.selectCusPeriodListExcelDown*/	
+		SELECT TCD_1.DTL_NM AS SALES_CLASS_NM
+			   , TSAI.SALES_NM
+			   , TWM.WH_NM
+			   , TBM.BUY_NM
+			   , TPM.LACK_NO_1
+			   , TPM.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , A.SALES_QTY
+			   , TPM.COST
+			   , A.PRICE
+			   , A.PURE_AMT
+			   , A.VAT_AMT
+			   , A.TOT_AMT
+			   
+			   , CASE WHEN TPM.STD_YN='2' THEN CONCAT((CASE WHEN MOD(A.SALES_QTY,1) = 0 THEN FORMAT(A.SALES_QTY,0) ELSE FORMAT(A.SALES_QTY,2) END), TCD.DTL_NM)
+               
+                           ELSE CASE WHEN A.SALES_QTY <![CDATA[<]]> TPM.QTY_BOX THEN CONCAT((CASE WHEN MOD(A.SALES_QTY,1) = 0 THEN FORMAT(A.SALES_QTY,0) ELSE FORMAT(A.SALES_QTY,2) END), TCD.DTL_NM)
+                           
+                                                                                  ELSE CASE WHEN MOD(A.SALES_QTY, TPM.QTY_BOX)=0 THEN CASE WHEN TPM.QTY_BOX <![CDATA[>]]> 1 THEN CONCAT(TRUNCATE(A.SALES_QTY / TPM.QTY_BOX,0), 'BOX')
+                                                                                                                                                                      ELSE CONCAT((CASE WHEN MOD(A.SALES_QTY,1) = 0 THEN FORMAT(A.SALES_QTY,0) ELSE FORMAT(A.SALES_QTY,2) END), TCD.DTL_NM)
+                                                                                                                                            END
+                                                                                                                                        
+                                                                                                                                      ELSE CONCAT(TRUNCATE(A.SALES_QTY / TPM.QTY_BOX,0), 'BOX/', CASE WHEN MOD(MOD(A.SALES_QTY, TPM.QTY_BOX),1) = 0 THEN FORMAT(MOD(A.SALES_QTY, TPM.QTY_BOX), 0) ELSE FORMAT(MOD(A.SALES_QTY, TPM.QTY_BOX), 2) END , TCD.DTL_NM)          
+                                                                                       END
+                                                                                       
+                                END
+                 END AS BOX_QTY
+
+			   
+		  FROM (SELECT A.WH_CD
+		               , A.SALES_CD
+		               , A.PRDT_CD
+		               , A.PRICE
+		               , SUM(A.QTY) AS SALES_QTY
+		               , SUM(A.PURE_AMT) AS PURE_AMT
+		               , SUM(A.VAT_AMT) AS VAT_AMT
+		               , SUM(A.TOT_AMT) AS TOT_AMT
+		          FROM (SELECT WH_CD
+		                       , SALES_CD
+		                       , PRDT_CD
+		                       , PRICE
+		                       , SUM(SALES_QTY) AS QTY
+	                           , SUM(PURE_AMT) AS PURE_AMT
+		                       , SUM(VAT_AMT) AS VAT_AMT
+		                       , SUM(TOT_AMT) AS TOT_AMT
+		                  FROM TSH_SALES_DLV
+		                 WHERE SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+		       	         <if test='whCd != null and whCd != ""'> 
+			   	           AND WH_CD = #{whCd}
+	   		   	         </if>
+	   		   	         <if test='prdtCd != null and prdtCd != ""'> 
+		                   AND PRDT_CD = #{prdtCd}
+	                     </if>
+		                 <if test='taxYn == "1"'> 
+		                   AND VAT_AMT > 0
+	                     </if>
+	                     <if test='taxYn == "2"'> 
+		                   AND VAT_AMT = 0
+	                     </if>
+		                 GROUP BY WH_CD, SALES_CD, PRDT_CD, PRICE
+		               UNION ALL
+		                SELECT WH_CD
+		                       , SALES_CD
+		                       , PRDT_CD
+		                       , PRICE
+		                       , SUM(RTN_QTY)*-1 AS QTY
+		                       , SUM(PURE_AMT)*-1 AS PURE_AMT
+		                       , SUM(VAT_AMT)*-1 AS VAT_AMT
+		                       , SUM(TOT_AMT)*-1 AS TOT_AMT
+		                  FROM TSH_SALES_RETURN
+		                 WHERE RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+		                 <if test='whCd != null and whCd != ""'> 
+			   	           AND WH_CD = #{whCd}
+	   		   	         </if>
+	   		   	         <if test='prdtCd != null and prdtCd != ""'> 
+		                   AND PRDT_CD = #{prdtCd}
+	                     </if>
+		                 <if test='taxYn == "1"'> 
+		                   AND VAT_AMT > 0
+	                     </if>
+	                     <if test='taxYn == "2"'> 
+		                   AND VAT_AMT = 0
+	                     </if>
+		                  GROUP BY WH_CD, SALES_CD, PRDT_CD, PRICE
+		               ) AS A
+		         GROUP BY A.WH_CD
+		                  , A.SALES_CD
+		                  , A.PRDT_CD
+		                  , A.PRICE
+		      ) AS A
+		        
+		        LEFT OUTER JOIN TFM_WH_MST AS TWM
+				    ON TWM.WH_CD = A.WH_CD
+		        
+		        JOIN TFM_SALES_ADD_INFO AS TSAI
+		            ON TSAI.SALES_CD = A.SALES_CD
+		        
+		        LEFT OUTER JOIN TCM_CODE_DTL AS TCD_1
+                    ON TCD_1.DTL_CD = TSAI.SALES_CLASS
+                   AND TCD_1.COM_CD = 'M013'
+			    
+			    JOIN TFM_PRDT_MST AS TPM
+		            ON TPM.PRDT_CD = A.PRDT_CD
+		            
+		        LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		            ON TCD.DTL_CD = TPM.ORD_UNIT
+		           AND TCD.COM_CD = 'M006'
+		        
+		        LEFT OUTER JOIN TFM_BUY_MST AS TBM
+		            ON TBM.BUY_CD = TPM.BUY_CD
+		            
+		        JOIN TFM_SALES_HQ_CLASS AS TSHC
+			       ON TSHC.SALES_CD = A.SALES_CD
+			       
+		<where>
+		  <if test='salesClass != null and salesClass != ""'> 
+		    AND TSAI.SALES_CLASS = #{salesClass}
+		  </if>
+		  <if test='lCd != null and lCd != ""'> 
+		    AND TPM.L_CD = #{lCd}
+	      </if>
+		  <if test='mCd != null and mCd != ""'> 
+		    AND TPM.M_CD = #{mCd}
+		  </if>
+		  <if test='hqClass == "10"'>
+		    AND TSHC.HQ_CD = #{salesCd} 
+	      </if>
+	      <if test='hqClass == "20"'>
+		    AND TSHC.SALES_CD = #{salesCd} 
+	      </if>
+	      <if test='srchSalesPrCd != null and srchSalesPrCd != ""'> 
+		    AND TSAI.SALES_PR_CD = #{srchSalesPrCd}
+		  </if>
+		</where>
+
+		ORDER BY TCD_1.DTL_NM, TSAI.SALES_NM
+</select>
+
+	<!-- 기간별출고현황 출력-->
+	<select id="selectCusPeriodPrintList" parameterType="com.doppio.workplace.sm.service.CusPeriodListVo" resultType="com.doppio.workplace.sm.service.CusPeriodListVo">
+		/*CusPeriodListMapper.selectCusPeriodPrintList*/	
+		SELECT
+		         #{startDt} AS BUY_START_DT
+		       , #{endDt}  AS BUY_END_DT
+		       , IFNULL(#{salesNm},'') AS SALES_NM_SEARCH
+		       , IFNULL(#{taxYn},'') AS TAX_YN_SEARCH
+		       , IFNULL(#{prdtNm},'') AS PRDT_NM_SEARCH
+			   , IFNULL(B.SALES_NM,'') AS SALES_NM
+			   , IFNULL(A.PRDT_CD,'') AS PRDT_CD
+			   , IFNULL(C.PRDT_NM,'') AS PRDT_NM
+			   , SUM(IFNULL(A.QTY,0)) AS SALES_QTY
+			   , IFNULL(A.PRICE,0) AS PRICE
+			   , SUM(IFNULL(A.AMT,0)) AS PURE_AMT
+			   , SUM(IFNULL(A.VAT_AMT,0)) AS VAT_AMT
+			   , SUM(IFNULL(A.TOT_AMT,0)) AS TOT_AMT
+			   , IFNULL(C.QTY_BOX,0)  AS QTY_BOX
+			   , IFNULL(G.DTL_NM,0)  AS GUBUN
+			   , IFNULL(D.DTL_NM,'') AS DTL_NM
+			   , IFNULL(E.BUY_NM,'') AS BUY_NM
+			   , IFNULL(C.COST,0) AS COST
+			   , IFNULL(F.WH_NM,'') AS WH_NM
+	FROM	(SELECT WH_CD, SALES_CD, PRDT_CD, PRICE,
+	                SUM(SALES_QTY) AS QTY, SUM(PRICE) AS AMT, SUM(VAT_AMT) AS VAT_AMT, SUM(TOT_AMT) AS TOT_AMT
+	           FROM TSH_SALES_DLV
+	          WHERE SALES_DT BETWEEN DATE_FORMAT(#{startDt},'%Y%m%d') AND  DATE_FORMAT(#{endDt},'%Y%m%d')
+	            AND SALES_QTY != 0
+			 <if test='whCd != null and whCd != ""'>	<!--창고코드 --> 
+				AND WH_CD LIKE CONCAT('%',#{whCd},'%')
+   			</if>
+	          	 <if test='taxYn != null and taxYn != ""'>	<!--창고코드 --> 
+	            AND	(#{taxYn}='' OR (VAT_AMT > CASE WHEN #{taxYn}='1' THEN 0 END
+                    OR VAT_AMT = CASE WHEN #{taxYn}='2' THEN 0 END))
+                   </if>
+	          GROUP BY WH_CD, SALES_CD, PRDT_CD, PRICE
+	        UNION ALL
+	         SELECT WH_CD, SALES_CD, PRDT_CD, PRICE,
+	                SUM(RTN_QTY)*-1 AS RTN_QTY, SUM(PRICE)*-1 AS AMT, SUM(VAT_AMT)*-1 AS VAT_AMT, SUM(TOT_AMT)*-1 AS TOT_AMT
+	           FROM TSH_SALES_RETURN
+	          WHERE RTN_DT BETWEEN DATE_FORMAT(#{startDt},'%Y%m%d') AND  DATE_FORMAT(#{endDt},'%Y%m%d')
+	            AND RTN_QTY != 0
+			 <if test='whCd != null and whCd != ""'>	<!--창고코드 --> 
+				AND WH_CD LIKE CONCAT('%',#{whCd},'%')
+   			</if>
+   			 <if test='taxYn != null and taxYn != ""'>	<!--창고코드 --> 
+	            AND	(#{taxYn}='' OR (VAT_AMT > CASE WHEN #{taxYn}='1' THEN 0 END
+                    OR VAT_AMT = CASE WHEN #{taxYn}='2' THEN 0 END))
+                   </if>
+	          GROUP BY WH_CD, SALES_CD, PRDT_CD, PRICE
+	        ) A
+	        LEFT OUTER JOIN TFM_WH_MST F
+						ON F.WH_CD = A.WH_CD
+	        , TFM_SALES_ADD_INFO B LEFT OUTER JOIN TCM_CODE_DTL D
+			                                ON B.SALES_CLASS = D.DTL_CD
+			                               AND D.COM_CD = 'M013'
+			                       LEFT OUTER JOIN TCM_CODE_DTL AS G
+	       	   					     	    ON B.DLV_DT_CLASS = G.DTL_CD
+                							 AND G.COM_CD = 'M006'
+	        , TFM_PRDT_MST C
+	          LEFT OUTER JOIN TFM_BUY_MST AS E
+	              ON C.BUY_CD = E.BUY_CD
+	WHERE	A.SALES_CD = B.SALES_CD
+	AND		A.PRDT_CD = C.PRDT_CD
+		<if test='salesCd != null and salesCd != ""'>	<!-- 품목코드 --> 
+	AND	(A.SALES_CD IN (SELECT SALES_CD FROM TFM_SALES_ADD_INFO WHERE CLT_SALES_CD = #{salesCd})
+	      OR A.SALES_CD IN (SELECT SALES_CD FROM TFM_SALES_ADD_INFO WHERE CLT_SALES_CD = #{salesCd}))
+	      </if>
+ 	   	<if test='prdtCd != null and prdtCd != ""'>	<!-- 품목코드 --> 
+	AND C.PRDT_CD LIKE CONCAT('%',#{prdtCd},'%')
+   </if>
+      	<if test='salesClass != null and salesClass != ""'>	<!-- 품목코드 --> 
+	AND		B.SALES_CLASS LIKE 'CONCAT('%',#{salesClass},'%')
+	 </if>
+ 	<if test='lCd != null and lCd != ""'>	<!-- 대분류  --> 
+	AND C.L_CD LIKE CONCAT('%',#{lCd},'%')
+   </if>
+	<if test='mCd != null and mCd != ""'>	<!-- 중분류  --> 
+	AND C.M_CD LIKE CONCAT('%',#{mCd},'%')
+	</if>
+	GROUP BY IFNULL(B.SALES_NM,'')
+			, IFNULL(E.BUY_CD,'')
+			, IFNULL(C.PRDT_NM,'')
+			, IFNULL(C.PRDT_STD,'')
+			, IFNULL(A.PRICE,0)
+			, IFNULL(C.QTY_BOX,0)
+			, IFNULL(G.DTL_NM,0)
+			, IFNULL(C.TAX_YN,'1')
+			, IFNULL(D.DTL_NM,'')
+			, IFNULL(E.BUY_NM,'')
+			, IFNULL(C.COST,0)
+			, IFNULL(F.WH_NM,'')
+	ORDER BY IFNULL(A.PRDT_CD,'')
+
+</select>
+
+</mapper>

@@ -1,0 +1,737 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusOrdRegMapper">
+
+
+
+	<!-- 매출처 발주 조회 -->
+	<select id="selectCusOrdProdList" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo" resultType="com.doppio.workplace.sm.service.CusOrdRegVo">
+		/*CusOrdRegMapper.selectCusOrdProdList*/	
+	   SELECT TPM.PRDT_CD
+       		  , TPM.PRDT_NM
+       		  , TPM.L_CD
+       		  , TPCM1.L_NM
+       		  , TPM.M_CD 
+       		  , TPCM2.M_NM 
+       		  , TPM.PRDT_STD
+       		  , TPM.ORD_UNIT
+       		  , TCD_1.DTL_NM AS ORD_UNIT_NM -- 주문단위명칭 
+       		  , TPM.QTY_BOX
+       		  , TSPM.START_DT
+			  , TSPM.END_DT
+			  , TSPM.VAT_YN
+			  , IFNULL(TSPM.PRICE,0) AS PRICE
+			  , TSAI.SALES_CD
+			  , TSAI.SALES_NM
+			  
+			  , TSO.SALES_SLIP_NO
+			  , TSO.SALES_SEQ
+			  , TSO.ORD_QTY
+			  , TSO.BOX_QTY
+			  , TSO.PURE_AMT
+			  , TSO.VAT_AMT
+			  , TSO.TOT_AMT
+			  
+			  , TPM.STD_YN
+         FROM TFM_PRDT_MST AS TPM
+         
+         	  INNER JOIN TSM_SALES_PRDT_MST AS TSPM
+         	      ON TPM.PRDT_CD = TSPM.PRDT_CD
+         		 
+         	  INNER JOIN TFM_SALES_ADD_INFO AS TSAI
+         	      ON TSPM.SALES_CD = TSAI.SALES_CD
+         	         
+              LEFT OUTER JOIN TSH_SALES_ORDER AS TSO
+       			  ON TSPM.SALES_CD = TSO.SALES_CD 
+       			 AND TSPM.PRDT_CD = TSO.PRDT_CD 
+       			 AND TSO.ORD_DT = #{ordDt}
+       			 
+              LEFT OUTER JOIN TFM_PRDT_CLASS1_MST AS TPCM1
+       		      ON TPM.L_CD = TPCM1.L_CD
+       		       
+              LEFT OUTER JOIN TFM_PRDT_CLASS2_MST AS TPCM2
+       		      ON TPM.M_CD = TPCM2.M_CD
+       		       		
+              LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_1
+		          ON TPM.ORD_UNIT = TCD_1.DTL_CD
+		         AND TCD_1.COM_CD = 'M006'
+		         				    
+		WHERE TSAI.SALES_CD = #{salesCd}
+		  AND TSPM.USE_YN ='Y'
+		  <if test='prdtCd != null and prdtCd != ""'> 
+		    AND TPM.PRDT_CD = #{prdtCd}
+	   	  </if>
+		  <if test='prdtNm != null and prdtNm != ""'> 
+		    AND TPM.PRDT_NM  LIKE CONCAT('%',#{prdtNm},'%')
+	      </if>
+	</select>
+	
+	
+	
+	<!-- 매출처 발주대상 상품정보 상세  조회 -->
+	<select id="selectCusOrdProdData" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo" resultType="com.doppio.workplace.sm.service.CusOrdRegVo">
+		/*CusOrdRegMapper.selectCusOrdProdData*/	
+		  SELECT  
+		       TPM.PRDT_CD  					-- 품목코드
+       		 , TPM.PRDT_NM  					-- 품목명
+       		 , TPM.L_CD 						-- 대분류 코드
+       		 , TPCM1.L_NM 						-- 대분류 명칭
+       		 , TPM.M_CD 						-- 중분류 코드 
+       		 , TPCM2.M_NM   					-- 중분류 명칭 
+       		 , TPM.PRDT_STD 					-- 규격
+       		 , TPM.ORD_UNIT 					-- 주문단위
+       		 , TCD_1.DTL_NM AS ORD_UNIT_NM 		-- 주문단위명칭 
+       		 , TPM.QTY_BOX  					-- 박스당수량
+       		 , TPM.ORIGIN_NM					-- 원산지명 
+       		 , TSPM.START_DT  					-- 시작일자
+			 , TSPM.END_DT	  					-- 종료일자
+			 , TSPM.VAT_YN	  					-- 부가세 여부
+			 , IFNULL(TSPM.PRICE,0) PRICE	  	-- 판매단가
+			 , TSAI.SALES_CD 					-- 매출처 코드
+			 , TSAI.SALES_NM 					-- 매출처 명
+		 FROM TFM_PRDT_MST TPM 							-- 품목마스			
+         	INNER JOIN TSM_SALES_PRDT_MST TSPM 			-- 매출처 품목 관리
+         		    ON TPM.PRDT_CD  = TSPM.PRDT_CD  
+         		   AND TSPM.USE_YN  ='Y'
+         	INNER JOIN TFM_SALES_ADD_INFO TSAI      	-- 매출처 추가정보 관리
+         	        ON TSPM.SALES_CD = TSAI.SALES_CD   
+       LEFT OUTER JOIN TFM_PRDT_CLASS1_MST TPCM1 		-- 대분류 등록
+       			    ON TPM.L_CD  	   = TPCM1.L_CD 
+       LEFT OUTER JOIN TFM_PRDT_CLASS2_MST TPCM2		-- 중분류 등록
+       			    ON TPM.M_CD  	   = TPCM2.M_CD 		
+       LEFT OUTER JOIN KRMC.TCM_CODE_DTL  TCD_1			-- 공통코드 
+		            ON TPM.ORD_UNIT    = TCD_1.DTL_CD
+		           AND TCD_1.COM_CD    = 'M006'	
+	WHERE TPM.PRDT_CD 		= #{prdtCd}	 	-- 상품코드 
+	  AND TSPM.SALES_CD 	= #{salesCd}	-- 매출처코드
+	</select>
+	
+	
+
+	<!--  전표번호 생성 및 조회 
+	     (25개이상인 경우 신규 전표번호 생성 하고 Insert/전표번호 반환,  25이하인경우 전표번호 INSERT 무시(IGNORE), 조회된 전표번호 반환  )  
+	-->
+     <insert id="insertSalesSlipNo" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo">
+	      <selectKey resultType="string" keyProperty="salesSlipNo" order="BEFORE">
+   	     	    SELECT CASE WHEN S.SALES_SLIP_NO IS NOT NULL AND SALES_SEQ BETWEEN 1 AND 24
+			       		    THEN S.SALES_SLIP_NO   -- 기존 전표사용 
+			       		    ELSE ( SELECT CONCAT(#{dlvDt}, '-', LPAD(CAST(RIGHT(IFNULL(MAX(SALES_SLIP_NO),'0000'),4) AS DECIMAL)+1, 4, 0)) AS SALES_SLIP_NO
+         	  				         FROM TSH_DAY_SLIPNO
+             				        WHERE SALES_SLIP_DT = #{dlvDt}	
+             				     ) 	 			 -- 신규 전표생성 
+			       		    END AS SALES_SLIP_NO
+			     FROM ( SELECT TSO.SALES_SLIP_NO, COUNT(*) AS SALES_SEQ
+						  FROM TSH_SALES_ORDER AS TSO
+						 WHERE TSO.SALES_SLIP_NO = #{salesSlipNo}
+			          ) S
+		</selectKey>
+	     	INSERT IGNORE INTO TSH_DAY_SLIPNO(		-- 일자별 전표번호 관리
+	     		 SALES_SLIP_DT		-- 납품일자
+				,SALES_SLIP_NO		-- 전표번호
+				,REG_DT				-- 등록일자
+		 		)
+		 	VALUES(
+		 		 #{dlvDt}	
+		 		,#{salesSlipNo}
+		 		,NOW()
+		 	)
+	</insert>
+
+
+	<!-- 매출처 발주 등록  -->
+	<insert  id="insertCusOrdProdList" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo">
+	/*CusOrdRegMapper.insertCusOrdProdList*/	
+	INSERT INTO TSH_SALES_ORDER(
+		 SALES_SLIP_NO		-- 매입전표번호
+		,SALES_SEQ       	-- 순번
+		,ORD_DT				-- 발주일자
+		,SALES_CD        	-- 매출처코드
+		,PRDT_CD			-- 상품코드
+		,WH_CD           	-- 창고코드
+		,DLV_DT				-- 납품일자
+		,PRICE				-- 판매단가
+		,ORD_QTY			-- 발주낱개수량
+		,BOX_QTY			-- 발주캐스당수량
+		,PURE_AMT			-- 공급가
+		,VAT_AMT			-- 부가세
+		,TOT_AMT			-- 총금액
+		,USE_YN				-- 사용유무 
+		,REG_ID				-- 등록자
+		,REG_DT				-- 등록일자
+		,MOD_ID				-- 수정자
+		,MOD_DT				-- 수정일자
+	)
+	  SELECT #{salesSlipNo}		AS SALES_SLIP_NO	-- 매입전표번호
+	  		,(SELECT IFNULL( MAX(SALES_SEQ),0)+1 SALES_SEQ FROM TSH_SALES_ORDER WHERE SALES_SLIP_NO = #{salesSlipNo} ) 		AS SALES_SEQ	 	-- 순번
+	  		,#{ordDt}			AS ORD_DT			-- 발주일자
+	  		,#{salesCd}			AS SALES_CD			-- 매출처코드
+	  		,#{prdtCd}  		AS PRDT_CD			-- 상품코드
+	  		,'10001'			AS WH_CD			-- 하남창고 기본 
+	  		,#{dlvDt}			AS DLV_DT			-- 납품일자
+	  		,TSPM.PRICE 							-- 판매단가
+	  		,#{ordQty} 			AS ORD_QTY			-- 발주낱개수량
+	  		<!-- ,CAST(#{ordQty} as unsigned ) * TPM.QTY_BOX  -->
+	  		,#{boxQty} -- 케이스당수량(박스수량)
+	  		
+	  		,CAST(#{ordQty} as unsigned ) * TSPM.PRICE AS PURE_AMT   -- 공급가
+	  		,CASE WHEN TSPM.VAT_YN ='1' THEN   CAST(#{ordQty} as unsigned ) * TSPM.PRICE * 0.1  ELSE 0 END AS VAT_AMT 	-- 부가세
+	  		,CASE WHEN TSPM.VAT_YN ='1' THEN  (CAST(#{ordQty} as unsigned ) * TSPM.PRICE * 0.1) +  ( CAST(#{ordQty} as unsigned ) * TSPM.PRICE ) 
+	  			  ELSE CAST(#{ordQty} as unsigned ) * TSPM.PRICE  END AS  TOT_AMT -- 총금액
+			,'Y'				AS USE_YN			-- 사용유무 
+			,#{workId}			AS REG_ID			-- 등록자
+			, NOW()				AS REG_DT			-- 등록일자
+			,#{workId}			AS MOD_ID			-- 수정자
+			,NOW()				AS MOD_DT			-- 수정일자
+	    FROM TSM_SALES_PRDT_MST TSPM
+  INNER JOIN TFM_PRDT_MST 		TPM 
+          ON TSPM.PRDT_CD  = TPM.PRDT_CD
+       WHERE TSPM.SALES_CD = #{salesCd}		
+         AND TSPM.PRDT_CD  = #{prdtCd}		
+	     <selectKey resultType="string" keyProperty="salesSeq" order="AFTER">
+		 	/*CusOrdRegMapper.insertCusOrdProdList AFTER SALES_SEQ */	
+		 	SELECT MAX(SALES_SEQ) SALES_SEQ FROM TSH_SALES_ORDER WHERE SALES_SLIP_NO = #{salesSlipNo} 
+		 </selectKey>  
+	</insert>
+	
+	
+	<!-- 매출처 발주 수정   -->
+	<update id="updateCusOrdProdList" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo">
+	/*CusOrdRegMapper.updateCusOrdProdList*/
+	UPDATE TSH_SALES_ORDER TSO, TSM_SALES_PRDT_MST TSPM, TFM_PRDT_MST TPM
+	   SET TSO.DLV_DT		= #{dlvDt}	
+		  ,TSO.PRICE    	= TSPM.PRICE 			-- 판매단가
+		  ,TSO.ORD_QTY  	= #{ordQty}				-- 발주수량 	 
+		<!--   ,TSO.BOX_QTY		= CAST(#{ordQty} as unsigned ) * TPM.QTY_BOX 			  -->
+		  ,TSO.BOX_QTY 		= #{boxQty} 			-- 케이스당수량(박스수량)
+
+		  ,TSO.PURE_AMT  	= CAST(#{ordQty} as unsigned ) * TSPM.PRICE    -- 공급가
+		  ,TSO.VAT_AMT	 	= CASE WHEN TSPM.VAT_YN ='1' THEN   CAST(#{ordQty} as unsigned ) * TSPM.PRICE * 0.1  ELSE 0 END 		-- 부가세
+		  ,TSO.TOT_AMT      = CASE WHEN TSPM.VAT_YN ='1' THEN  (CAST(#{ordQty} as unsigned ) * TSPM.PRICE * 0.1) +  ( CAST(#{ordQty} as unsigned ) * TSPM.PRICE ) 
+		  						   ELSE CAST(#{ordQty} as unsigned ) * TSPM.PRICE  END -- 총금액 
+		  ,TSO.USE_YN       = #{useYn}
+		  ,TSO.MOD_ID   	= #{workId}
+		  ,TSO.MOD_DT   	= NOW()
+    WHERE  TSO.SALES_CD 	= TSPM.SALES_CD 
+      AND TSO.PRDT_CD   = TSPM.PRDT_CD
+      AND TSO.PRDT_CD   = TPM.PRDT_CD
+	  AND TSO.SALES_SLIP_NO  =  #{salesSlipNo}
+      AND TSO.SALES_SEQ      =  #{salesSeq}
+	</update>
+	
+	
+	<!-- 매출처 발주 관리 데이터 생성 처리    -->
+	<insert id="insertSalesDlv" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo">
+	/*CusOrdRegMapper.insertSalesDlv*/
+	  INSERT INTO TSH_SALES_DLV
+	     (   SALES_SLIP_NO			-- 매입전표번호
+	       , SALES_SEQ				-- 순번 
+	       , SALES_DT				-- 납품일자
+	       , SALES_CD				-- 매출처코드
+	       , PRDT_CD				-- 상품코드
+	       , WH_CD					-- 창고코드
+	       , ORD_DT					-- 발주일자
+	       , PRICE					-- 판매단가
+	       , ORD_QTY				-- 발주수량
+	       , SALES_QTY				-- 매출수량
+	       , BOX_QTY				-- BOX 수량
+	       , PURE_AMT				-- 공급가
+	       , VAT_AMT				-- 부가세
+	       , TOT_AMT				-- 총금액
+	       , USE_YN					-- 사용유무
+	       , REG_ID					-- 등록자
+	       , REG_DT					-- 등록일자
+	       , MOD_ID					-- 수정자
+	       , MOD_DT 				-- 수정일자
+	       )						
+	   SELECT 	
+		      SALES_SLIP_NO			-- 매입전표번호
+	          , SALES_SEQ				-- 순번
+	          , DLV_DT AS SALES_DT	    -- 납품일자 | 납품일자
+	          , SALES_CD				-- 매출처코드
+	          , PRDT_CD				-- 상품코드
+	          , WH_CD					-- 창고코드
+	          , ORD_DT					-- 발주일자
+	          , PRICE					-- 판매단가
+	          , ORD_QTY				-- 발주수량
+	          , ORD_QTY AS SALES_QTY	-- 발주수량 | 매출수량
+	          , BOX_QTY				-- 발주캐스당수량 | BOX 수량
+	          , PURE_AMT				-- 공급가
+	          , VAT_AMT				-- 부가세
+	          , TOT_AMT				-- 총금액
+	          , USE_YN					-- 사용유무
+	          , REG_ID					-- 등록자
+	          , REG_DT					-- 등록일자
+	          , MOD_ID					-- 수정자
+	          , MOD_DT					-- 수정일자
+		 FROM TSH_SALES_ORDER -- 매출처 발주 관리
+		WHERE SALES_SLIP_NO = #{salesSlipNo}	-- PK 매입전표번호
+	      AND SALES_SEQ		= #{salesSeq}		-- PK 순번
+		</insert>
+		
+		
+		
+		<!-- 매출처 발주 관리 데이터 생성 / 수정 처리    -->
+		<insert id="updateSalesDlv" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo">
+		/*CusOrdRegMapper.updateSalesDlv*/
+		UPDATE TSH_SALES_DLV TSD, TSH_SALES_ORDER TSO
+		   SET TSD.SALES_DT		= TSO.DLV_DT			-- 납품일자  | 납품일자 
+			  ,TSD.PRICE    	= TSO.PRICE				-- 판매단가
+			  ,TSD.ORD_QTY  	= TSO.ORD_QTY			-- 발주수량
+			  ,TSD.SALES_QTY  	= TSO.ORD_QTY			-- 매출수량  | 발주수량
+			  ,TSD.BOX_QTY		= TSO.BOX_QTY
+	
+			  ,TSD.PURE_AMT  	= TSO.PURE_AMT			-- 공급가
+			  ,TSD.VAT_AMT	 	= TSO.VAT_AMT			-- 부가세
+			  ,TSD.TOT_AMT      = TSO.TOT_AMT			-- 총금액
+			  ,TSD.USE_YN       = TSO.USE_YN			-- 사용여부
+			  ,TSD.MOD_ID   	= TSO.MOD_ID			-- 수정자아이디 
+			  ,TSD.MOD_DT   	= NOW()					-- 수정일자 
+	    WHERE  TSD.SALES_SLIP_NO = TSO.SALES_SLIP_NO 	-- PK 매입전표번호
+	       AND TSD.SALES_SEQ     = TSO.SALES_SEQ		-- PK 순번
+	       AND TSO.SALES_SLIP_NO  =  #{salesSlipNo}		-- 매입전표번호
+	       AND TSO.SALES_SEQ      =  #{salesSeq}		-- 순번
+		</insert>
+
+
+		<insert id="insertSalesDlvEtc" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo">
+			/*CusOrdRegMapper.insertSalesDlvEtc*/
+			 INSERT IGNORE INTO TSH_SALES_DLV_ETC (
+				     SALES_SLIP_NO 	-- 매입전표번호 PK
+				    , SALES_DT			-- 납품일자 	PK
+				    , SALES_CD			-- 매출처코드  PK
+				    , TRNSC_PRT_YN		-- 거래명세표출력유무
+  				    , SMR_PRT_YN		-- 집계표출력유무
+  				    , CAR_PRT_YN		-- 차량별집계표출력유무
+  				    , STK_PRT_YN		-- 재고집계표출력유무
+				    , USE_YN			-- 사용유무
+				    , REG_ID			-- 등록자
+				    , REG_DT			-- 등록일자
+				    , MOD_ID			-- 수정자
+				    , MOD_DT			-- 수정일자
+				 )
+			SELECT SALES_SLIP_NO 	-- 매입전표번호 PK
+				   , SALES_DT			-- 납품일자 	PK
+				   , SALES_CD			-- 매출처코드  PK
+				   , 'N'				-- 거래명세표출력유무
+  				   , 'N'				-- 집계표출력유무
+  				   , 'N'				-- 차량별집계표출력유무
+  				   , 'N'				-- 재고집계표출력유무
+				   , 'Y'				-- 사용유무 
+				   , #{workId}		-- 등록자
+				   ,  NOW()			-- 등록일자
+				   , #{workId}		-- 수정자
+				   ,  NOW()			-- 수정일자
+			  FROM TSH_SALES_DLV
+			 WHERE SALES_SLIP_NO  = #{salesSlipNo}
+			 GROUP BY SALES_SLIP_NO, SALES_DT, SALES_CD
+		</insert>
+
+
+	<sql id="selectCusOrdSlipList_Where">
+		/*CusOrdRegMapper.selectCusOrdSlipList_Where*/
+		<where>
+	   		<if test='salesSlipNo != null and salesSlipNo != ""'>	
+			 	AND TSO.SALES_SLIP_NO =	#{salesSlipNo}		<!--  전표번호  -->
+			 </if>
+	   		 <if test='salesCd != null and salesCd != ""'>	
+			 	AND TSAI.SALES_CD =	#{salesCd}				<!--  매출처 코드 -->
+			 </if>	
+			 <if test='salesNm != null and salesNm != ""'>	<!--  매출처 명 --> 
+				AND  TSAI.SALES_NM LIKE CONCAT('%',#{salesNm},'%')
+	   		 </if>
+	   		  
+	   		 <choose>
+				<when test='( ordDtFrDy != null and ordDtFrDy != "") and ( ordDtToDy != null and ordDtToDy != "")'>
+					AND TSO.ORD_DT   BETWEEN    #{ordDtFrDy}   AND #{ordDtToDy}
+				</when>
+				<when test='ordDtFrDy != null and ordDtFrDy != ""'>
+					AND	TSO.ORD_DT  <![CDATA[>=]]> #{ordDtFrDy}
+				</when>
+				<when test='ordDtToDy != null and ordDtToDy != ""'>
+					AND	TSO.ORD_DT  <![CDATA[<=]]> #{ordDtToDy}
+				</when>
+			</choose>
+			
+			<choose>
+				<when test='( dlvDtFrDy != null and dlvDtFrDy != "") and ( dlvDtToDy != null and dlvDtToDy != "")'>
+					AND TSO.DLV_DT   BETWEEN    #{ordDtFrDy}   AND #{ordDtToDy}
+				</when>
+				<when test='dlvDtFrDy != null and dlvDtFrDy != ""'>
+					AND	TSO.DLV_DT  <![CDATA[>=]]> #{dlvDtFrDy}
+				</when>
+				<when test='dlvDtToDy != null and dlvDtToDy != ""'>
+					AND	TSO.DLV_DT  <![CDATA[<=]]> #{dlvDtToDy}
+				</when>
+			</choose>
+			
+		</where>
+	</sql>
+
+
+	<!-- 매출처 발주   카운터 -->
+	<select id="selectCusOrdSlipListCount" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo" resultType="int">
+		/* CusOrdRegMapper.selectCusOrdSlipListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM TSH_SALES_ORDER AS TSO
+
+	           INNER JOIN TFM_SALES_ADD_INFO AS TSAI 
+	               ON TSAI.SALES_CD = TSO.SALES_CD
+	               
+	     WHERE TSO.ORD_DT = #{ordDtFrDy}
+	     <if test='salesCd != null and salesCd != ""'>	
+		 	AND TSAI.SALES_CD =	#{salesCd}				<!--  매출처 코드 -->
+		 </if>	
+		 <if test='salesNm != null and salesNm != ""'>	<!--  매출처 명 --> 
+			AND  TSAI.SALES_NM LIKE CONCAT('%',#{salesNm},'%')
+   		 </if>
+	</select>
+
+	<!-- 매출처 발주 현황 조회 (모바일)-->
+	<select id="selectCusOrdSlipList" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo" resultType="com.doppio.workplace.sm.service.CusOrdRegVo">
+	 /*CusOrdRegMapper.selectCusOrdSlipList*/
+	 SELECT A.RNUM
+	 		, A.ORD_DT
+			, A.SALES_CD
+			, A.SALES_SLIP_NO
+			, A.DLV_DT 
+			, A.SALES_NM
+			, A.PRDT_NM
+			, A.ORD_QTY 
+	    	, A.PURE_AMT
+	    	, A.VAT_AMT
+	    	, A.TOT_AMT
+	    	, A.ORD_DDLN_TM 
+	    	, A.REG_ID 
+	    	, A.REG_USER_NM 
+	 		, CASE WHEN 
+			  TIMESTAMPDIFF(minute,DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i')
+			    ,CONCAT(DATE_FORMAT(A.ORD_DT, '%Y-%m-%d '), CASE WHEN A.ORD_DDLN_TM IS NULL OR A.ORD_DDLN_TM = ''  THEN '23:59' 
+			      												ELSE CONCAT(SUBSTRING(A.ORD_DDLN_TM,1,2),':',SUBSTRING(A.ORD_DDLN_TM,3,4)) END)
+			     )   <![CDATA[ < ]]>      0 THEN 'Y' ELSE  'N'
+			  END  AS CLOSE_YN
+	   FROM (SELECT
+		  	        ROW_NUMBER () OVER ( ORDER BY TSO.ORD_DT, TSO.SALES_CD, TSO.PRDT_CD ) AS RNUM
+	    	        , TSO.ORD_DT
+			        , TSO.SALES_CD
+			        , TSO.SALES_SLIP_NO
+			        , TSO.DLV_DT 
+			        , TSAI.SALES_NM
+			        , TPM.PRDT_NM
+			        , TSO.ORD_QTY 
+	    	        , TSO.PURE_AMT
+	    	        , TSO.VAT_AMT
+	    	        , TSO.TOT_AMT
+	    	        , TSAI.ORD_DDLN_TM 
+	    	        , TSO.REG_ID 
+	    	        , TM.USER_NM AS REG_USER_NM 
+	           FROM TSH_SALES_ORDER AS TSO
+	           
+	    	        INNER JOIN TFM_SALES_ADD_INFO AS TSAI
+	    	            ON TSAI.SALES_CD = TSO.SALES_CD
+	    	            
+	    	        LEFT OUTER JOIN TCM_MEMBER AS TM
+	    	            ON TSO.REG_ID = TM.USER_ID
+	    	        
+	    	        JOIN TFM_PRDT_MST AS TPM
+	    	            ON TPM.PRDT_CD = TSO.PRDT_CD
+	    	            
+	    	  WHERE TSO.ORD_DT = #{ordDtFrDy}
+	    	    AND TSO.ORD_QTY != 0
+	   	      <if test='salesCd != null and salesCd != ""'>	
+			 	AND TSAI.SALES_CD =	#{salesCd}
+			  </if>	
+			  <if test='salesNm != null and salesNm != ""'> 
+				AND  TSAI.SALES_NM LIKE CONCAT('%',#{salesNm},'%')
+	   		  </if>
+	        ) A
+		  ORDER BY A.RNUM
+   </select> 	  	
+   
+   
+  	<!-- 매출처 발주 상세 현황  조회 -->
+	<select id="selectOrdProdList" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo" resultType="com.doppio.workplace.sm.service.CusOrdRegVo">
+	 /*CusOrdRegMapper.selectOrdProdList*/
+	 	SELECT TSO.SALES_SLIP_NO	-- 매입전표번호
+			 , TSO.SALES_SEQ		-- 순번
+			 , TSO.ORD_QTY			-- 발주낱개수량
+			 , TSO.BOX_QTY		 	-- 발주캐스당수량
+			 , TSO.PURE_AMT 		-- 공급가
+			 , TSO.VAT_AMT  		-- 부가세
+			 , TSO.TOT_AMT 			-- 총금액
+			 , TSO.PRICE		    -- 판매단가
+			 , TSO.BOX_QTY  		-- 박스당수량
+		     , TPM.PRDT_CD  		-- 품목코드
+       		 , TPM.PRDT_NM  		-- 품목명
+       		 , TPM.L_CD 			-- 대분류 코드
+       		 , TPCM1.L_NM 			-- 대분류 명칭
+       		 , TPM.M_CD 			-- 중분류 코드 
+       		 , TPCM2.M_NM   		-- 중분류 명칭 
+       		 , TPM.PRDT_STD 		-- 규격
+       		 , TPM.ORD_UNIT 		-- 주문단위
+       		 , TCD_1.DTL_NM AS ORD_UNIT_NM -- 주문단위명칭 
+       		
+       		 , TSPM.START_DT  		-- 시작일자
+			 , TSPM.END_DT	  		-- 종료일자
+			 , TSPM.VAT_YN	  		-- 부가세 여부
+			
+			 , TSAI.SALES_CD 		-- 매출처 코드
+			 , TSAI.SALES_NM 		-- 매출처 명
+			 
+         FROM TSH_SALES_ORDER TSO 					  -- 매출처 발주 관리	
+         	INNER JOIN TFM_PRDT_MST TPM 			  -- 품목마스						
+       			   ON TSO.PRDT_CD = TPM.PRDT_CD    
+       		INNER JOIN TSM_SALES_PRDT_MST TSPM 		  -- 매출처 품목 관리
+         		    ON TPM.PRDT_CD  = TSPM.PRDT_CD  
+         		   AND TSO.SALES_CD = TSPM.SALES_CD   
+         	INNER JOIN TFM_SALES_ADD_INFO TSAI        -- 매출처 추가정보 관리
+         	        ON TSO.SALES_CD = TSAI.SALES_CD   
+       		
+       LEFT OUTER JOIN TFM_PRDT_CLASS1_MST TPCM1 	  --  대분류 등록
+       			    ON TPM.L_CD  	   = TPCM1.L_CD 
+       LEFT OUTER JOIN TFM_PRDT_CLASS2_MST TPCM2	  -- 중분류 등록
+       			    ON TPM.M_CD  	   = TPCM2.M_CD 		
+       LEFT OUTER JOIN KRMC.TCM_CODE_DTL  TCD_1		  -- 공통코드
+		            ON TPM.ORD_UNIT    = TCD_1.DTL_CD
+		           AND TCD_1.COM_CD    = 'M006'	
+	  WHERE TSO.SALES_SLIP_NO   =  #{salesSlipNo}     
+		           
+         		    
+	</select>
+	
+	
+	
+	
+	<!-- 매출처 발주대상 상품 정보 조회(PC) -->
+	<select id="selectOrdPrdtList" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo" resultType="com.doppio.workplace.sm.service.CusOrdRegVo">
+		/*CusOrdRegMapper.selectOrdPrdtList*/	
+		  SELECT TPM.PRDT_CD
+       		     , TPM.PRDT_NM
+       		     , TPM.PRDT_STD
+       		     , TPM.ORD_UNIT
+       		     , TCD_1.DTL_NM AS ORD_UNIT_NM 
+       		     , TPM.QTY_BOX
+       		     , TSPM.VAT_YN
+			     , TCD_2.DTL_NM AS VAT_YN_NM
+			     , IFNULL(TSPM.PRICE,0) AS PRICE
+			     , TPM.STD_YN
+			     , TCD_3.DTL_NM AS STRG_TYPE_NM
+		    FROM TFM_PRDT_MST AS TPM			
+          	     
+          	     INNER JOIN TSM_SALES_PRDT_MST AS TSPM
+         		     ON TPM.PRDT_CD  = TSPM.PRDT_CD
+         	     
+         	     LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_1 
+		             ON TCD_1.DTL_CD = TPM.ORD_UNIT 
+		            AND TCD_1.COM_CD    = 'M006'
+		         
+		         LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_2 
+		             ON TCD_2.DTL_CD    = TSPM.VAT_YN
+		            AND TCD_2.COM_CD    = 'M005'
+		         
+		         LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_3
+		             ON TCD_3.DTL_CD    = TPM.STRG_TYPE
+		            AND TCD_3.COM_CD    = 'M001'
+	      WHERE TSPM.USE_YN  ='Y'
+	        AND TPM.USE_YN = 'Y'
+		 	AND TSPM.SALES_CD =	#{salesCd}
+			<if test='prdtCd != null and prdtCd != ""'> 
+				AND TPM.PRDT_CD  = #{prdtCd}
+	   		</if>
+	</select>
+	
+	<!-- 매출처 발주 등록 내역 조회(PC) -->
+	<select id="selectOrdList" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo" resultType="com.doppio.workplace.sm.service.CusOrdRegVo">
+		/*CusOrdRegMapper.selectOrdList*/	
+	   SELECT TSO.SALES_SLIP_NO
+			  , TSO.SALES_SEQ
+			  , TPM.PRDT_CD
+       		  , TPM.PRDT_NM 
+       		  , TPM.PRDT_STD
+       		  , TPM.ORD_UNIT
+       		  , TCD_1.DTL_NM AS ORD_UNIT_NM 
+       		  , TSO.ORD_QTY
+			  , TSO.BOX_QTY
+			  , TSO.PRICE
+			  , TSO.PURE_AMT
+			  , TSO.VAT_AMT
+			  , TSO.TOT_AMT
+			  , TWM.WH_NM
+			  , TSR.REMARKS_1
+    	  	  , TSR.REMARKS_2
+			  
+			  , TSAI.SALES_CD
+			  , TSAI.SALES_NM			  
+			  
+			  , TPM.QTY_BOX
+       		  , TSPM.VAT_YN
+       		  , TPM.STD_YN
+       		  
+         FROM TSH_SALES_ORDER AS TSO
+         
+              INNER JOIN TFM_PRDT_MST TPM
+                  ON TPM.PRDT_CD = TSO.PRDT_CD
+                  
+         	  INNER JOIN TSM_SALES_PRDT_MST TSPM
+         	      ON TSPM.SALES_CD = TSO.SALES_CD
+         	     AND TSPM.PRDT_CD  = TSO.PRDT_CD
+         	      
+         	  INNER JOIN TFM_SALES_ADD_INFO TSAI
+         	      ON TSPM.SALES_CD = TSAI.SALES_CD  
+       			 
+              LEFT OUTER JOIN KRMC.TCM_CODE_DTL  TCD_1
+		          ON TPM.ORD_UNIT    = TCD_1.DTL_CD
+		         AND TCD_1.COM_CD    = 'M006'
+		         
+		      LEFT OUTER JOIN TFM_WH_MST AS TWM
+		          ON TWM.WH_CD = TSO.WH_CD
+		          
+		      LEFT OUTER JOIN TSH_SALES_REMARK AS TSR
+		         ON TSR.SALES_SLIP_NO = TSO.SALES_SLIP_NO
+		        AND TSR.SALES_SEQ = TSO.SALES_SEQ
+		        
+		WHERE TSO.ORD_DT = #{ordDt}
+		  AND TSO.SALES_CD = #{salesCd}
+		  AND TSO.DLV_DT = #{dlvDt}
+		  AND TSO.ORD_QTY != 0
+		ORDER BY TSO.SALES_SLIP_NO
+			     , TSO.SALES_SEQ
+	</select>
+	
+	<!-- 매출처 발주 하나의 품목 조회(PC) -->
+	<select id="selectCusOrdRegPrdtAdd" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo" resultType="com.doppio.workplace.sm.service.CusOrdRegVo">
+		/*CusOrdRegMapper.selectCusOrdRegPrdtAdd*/	
+		  SELECT TPM.PRDT_CD
+       		     , TPM.PRDT_NM
+       		     , TPM.PRDT_STD
+       		     , TPM.ORD_UNIT
+       		     , TCD_1.DTL_NM AS ORD_UNIT_NM 
+       		     , TPM.QTY_BOX
+       		     , TSPM.VAT_YN
+			     , IFNULL(TSPM.PRICE,0) AS PRICE
+			     , TSAI.SALES_CD
+			     , TSAI.SALES_NM
+			     , TPM.STD_YN
+		    FROM TFM_PRDT_MST TPM
+          	     INNER JOIN TSM_SALES_PRDT_MST TSPM
+         		     ON TPM.PRDT_CD  = TSPM.PRDT_CD
+         		    AND TSPM.USE_YN  ='Y'
+         	     INNER JOIN TFM_SALES_ADD_INFO TSAI
+         	         ON TSPM.SALES_CD = TSAI.SALES_CD
+                 LEFT OUTER JOIN KRMC.TCM_CODE_DTL  TCD_1 
+		             ON TPM.ORD_UNIT    = TCD_1.DTL_CD
+		            AND TCD_1.COM_CD    = 'M006'	
+	       WHERE TSAI.SALES_CD = #{salesCd}
+			 AND TPM.PRDT_CD  = #{prdtCd}
+	</select>
+	
+	
+	<!-- 매출처 발주 전표별 비고 Count (PC)  -->
+	<select id="selectCusOrdRemarksListCount" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo" resultType="int">
+	/*CusSampleRegMapper.selectCusOrdRemarksListCount*/
+		SELECT COUNT(*)
+		  FROM TSH_SALES_REMARK AS TSR
+	     WHERE TSR.SALES_SLIP_NO =  #{salesSlipNo}
+	       AND TSR.SALES_SEQ     =  #{salesSeq}
+	</select>
+	
+	
+	<!-- 매출처 발주 전표별 비고 저장 (PC)  -->
+	<insert id="insertCusOrdRemarks" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo">
+	/*CusSampleRegMapper.insertCusOrdRemarks*/
+		INSERT INTO TSH_SALES_REMARK
+	    	(SALES_SLIP_NO, SALES_SEQ, REMARKS_1, REMARKS_2
+             , REG_ID, REG_DT
+			)
+		VALUES
+			(#{salesSlipNo}, #{salesSeq}, #{remarks1}, #{remarks2}
+			 , #{workId}, NOW()
+			)
+	</insert>
+		
+		
+		
+	<!-- 매출처 발주 전표별 비고 수정 처리 (PC)   -->
+	<update id="updateCusOrdRemarks" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo">
+	/*CusSampleRegMapper."updateCusOrdRemarks"*/
+		UPDATE TSH_SALES_REMARK
+		   SET REMARKS_1 	= #{remarks1}
+		       , REMARKS_2 	= #{remarks2}
+			   , REG_ID   	= #{workId}
+			   , REG_DT   	= NOW()
+	     WHERE SALES_SLIP_NO  =  #{salesSlipNo}
+	</update>
+	
+	
+	<!-- 매출처 발주 등록 (PC) -->
+	<insert  id="insertCusOrdList" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo">
+	/*CusOrdRegMapper.insertCusOrdList*/
+    <selectKey resultType="string" keyProperty="salesSeq" order="BEFORE">
+		SELECT IFNULL( MAX(SALES_SEQ),0)+1 AS SALES_SEQ FROM TSH_SALES_ORDER WHERE SALES_SLIP_NO = #{salesSlipNo} 
+	</selectKey>  	
+	INSERT INTO TSH_SALES_ORDER
+	(
+		SALES_SLIP_NO
+		, SALES_SEQ
+		, ORD_DT
+		, SALES_CD
+		, PRDT_CD
+		, WH_CD
+		, DLV_DT
+		, PRICE
+		, ORD_QTY
+		, BOX_QTY
+		, PURE_AMT
+		, VAT_AMT
+		, TOT_AMT
+		, USE_YN 
+		, REG_ID
+		, REG_DT
+		, MOD_ID
+		, MOD_DT
+	)
+	  SELECT #{salesSlipNo}		AS SALES_SLIP_NO	-- 매입전표번호
+	  		,#{salesSeq} 		AS SALES_SEQ	 	-- 순번
+	  		,#{ordDt}			AS ORD_DT			-- 발주일자
+	  		,#{salesCd}			AS SALES_CD			-- 매출처코드
+	  		,#{prdtCd}  		AS PRDT_CD			-- 상품코드
+	  		,#{whCd}			AS WH_CD			-- 하남창고 기본 
+	  		,#{dlvDt}			AS DLV_DT			-- 납품일자
+	  		,TSPM.PRICE 		AS PRICE			-- 판매단가
+	  		,#{ordQty} 			AS ORD_QTY			-- 발주낱개수량
+	  		,#{boxQty} 			AS BOX_QTY			-- 케이스당수량(박스수량)
+	  		
+	  		,CAST(#{ordQty} AS DECIMAL(13,2) ) * TSPM.PRICE 														AS PURE_AMT   	-- 공급가
+	  		,CASE WHEN TSPM.VAT_YN ='1' THEN   CAST(#{ordQty} AS DECIMAL(13,2) ) * TSPM.PRICE * 0.1  ELSE 0 END 	AS VAT_AMT 		-- 부가세
+	  		,CASE WHEN TSPM.VAT_YN ='1' THEN  (CAST(#{ordQty} AS DECIMAL(13,2) ) * TSPM.PRICE * 0.1) +  ( CAST(#{ordQty} AS DECIMAL(13,2) ) * TSPM.PRICE ) 
+	  			  ELSE CAST(#{ordQty} AS DECIMAL(13,2) ) * TSPM.PRICE  END 										AS  TOT_AMT	 	-- 총금액
+	  			  	  			  
+			,'Y'				AS USE_YN			-- 사용유무 
+			,#{workId}			AS REG_ID			-- 등록자
+			, NOW()				AS REG_DT			-- 등록일자
+			,#{workId}			AS MOD_ID			-- 수정자
+			,NOW()				AS MOD_DT			-- 수정일자
+	    FROM TSM_SALES_PRDT_MST TSPM
+  INNER JOIN TFM_PRDT_MST 		TPM 
+          ON TSPM.PRDT_CD  = TPM.PRDT_CD
+       WHERE TSPM.SALES_CD = #{salesCd}		
+         AND TSPM.PRDT_CD  = #{prdtCd}	
+	</insert>
+	
+	
+	<!-- 매출처 발주 수정 (PC)  -->
+	<update id="updateCusOrdList" parameterType="com.doppio.workplace.sm.service.CusOrdRegVo">
+	/*CusOrdRegMapper.updateCusOrdList*/
+	UPDATE TSH_SALES_ORDER AS TSO
+	   SET TSO.ORD_QTY  	= #{ordQty} 	 
+		   , TSO.BOX_QTY	= #{boxQty}
+		   , TSO.PURE_AMT  	= #{pureAmt}
+		   , TSO.VAT_AMT 	= #{vatAmt}
+		   , TSO.TOT_AMT    = #{totAmt} 
+		   , TSO.USE_YN     = #{useYn}
+		   , TSO.MOD_ID   	= #{workId}
+		   , TSO.MOD_DT   	= NOW()
+     WHERE TSO.SALES_SLIP_NO  =  #{salesSlipNo}
+       AND TSO.SALES_SEQ      =  #{salesSeq}
+	</update>
+	
+</mapper>

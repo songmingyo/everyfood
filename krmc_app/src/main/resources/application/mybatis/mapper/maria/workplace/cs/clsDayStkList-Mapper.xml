@@ -1,0 +1,793 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.cs.service.impl.ClsDayStkListMapper">
+
+	
+	<!-- 일재고 조회 -->
+	<select id="selectClsDayStkList" parameterType="com.doppio.workplace.cs.service.ClsDayStkListVo" resultType="com.doppio.workplace.cs.service.ClsDayStkListVo">
+	/*ClsDayStkListMapper.selectClsDayStkList*/
+	    WITH DAY_STOCK AS (
+
+			SELECT A.PRDT_CD
+   		       	   , A.WH_CD
+                   , 0 AS COST
+                   , 0 AS B_STK_QTY
+                   , B.STK_DT
+		           , A.AREA_1_QTY + A.AREA_2_QTY AS STK_QTY
+	          FROM TMH_DAY_STOCK AS A
+			       JOIN 
+				       (SELECT WH_CD, PRDT_CD, MAX(STK_DT) STK_DT
+	    			      FROM TMH_DAY_STOCK
+		       			 WHERE STK_DT BETWEEN CONCAT(DATE_FORMAT(#{searchStkDt},'%Y%m'),'01') AND DATE_FORMAT(DATE_ADD(#{searchStkDt}, INTERVAL 0 DAY),'%Y%m%d')
+		       			   <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+				             AND PRDT_CD = #{searchPrdtCd}
+				           </if> 
+                           AND WH_CD LIKE CONCAT(#{searchWhCd},'%')
+		       			 GROUP BY WH_CD, PRDT_CD 
+			   		   ) AS B
+				 WHERE A.STK_DT = B.STK_DT
+				   AND A.WH_CD = B.WH_CD
+				   AND A.PRDT_CD = B.PRDT_CD
+	    )
+	    
+		SELECT #{searchStkDt} AS STK_DT
+		       , TPM.PRDT_CD
+			   , TPM.LACK_NO_1
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TPM.QTY_BOX
+			   
+			   , IFNULL(A.PREV_STK_QTY, 0) AS PREV_STK_QTY
+               
+               , IFNULL(A.BUY_QTY, 0) AS BUY_QTY
+               , IFNULL(A.IN_WH_QTY, 0) AS IN_WH_QTY
+               , IFNULL(A.BUY_RTN_QTY, 0) AS BUY_RTN_QTY
+               , IFNULL(A.PREV_STK_QTY, 0) + IFNULL(A.BUY_QTY, 0) + IFNULL(A.IN_WH_QTY, 0) - IFNULL(A.BUY_RTN_QTY, 0) AS BUY_TOT_QTY
+               
+               , IFNULL(A.SALES_QTY, 0) + IFNULL(A.DSPL_QTY, 0) AS DLV_QTY
+               , IFNULL(A.OUT_WH_QTY, 0) AS OUT_WH_QTY
+               , IFNULL(A.SALES_RTN_QTY, 0) AS DLV_RTN_QTY
+               , IFNULL(A.SALES_QTY, 0) + IFNULL(A.OUT_WH_QTY, 0) - IFNULL(A.SALES_RTN_QTY, 0) + IFNULL(A.DSPL_QTY, 0) AS DLV_TOT_QTY
+               
+               , IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_QTY,0) - IFNULL(A.OUT_WH_QTY,0) AS STK_QTY
+               , (IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_QTY,0) - IFNULL(A.OUT_WH_QTY,0)) * CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END AS STK_AMT
+   		       
+   		       , CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END AS COST
+   		       
+   		       
+   		       , CASE WHEN TPM.STD_YN='2' THEN CONCAT((CASE WHEN MOD(A.STK_QTY,1) = 0 THEN FORMAT(A.STK_QTY,2) ELSE FORMAT(A.STK_QTY,2) END), TCD.DTL_NM)
+    	  	   
+    	  	                              ELSE CASE WHEN A.STK_QTY <![CDATA[<]]> TPM.QTY_BOX THEN CONCAT((CASE WHEN MOD(A.STK_QTY,1) = 0 THEN FORMAT(A.STK_QTY,0) ELSE FORMAT(A.STK_QTY,2) END), TCD.DTL_NM)
+    	  	                              
+    	  	                                                                                     ELSE CASE WHEN MOD(A.STK_QTY, TPM.QTY_BOX)=0 THEN CASE WHEN TPM.QTY_BOX <![CDATA[>]]> 1 THEN CONCAT(TRUNCATE(A.STK_QTY / TPM.QTY_BOX,0), 'BOX')
+    	  	                                                                                                                                                                         ELSE CONCAT((CASE WHEN MOD(A.STK_QTY,1) = 0 THEN FORMAT(A.STK_QTY,0) ELSE FORMAT(A.STK_QTY,2) END), TCD.DTL_NM)
+     	  	                                                                                                                                               END
+    	  	                                                                                                                                           
+    	  	                                                                                                                                         ELSE CONCAT(TRUNCATE(A.STK_QTY / TPM.QTY_BOX,0), 'BOX/', CASE WHEN MOD(MOD(A.STK_QTY, TPM.QTY_BOX),1) = 0 THEN FORMAT(MOD(A.STK_QTY, TPM.QTY_BOX), 0) ELSE FORMAT(MOD(A.STK_QTY, TPM.QTY_BOX), 2) END , TCD.DTL_NM)          
+    	  	                                                                                          END
+    	  	                                                                                          
+    	  	                                   END
+    	  	     END AS BOX_QTY_COMP
+    	  	   , DATE_FORMAT(A.TERM_VAL, '%Y-%m-%d')	AS TERM_VAL		/* 최종 입고 소비기한 */   		       
+		  FROM TFM_PRDT_MST AS TPM
+		  	       
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = TPM.ORD_UNIT
+		          AND TCD.COM_CD = 'M006'
+		  	   
+		  	   LEFT OUTER JOIN 
+                   (SELECT A.PRDT_CD
+                           , MAX(A.COST) AS COST
+                           , SUM(IFNULL(A.PREV_STK_QTY, 0)) AS PREV_STK_QTY
+                           , SUM(IFNULL(A.BUY_QTY, 0)) AS BUY_QTY
+                           , SUM(IFNULL(A.BUY_RTN_QTY, 0)) AS BUY_RTN_QTY
+                           , SUM(IFNULL(A.SALES_QTY, 0)) AS SALES_QTY
+                           , SUM(IFNULL(A.SALES_RTN_QTY, 0)) AS SALES_RTN_QTY
+                           , SUM(IFNULL(A.DSPL_QTY, 0)) AS DSPL_QTY
+                           , SUM(IFNULL(A.IN_WH_QTY, 0)) AS IN_WH_QTY
+                           , SUM(IFNULL(A.OUT_WH_QTY, 0)) AS OUT_WH_QTY
+                           , SUM(IFNULL(A.PREV_STK_QTY,0)) + SUM(IFNULL(A.BUY_QTY,0)) - SUM(IFNULL(A.BUY_RTN_QTY,0)) - SUM(IFNULL(A.SALES_QTY,0)) + SUM(IFNULL(A.SALES_RTN_QTY,0)) - SUM(IFNULL(A.DSPL_QTY,0)) + SUM(IFNULL(A.IN_WH_QTY,0)) - SUM(IFNULL(A.OUT_WH_QTY,0)) AS STK_QTY
+                           , MAX(A.TERM_VAL)	AS TERM_VAL		/* 최종 입고 소비기한*/
+                      FROM (SELECT TMC.PRDT_CD
+			                       , MAX(TMC.COST) AS COST
+			                       , SUM(CASE WHEN DS.PRDT_CD IS NULL THEN TMC.STK_QTY ELSE DS.STK_QTY END) AS PREV_STK_QTY
+			                       , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)	AS TERM_VAL		/* 최종입고 소비기한 */
+			                  FROM TMH_MON_CLOSING AS TMC
+			                  
+			                       LEFT OUTER JOIN DAY_STOCK AS DS
+								       ON DS.PRDT_CD = TMC.PRDT_CD
+									  AND DS.WH_CD = TMC.WH_CD
+									  
+									LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TMC.PRDT_CD
+								   		AND TBT.WH_CD = TMC.WH_CD  
+									    
+			                 WHERE TMC.YEAR_MON = DATE_FORMAT(DATE_ADD(#{searchStkDt}, INTERVAL -1 MONTH),'%Y%m')
+			                 <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TMC.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TMC.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                             GROUP BY TMC.PRDT_CD
+                          UNION ALL
+                            SELECT TPR.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{searchStkDt} <![CDATA[>]]> TPR.BUY_DT THEN TPR.BUY_QTY END) AS PREV_STK_QTY
+                                   , SUM(CASE WHEN #{searchStkDt}=TPR.BUY_DT THEN TPR.BUY_QTY END) AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL		/* 최종 입고 소비기한 */
+                              FROM TBH_PRDT_RCPT AS TPR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPR.PRDT_CD
+		                              AND DS.WH_CD = TPR.WH_CD
+		                           LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TPR.PRDT_CD
+								   		AND TBT.WH_CD = TPR.WH_CD   
+                             WHERE TPR.BUY_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TPR.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TPR.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                               AND TPR.BUY_CONF_YN = 'Y'
+                             GROUP BY TPR.PRDT_CD
+                            UNION ALL
+                            SELECT TPR.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{searchStkDt} <![CDATA[>]]> TPR.RTN_DT THEN TPR.RTN_QTY END)*-1 AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , SUM(CASE WHEN #{searchStkDt}=TPR.RTN_DT THEN TPR.RTN_QTY END) AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL 	/* 최종입고 소비기한 */
+                              FROM TBH_PRDT_RETURN AS TPR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPR.PRDT_CD
+ 		                              AND DS.WH_CD = TPR.WH_CD
+ 		                           LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TPR.PRDT_CD
+								   		AND TBT.WH_CD = TPR.WH_CD   
+                             WHERE TPR.RTN_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TPR.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TPR.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                             GROUP BY PRDT_CD
+                          UNION ALL
+                            SELECT TPD.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{searchStkDt} <![CDATA[>]]> TPD.DSP_DT THEN TPD.DSP_QTY END)*-1 AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , SUM(CASE WHEN #{searchStkDt}=TPD.DSP_DT THEN TPD.DSP_QTY END) AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL		/* 최종입고 소비기한 */
+                              FROM TBH_PRDT_DSPL AS TPD
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPD.PRDT_CD
+		                              AND DS.WH_CD = TPD.WH_CD
+		                           LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TPD.PRDT_CD
+								   		AND TBT.WH_CD = TPD.WH_CD   
+                             WHERE TPD.DSP_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TPD.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TPD.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                             GROUP BY TPD.PRDT_CD
+                          UNION ALL
+                            SELECT TSD.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{searchStkDt} <![CDATA[>]]> TSD.SALES_DT THEN TSD.SALES_QTY END)*-1 AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , SUM(CASE WHEN #{searchStkDt}=TSD.SALES_DT THEN TSD.SALES_QTY END) AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL		/* 최종입고 소비기한 */
+                              FROM TSH_SALES_DLV AS TSD
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSD.PRDT_CD
+		                              AND DS.WH_CD = TSD.WH_CD
+		                           LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TSD.PRDT_CD
+								   		AND TBT.WH_CD = TSD.WH_CD   
+                             WHERE TSD.SALES_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TSD.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TSD.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                             GROUP BY TSD.PRDT_CD
+                          UNION ALL
+                            SELECT TSR.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{searchStkDt} <![CDATA[>]]> TSR.RTN_DT THEN TSR.RTN_QTY END) AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , SUM(CASE WHEN #{searchStkDt}=TSR.RTN_DT THEN TSR.RTN_QTY END) AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL		/* 최종입고 소비기한 */
+                              FROM TSH_SALES_RETURN AS TSR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSR.PRDT_CD
+		                              AND DS.WH_CD = TSR.WH_CD
+		                           LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TSR.PRDT_CD
+								   		AND TBT.WH_CD = TSR.WH_CD   
+                             WHERE TSR.RTN_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TSR.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TSR.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                             GROUP BY TSR.PRDT_CD
+                          UNION ALL
+                            SELECT TSF.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{searchStkDt} <![CDATA[>]]> TSF.FREE_DT THEN TSF.FREE_QTY END)*-1 AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , SUM(CASE WHEN #{searchStkDt}=TSF.FREE_DT THEN TSF.FREE_QTY END) AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL		/* 최종입고 소비기한 */
+                              FROM TSH_SALES_FREE AS TSF
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSF.PRDT_CD
+		                              AND DS.WH_CD = TSF.WH_CD
+		                              LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TSF.PRDT_CD
+								   		AND TBT.WH_CD = TSF.WH_CD
+                             WHERE TSF.FREE_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TSF.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TSF.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                             GROUP BY TSF.PRDT_CD
+	                      UNION ALL
+                            SELECT TWMP.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{searchStkDt} <![CDATA[>]]> TWMP.MV_DT THEN TWMP.MV_QTY END) AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , SUM(CASE WHEN #{searchStkDt}=TWMP.MV_DT THEN TWMP.MV_QTY END) AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL) 		AS TERM_VAL		/* 최종입고 소비기한 */
+                              FROM TBH_WH_MV_PRDT AS TWMP
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TWMP.PRDT_CD
+		                              AND DS.WH_CD = TWMP.IN_WH_CD
+		                           LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TWMP.PRDT_CD
+								   		AND TBT.WH_CD = TWMP.IN_WH_CD    
+                             WHERE TWMP.MV_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+                               AND TWMP.IN_WH_CD = #{searchWhCd}
+                             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TWMP.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                               AND TWMP.MV_CONF_YN = 'Y'
+                             GROUP BY TWMP.PRDT_CD
+                          UNION ALL
+                            SELECT TWMP.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{searchStkDt} <![CDATA[>]]> TWMP.MV_DT THEN TWMP.MV_QTY END)*-1 AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , SUM(CASE WHEN #{searchStkDt}=TWMP.MV_DT THEN TWMP.MV_QTY END) AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL		/* 최종입고 소비기한 */
+                              FROM TBH_WH_MV_PRDT AS TWMP
+		                         LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TWMP.PRDT_CD
+		                              AND DS.WH_CD = TWMP.OUT_WH_CD
+	                             LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+							   		ON TBT.PRDT_CD = TWMP.PRDT_CD
+							   		AND TBT.WH_CD = TWMP.OUT_WH_CD   
+                             WHERE TWMP.MV_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{searchStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{searchStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+                               AND TWMP.OUT_WH_CD = #{searchWhCd}
+                             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TWMP.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                               AND TWMP.MV_CONF_YN = 'Y'
+                             GROUP BY TWMP.PRDT_CD
+                           ) AS A
+                     GROUP BY A.PRDT_CD
+                   ) AS A
+               ON A.PRDT_CD = TPM.PRDT_CD
+               
+<!-- 		WHERE (IFNULL(A.PREV_STK_QTY, 0) != 0 OR IFNULL(A.BUY_QTY, 0) != 0 OR IFNULL(A.IN_WH_QTY, 0) != 0 OR IFNULL(A.BUY_RTN_QTY, 0) != 0  -->
+<!-- 		       OR IFNULL(A.SALES_QTY, 0) != 0 OR IFNULL(A.DSPL_QTY, 0) != 0 OR IFNULL(A.OUT_WH_QTY, 0) != 0 OR IFNULL(A.SALES_RTN_QTY, 0) != 0) -->
+          WHERE TPM.USE_YN = 'Y'
+               
+			<if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                AND TPM.PRDT_CD = #{searchPrdtCd}
+            </if>
+            <if test='searchLCd != null and searchLCd != ""'> 
+                AND TPM.L_CD = #{searchLCd}
+            </if>
+            <if test='searchMCd != null and searchMCd != ""'> 
+                AND TPM.M_CD = #{searchMCd}
+            </if>
+            <if test='searchStrgType != null and searchStrgType != ""'> 
+                AND TPM.STRG_TYPE = #{searchStrgType}
+            </if>
+        ORDER BY TPM.PRDT_CD
+	</select>
+	
+	
+	<!-- 일재고 엑셀 다운로드 -->
+	<select id="selectClsDayStkListExcel" parameterType="com.doppio.workplace.cs.service.ClsDayStkListVo" resultType="java.util.HashMap">
+	/*ClsDayStkListMapper.selectClsDayStkListExcel*/	
+	    WITH DAY_STOCK AS (
+			 
+			SELECT A.PRDT_CD
+   		       	   , A.WH_CD
+                   , 0 AS COST
+                   , 0 AS B_STK_QTY
+                   , B.STK_DT
+		           , A.AREA_1_QTY + A.AREA_2_QTY AS STK_QTY
+	          FROM TMH_DAY_STOCK AS A
+			       JOIN 
+				       (SELECT WH_CD, PRDT_CD, MAX(STK_DT) STK_DT
+	    			      FROM TMH_DAY_STOCK
+		       			 WHERE STK_DT BETWEEN CONCAT(DATE_FORMAT(#{excelStkDt},'%Y%m'),'01') AND DATE_FORMAT(DATE_ADD(#{excelStkDt}, INTERVAL 0 DAY),'%Y%m%d')
+		       			   <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+				             AND PRDT_CD = #{searchPrdtCd}
+				           </if> 
+                           AND WH_CD LIKE CONCAT(#{searchWhCd},'%')
+		       			 GROUP BY WH_CD, PRDT_CD 
+			   		   ) AS B
+				 WHERE A.STK_DT = B.STK_DT
+				   AND A.WH_CD = B.WH_CD
+				   AND A.PRDT_CD = B.PRDT_CD
+	    )
+	    
+		SELECT #{excelStkDt} AS STK_DT
+		       , TPM.PRDT_CD
+			   , TPM.LACK_NO_1
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TPM.QTY_BOX
+			   
+               , IFNULL(A.PREV_STK_QTY, 0) AS PREV_STK_QTY
+               
+               , IFNULL(A.BUY_QTY, 0) AS BUY_QTY
+               , IFNULL(A.IN_WH_QTY, 0) AS IN_WH_QTY
+               , IFNULL(A.BUY_RTN_QTY, 0) AS BUY_RTN_QTY
+               , IFNULL(A.BUY_QTY, 0) + IFNULL(A.IN_WH_QTY, 0) - IFNULL(A.BUY_RTN_QTY, 0) AS BUY_TOT_QTY
+               
+               , IFNULL(A.SALES_QTY, 0) + IFNULL(A.DSPL_QTY, 0) AS DLV_QTY
+               , IFNULL(A.OUT_WH_QTY, 0) AS OUT_WH_QTY
+               , IFNULL(A.SALES_RTN_QTY, 0) AS DLV_RTN_QTY
+               , IFNULL(A.SALES_QTY, 0) + IFNULL(A.OUT_WH_QTY, 0) - IFNULL(A.SALES_RTN_QTY, 0) + IFNULL(A.DSPL_QTY, 0) AS DLV_TOT_QTY
+               
+               , IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_QTY,0) - IFNULL(A.OUT_WH_QTY,0) AS STK_QTY
+               , FORMAT((IFNULL(A.PREV_STK_QTY,0) + IFNULL(A.BUY_QTY,0) - IFNULL(A.BUY_RTN_QTY,0) - IFNULL(A.SALES_QTY,0) + IFNULL(A.SALES_RTN_QTY,0) - IFNULL(A.DSPL_QTY,0) + IFNULL(A.IN_WH_QTY,0) - IFNULL(A.OUT_WH_QTY,0)) * CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END, 0) AS STK_AMT
+   		       
+   		       , CASE WHEN IFNULL(A.COST,0)=0 THEN IFNULL(TPM.COST,0) ELSE IFNULL(A.COST,0) END AS COST
+   		       , IFNULL( DATE_FORMAT(A.TERM_VAL, '%Y-%m-%d'), ' ')	AS TERM_VAL		/* 최종 입고 소비기한 */
+		  FROM TFM_PRDT_MST AS TPM
+		  	       
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = TPM.ORD_UNIT
+		          AND TCD.COM_CD = 'M006'
+		  	   
+		  	   LEFT OUTER JOIN 
+                   (SELECT A.PRDT_CD
+                           , MAX(A.COST) AS COST
+                           , SUM(IFNULL(A.PREV_STK_QTY, 0)) AS PREV_STK_QTY
+                           , SUM(IFNULL(A.BUY_QTY, 0)) AS BUY_QTY
+                           , SUM(IFNULL(A.BUY_RTN_QTY, 0)) AS BUY_RTN_QTY
+                           , SUM(IFNULL(A.SALES_QTY, 0)) AS SALES_QTY
+                           , SUM(IFNULL(A.SALES_RTN_QTY, 0)) AS SALES_RTN_QTY
+                           , SUM(IFNULL(A.DSPL_QTY, 0)) AS DSPL_QTY
+                           , SUM(IFNULL(A.IN_WH_QTY, 0)) AS IN_WH_QTY
+                           , SUM(IFNULL(A.OUT_WH_QTY, 0)) AS OUT_WH_QTY
+                           , SUM(IFNULL(A.PREV_STK_QTY,0)) + SUM(IFNULL(A.BUY_QTY,0)) - SUM(IFNULL(A.BUY_RTN_QTY,0)) - SUM(IFNULL(A.SALES_QTY,0)) + SUM(IFNULL(A.SALES_RTN_QTY,0)) - SUM(IFNULL(A.DSPL_QTY,0)) + SUM(IFNULL(A.IN_WH_QTY,0)) - SUM(IFNULL(A.OUT_WH_QTY,0)) AS STK_QTY
+                           , MAX(A.TERM_VAL)	AS TERM_VAL		/* 최종 입고 소비기한*/
+                      FROM (SELECT TMC.PRDT_CD
+			                       , MAX(TMC.COST) AS COST
+			                       , SUM(CASE WHEN DS.PRDT_CD IS NULL THEN TMC.STK_QTY ELSE DS.STK_QTY END) AS PREV_STK_QTY
+			                       , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)	AS TERM_VAL		/* 최종입고 소비기한 */
+			                  FROM TMH_MON_CLOSING AS TMC
+			                  
+			                       LEFT OUTER JOIN DAY_STOCK AS DS
+								       ON DS.PRDT_CD = TMC.PRDT_CD
+									  AND DS.WH_CD = TMC.WH_CD
+									  
+									LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TMC.PRDT_CD
+								   		AND TBT.WH_CD = TMC.WH_CD  	  
+									    
+			                 WHERE TMC.YEAR_MON = DATE_FORMAT(DATE_ADD(#{excelStkDt}, INTERVAL -1 MONTH),'%Y%m')
+			                 <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TMC.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TMC.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                             GROUP BY TMC.PRDT_CD
+                          UNION ALL
+                            SELECT TPR.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{excelStkDt} <![CDATA[>]]> TPR.BUY_DT THEN TPR.BUY_QTY END) AS PREV_STK_QTY
+                                   , SUM(CASE WHEN #{excelStkDt}=TPR.BUY_DT THEN TPR.BUY_QTY END) AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL		/* 최종 입고 소비기한 */
+                              FROM TBH_PRDT_RCPT AS TPR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPR.PRDT_CD
+		                              AND DS.WH_CD = TPR.WH_CD
+		                           LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TPR.PRDT_CD
+								   		AND TBT.WH_CD = TPR.WH_CD    
+                             WHERE TPR.BUY_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{excelStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{excelStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TPR.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TPR.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                               AND TPR.BUY_CONF_YN = 'Y'
+                             GROUP BY TPR.PRDT_CD
+                            UNION ALL
+                            SELECT TPR.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{excelStkDt} <![CDATA[>]]> TPR.RTN_DT THEN TPR.RTN_QTY END)*-1 AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , SUM(CASE WHEN #{excelStkDt}=TPR.RTN_DT THEN TPR.RTN_QTY END) AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL 	/* 최종입고 소비기한 */
+                              FROM TBH_PRDT_RETURN AS TPR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPR.PRDT_CD
+ 		                              AND DS.WH_CD = TPR.WH_CD
+ 		                           LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TPR.PRDT_CD
+								   		AND TBT.WH_CD = TPR.WH_CD    
+                             WHERE TPR.RTN_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{excelStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{excelStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TPR.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TPR.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                             GROUP BY PRDT_CD
+                          UNION ALL
+                            SELECT TPD.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{excelStkDt} <![CDATA[>]]> TPD.DSP_DT THEN TPD.DSP_QTY END)*-1 AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , SUM(CASE WHEN #{excelStkDt}=TPD.DSP_DT THEN TPD.DSP_QTY END) AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL		/* 최종입고 소비기한 */
+                              FROM TBH_PRDT_DSPL AS TPD
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TPD.PRDT_CD
+		                              AND DS.WH_CD = TPD.WH_CD
+		                            LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TPD.PRDT_CD
+								   		AND TBT.WH_CD = TPD.WH_CD   
+                             WHERE TPD.DSP_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{excelStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{excelStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TPD.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TPD.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                             GROUP BY TPD.PRDT_CD
+                          UNION ALL
+                            SELECT TSD.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{excelStkDt} <![CDATA[>]]> TSD.SALES_DT THEN TSD.SALES_QTY END)*-1 AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , SUM(CASE WHEN #{excelStkDt}=TSD.SALES_DT THEN TSD.SALES_QTY END) AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL		/* 최종입고 소비기한 */
+                              FROM TSH_SALES_DLV AS TSD
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSD.PRDT_CD
+		                              AND DS.WH_CD = TSD.WH_CD
+		                            LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TSD.PRDT_CD
+								   		AND TBT.WH_CD = TSD.WH_CD    
+                             WHERE TSD.SALES_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{excelStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{excelStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TSD.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TSD.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                             GROUP BY TSD.PRDT_CD
+                          UNION ALL
+                            SELECT TSR.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{excelStkDt} <![CDATA[>]]> TSR.RTN_DT THEN TSR.RTN_QTY END) AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , SUM(CASE WHEN #{excelStkDt}=TSR.RTN_DT THEN TSR.RTN_QTY END) AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL		/* 최종입고 소비기한 */
+                              FROM TSH_SALES_RETURN AS TSR
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSR.PRDT_CD
+		                              AND DS.WH_CD = TSR.WH_CD
+		                            LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TSR.PRDT_CD
+								   		AND TBT.WH_CD = TSR.WH_CD     
+                             WHERE TSR.RTN_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{excelStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{excelStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TSR.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TSR.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                             GROUP BY TSR.PRDT_CD
+                          UNION ALL
+                            SELECT TSF.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{excelStkDt} <![CDATA[>]]> TSF.FREE_DT THEN TSF.FREE_QTY END)*-1 AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , SUM(CASE WHEN #{excelStkDt}=TSF.FREE_DT THEN TSF.FREE_QTY END) AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL		/* 최종입고 소비기한 */
+                              FROM TSH_SALES_FREE AS TSF
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TSF.PRDT_CD
+		                              AND DS.WH_CD = TSF.WH_CD
+		                            LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TSF.PRDT_CD
+								   		AND TBT.WH_CD = TSF.WH_CD   
+                             WHERE TSF.FREE_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{excelStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{excelStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+				               AND TSF.WH_CD = #{searchWhCd}
+				             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TSF.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                             GROUP BY TSF.PRDT_CD
+	                      UNION ALL
+                            SELECT TWMP.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{excelStkDt} <![CDATA[>]]> TWMP.MV_DT THEN TWMP.MV_QTY END) AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , SUM(CASE WHEN #{excelStkDt}=TWMP.MV_DT THEN TWMP.MV_QTY END) AS IN_WH_QTY
+                                   , 0 AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL) 		AS TERM_VAL		/* 최종입고 소비기한 */
+                              FROM TBH_WH_MV_PRDT AS TWMP
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TWMP.PRDT_CD
+		                              AND DS.WH_CD = TWMP.IN_WH_CD
+		                             LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+								   		ON TBT.PRDT_CD = TWMP.PRDT_CD
+								   		AND TBT.WH_CD = TWMP.IN_WH_CD   
+                             WHERE TWMP.MV_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{excelStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{excelStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+                               AND TWMP.IN_WH_CD = #{searchWhCd}
+                             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TWMP.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                               AND TWMP.MV_CONF_YN = 'Y'
+                             GROUP BY TWMP.PRDT_CD
+                          UNION ALL
+                            SELECT TWMP.PRDT_CD
+                                   , 0 AS COST
+                                   , SUM(CASE WHEN #{excelStkDt} <![CDATA[>]]> TWMP.MV_DT THEN TWMP.MV_QTY END)*-1 AS PREV_STK_QTY
+                                   , 0 AS BUY_QTY
+                                   , 0 AS BUY_RTN_QTY
+                                   , 0 AS SALES_QTY
+                                   , 0 AS SALES_RTN_QTY
+                                   , 0 AS DSPL_QTY
+                                   , 0 AS IN_WH_QTY
+                                   , SUM(CASE WHEN #{excelStkDt}=TWMP.MV_DT THEN TWMP.MV_QTY END) AS OUT_WH_QTY
+                                   , MAX(TBT.TERM_VAL)		AS TERM_VAL		/* 최종입고 소비기한 */
+                              FROM TBH_WH_MV_PRDT AS TWMP
+		                           LEFT OUTER JOIN DAY_STOCK AS DS
+		                               ON DS.PRDT_CD = TWMP.PRDT_CD
+		                              AND DS.WH_CD = TWMP.OUT_WH_CD
+		                            LEFT OUTER JOIN TBH_PRDT_TERM AS TBT
+							   		ON TBT.PRDT_CD = TWMP.PRDT_CD
+							   		AND TBT.WH_CD = TWMP.OUT_WH_CD      
+                             WHERE TWMP.MV_DT BETWEEN CASE WHEN DS.STK_DT IS NULL THEN CONCAT(DATE_FORMAT(#{excelStkDt}, '%Y%m'),'01') ELSE DATE_FORMAT(DATE_ADD(DS.STK_DT, INTERVAL 1 DAY),'%Y%m%d') END AND #{excelStkDt}
+                             <if test='searchWhCd != null and searchWhCd != ""'> 
+                               AND TWMP.OUT_WH_CD = #{searchWhCd}
+                             </if>
+                  		     <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                               AND TWMP.PRDT_CD = #{searchPrdtCd}
+                             </if>
+                               AND TWMP.MV_CONF_YN = 'Y'
+                             GROUP BY TWMP.PRDT_CD
+                           ) AS A
+                     GROUP BY A.PRDT_CD
+                   ) AS A
+               ON A.PRDT_CD = TPM.PRDT_CD
+               
+<!-- 		WHERE (IFNULL(A.PREV_STK_QTY, 0) != 0 OR IFNULL(A.BUY_QTY, 0) != 0 OR IFNULL(A.IN_WH_QTY, 0) != 0 OR IFNULL(A.BUY_RTN_QTY, 0) != 0  -->
+<!-- 		       OR IFNULL(A.SALES_QTY, 0) != 0 OR IFNULL(A.DSPL_QTY, 0) != 0 OR IFNULL(A.OUT_WH_QTY, 0) != 0 OR IFNULL(A.SALES_RTN_QTY, 0) != 0) -->
+          WHERE TPM.USE_YN = 'Y'
+               
+			<if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+                AND TPM.PRDT_CD = #{searchPrdtCd}
+            </if>
+            <if test='searchLCd != null and searchLCd != ""'> 
+                AND TPM.L_CD = #{searchLCd}
+            </if>
+            <if test='searchMCd != null and searchMCd != ""'> 
+                AND TPM.M_CD = #{searchMCd}
+            </if>
+            <if test='searchStrgType != null and searchStrgType != ""'> 
+                AND TPM.STRG_TYPE = #{searchStrgType}
+            </if>
+        ORDER BY TPM.PRDT_CD
+	</select>
+	
+	
+	<!-- 일재고 출력 조회 -->
+	<select id="selectStkListPrint" parameterType="com.doppio.workplace.cs.service.ClsDayStkListVo" resultType="com.doppio.workplace.cs.service.ClsDayStkListVo">
+	/*ClsDayStkListMapper.selectStkListPrint*/
+
+	</select>
+	
+	<!-- 품목별 당월, 전월, 전전월 출고량 조회 add by song min kyo 2024.10.11 -->
+	<select	id="selPrdtQtyMonth"		parameterType="com.doppio.workplace.cs.service.ClsDayStkListVo"		resultType="com.doppio.workplace.cs.service.ClsDayStkListVo">
+		/* ClsDayStkListMapper.selPrdtQtyMonth */
+		<![CDATA[
+			SELECT  	CASE WHEN A.STD_YN='2' THEN CONCAT((CASE WHEN MOD(A.SALES_QTY_1,1) = 0 THEN FORMAT(A.SALES_QTY_1,2) ELSE FORMAT(A.SALES_QTY_1,2) END), TCD.DTL_NM)
+    	  	   
+    	  	                              ELSE CASE WHEN A.SALES_QTY_1  <  A.QTY_BOX THEN CONCAT((CASE WHEN MOD(A.SALES_QTY_1,1) = 0 THEN FORMAT(A.SALES_QTY_1,0) ELSE FORMAT(A.SALES_QTY_1,2) END), TCD.DTL_NM)
+    	  	                              
+    	  	                                                                                     ELSE CASE WHEN MOD(A.SALES_QTY_1, A.QTY_BOX)=0 THEN CASE WHEN A.QTY_BOX  >  1 THEN CONCAT(TRUNCATE(A.SALES_QTY_1 / A.QTY_BOX,0), 'BOX')
+    	  	                                                                                                                                                                         ELSE CONCAT((CASE WHEN MOD(A.SALES_QTY_1,1) = 0 THEN FORMAT(A.SALES_QTY_1,0) ELSE FORMAT(A.SALES_QTY_1,2) END), TCD.DTL_NM)
+     	  	                                                                                                                                               END
+    	  	                                                                                                                                           
+    	  	                                                                                                                                         ELSE CONCAT(TRUNCATE(A.SALES_QTY_1 / A.QTY_BOX,0), 'BOX/', CASE WHEN MOD(MOD(A.SALES_QTY_1, A.QTY_BOX),1) = 0 THEN FORMAT(MOD(A.SALES_QTY_1, A.QTY_BOX), 0) ELSE FORMAT(MOD(A.SALES_QTY_1, A.QTY_BOX), 2) END , TCD.DTL_NM)          
+    	  	                                                                                          END
+    	  	                                                                                          
+    	  	                                   END
+    	  	    	 	END AS BOX_QTY_COMP_1
+				,	    CASE WHEN A.STD_YN='2' THEN CONCAT((CASE WHEN MOD(A.SALES_QTY_2,1) = 0 THEN FORMAT(A.SALES_QTY_2,2) ELSE FORMAT(A.SALES_QTY_2,2) END), TCD.DTL_NM)
+    	  	   
+    	  	                              ELSE CASE WHEN A.SALES_QTY_2  <  A.QTY_BOX THEN CONCAT((CASE WHEN MOD(A.SALES_QTY_2,1) = 0 THEN FORMAT(A.SALES_QTY_2,0) ELSE FORMAT(A.SALES_QTY_2,2) END), TCD.DTL_NM)
+    	  	                              
+    	  	                                                                                     ELSE CASE WHEN MOD(A.SALES_QTY_2, A.QTY_BOX)=0 THEN CASE WHEN A.QTY_BOX  >  1 THEN CONCAT(TRUNCATE(A.SALES_QTY_2 / A.QTY_BOX,0), 'BOX')
+    	  	                                                                                                                                                                         ELSE CONCAT((CASE WHEN MOD(A.SALES_QTY_2,1) = 0 THEN FORMAT(A.SALES_QTY_2,0) ELSE FORMAT(A.SALES_QTY_2,2) END), TCD.DTL_NM)
+     	  	                                                                                                                                               END
+    	  	                                                                                                                                           
+    	  	                                                                                                                                         ELSE CONCAT(TRUNCATE(A.SALES_QTY_2 / A.QTY_BOX,0), 'BOX/', CASE WHEN MOD(MOD(A.SALES_QTY_2, A.QTY_BOX),1) = 0 THEN FORMAT(MOD(A.SALES_QTY_2, A.QTY_BOX), 0) ELSE FORMAT(MOD(A.SALES_QTY_2, A.QTY_BOX), 2) END , TCD.DTL_NM)          
+    	  	                                                                                          END
+    	  	                                                                                          
+    	  	                                   END
+    	  	     		END AS BOX_QTY_COMP_2 	     
+    	 		,	    CASE WHEN A.STD_YN='2' THEN CONCAT((CASE WHEN MOD(A.SALES_QTY_3,1) = 0 THEN FORMAT(A.SALES_QTY_3,2) ELSE FORMAT(A.SALES_QTY_3,2) END), TCD.DTL_NM)
+    	  	   
+    	  	                              ELSE CASE WHEN A.SALES_QTY_3  <  A.QTY_BOX THEN CONCAT((CASE WHEN MOD(A.SALES_QTY_3,1) = 0 THEN FORMAT(A.SALES_QTY_3,0) ELSE FORMAT(A.SALES_QTY_3,2) END), TCD.DTL_NM)
+    	  	                              
+    	  	                                                                                     ELSE CASE WHEN MOD(A.SALES_QTY_3, A.QTY_BOX)=0 THEN CASE WHEN A.QTY_BOX  >  1 THEN CONCAT(TRUNCATE(A.SALES_QTY_3 / A.QTY_BOX,0), 'BOX')
+    	  	                                                                                                                                                                         ELSE CONCAT((CASE WHEN MOD(A.SALES_QTY_3,1) = 0 THEN FORMAT(A.SALES_QTY_3,0) ELSE FORMAT(A.SALES_QTY_3,2) END), TCD.DTL_NM)
+     	  	                                                                                                                                               END
+    	  	                                                                                                                                           
+    	  	                                                                                                                                         ELSE CONCAT(TRUNCATE(A.SALES_QTY_3 / A.QTY_BOX,0), 'BOX/', CASE WHEN MOD(MOD(A.SALES_QTY_3, A.QTY_BOX),1) = 0 THEN FORMAT(MOD(A.SALES_QTY_3, A.QTY_BOX), 0) ELSE FORMAT(MOD(A.SALES_QTY_3, A.QTY_BOX), 2) END , TCD.DTL_NM)          
+    	  	                                                                                          END
+    	  	                                                                                          
+    	  	                                   END
+    	  	     		END AS BOX_QTY_COMP_3     	     
+			FROM
+			(
+				SELECT 	B.STD_YN
+					,	B.ORD_UNIT
+					,	B.QTY_BOX
+					,	IFNULL(SUM(A.SALES_QTY), 0)				AS SALES_QTY_1	/* 당월 판매수량 */	
+					/* 전월 판매수량 */
+					,	(
+							SELECT 	IFNULL(SUM(SALES_QTY), 0) 	AS SALES_QTY_2
+								FROM TMH_MON_SALES_TOT A
+								WHERE 1=1
+								AND A.PRDT_CD = #{prdtCd}
+								AND A.YEAR_MON = DATE_FORMAT( DATE_ADD(NOW(), INTERVAL -1 MONTH), '%Y%m')
+						)	AS SALES_QTY_2
+					/* 전전월 판매수량 */	
+					,	(
+						SELECT 	IFNULL(SUM(SALES_QTY), 0) 		AS SALES_QTY_3
+							FROM TMH_MON_SALES_TOT A
+							WHERE 1=1
+							AND A.PRDT_CD = #{prdtCd}
+							AND A.YEAR_MON = DATE_FORMAT( DATE_ADD(NOW(), INTERVAL -2 MONTH), '%Y%m')
+					)	AS SALES_QTY_3	
+				FROM TSH_SALES_DLV A
+					,TFM_PRDT_MST B
+				WHERE 1=1
+				AND A.PRDT_CD = B.PRDT_CD
+				AND A.PRDT_CD = #{prdtCd}
+				AND SUBSTR(SALES_DT, 1, 6) = DATE_FORMAT(NOW(),'%Y%m')
+			) A
+			LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = A.ORD_UNIT
+		          AND TCD.COM_CD = 'M006'
+			WHERE 1=1	
+		]]>
+	</select>
+	
+</mapper>
+

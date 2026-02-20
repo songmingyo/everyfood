@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.bm.service.impl.DeliVehicleMapper">
+
+	
+	<!-- 차량정보 조회 리스트 검색조건-->
+	<sql id="selectDelivehicleList_Where">
+		/*DeliVehicleMapper.selectDelivehicleList_Where*/
+		<where>
+			<if test='carCd != null and carCd != ""'>				<!-- 배송차코드 --> 
+				AND TDM.CAR_CD = #{carCd}
+			</if>
+			<if test='carNm != null and carNm != ""'>				<!-- 배송차명  --> 
+				AND TDM.CAR_NM LIKE CONCAT('%',#{carNm},'%')
+			</if>
+			<if test='carNum != null and carNum != ""'>				<!-- 배송차번호  --> 
+				AND TDM.CAR_NUM LIKE CONCAT('%',#{carNum},'%')
+			</if>
+			<if test='drvSnm != null and drvSnm != ""'>				<!-- 배송기사  --> 
+				AND TDM.DRV_SNM LIKE CONCAT('%',#{drvSnm},'%')
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 차량정보 조회  카운터 -->
+	<select id="selectDelivehicleListCount" parameterType="com.doppio.workplace.bm.service.DlvrMasterVo" resultType="int">
+		/* DeliVehicleMapper.selectDelivehicleListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM KRMC.TFM_DLVR_MST TDM
+		<include refid="selectDelivehicleList_Where"/>
+	</select>
+	
+	
+	<!-- 차량정보 조회(현황조회 ) -->
+	<select id="selectDelivehicleList" parameterType="com.doppio.workplace.bm.service.DlvrMasterVo" resultType="com.doppio.workplace.bm.service.DlvrMasterVo">
+	/*DeliVehicleMapper.selectDelivehicleList*/	
+		  SELECT TDM.CAR_CD
+		       , TDM.CAR_NM
+		       , TDM.CAR_NUM
+		       , TDM.DRV_SNM
+		       , TDM.MTEL_NO
+		       , TDM.CAR_TYPE
+		       , TDM.START_DT
+		       , TDM.END_DT
+		       , TDM.USE_YN
+		       , TDM.REG_ID
+		       , TDM.REG_DT
+		       , DATE_FORMAT(TDM.REG_DT,'%Y-%m-%d %T') as REG_DT
+		       , TDM.MOD_ID
+		       , DATE_FORMAT(TDM.MOD_DT,'%Y-%m-%d %T') as MOD_DT
+		  FROM KRMC.TFM_DLVR_MST TDM
+		 <include refid="selectDelivehicleList_Where"/>
+	</select>
+	
+	<!-- 차량정보 조회(상세조회 ) -->
+	<select id="selectDelivehicleData" parameterType="com.doppio.workplace.bm.service.DlvrMasterVo" resultType="com.doppio.workplace.bm.service.DlvrMasterVo">
+	/*DeliVehicleMapper.selectDelivehicleData*/	
+	      SELECT TDM.CAR_CD
+		       , TDM.CAR_NM
+		       , TDM.CAR_NUM
+		       , TDM.DRV_SNM
+		       , TDM.MTEL_NO
+		       , TDM.CAR_TYPE
+		       , TDM.START_DT
+		       , TDM.END_DT
+		       , TDM.USE_YN
+		       , TDM.REG_ID
+		       , TDM.REG_DT
+		       , DATE_FORMAT(TDM.REG_DT,'%Y-%m-%d %T') as REG_DT
+		       , TDM.MOD_ID
+		       , DATE_FORMAT(TDM.MOD_DT,'%Y-%m-%d %T') as MOD_DT
+		       , TMR.USER_NM  AS REG_USER_NM
+		       , TMR.USER_ID  AS REG_USER_ID
+		       , TMM.USER_NM  AS MOD_USER_NM
+		       , TMM.USER_ID  AS MOD_USER_ID
+		  FROM KRMC.TFM_DLVR_MST TDM
+			LEFT OUTER JOIN KRMC.TCM_MEMBER TMR ON TDM.REG_ID = TMR.MEMBER_CD 
+			LEFT OUTER JOIN KRMC.TCM_MEMBER TMM ON TDM.MOD_ID = TMM.MEMBER_CD 
+		<where>
+			AND TDM.CAR_CD = #{carCd}
+		</where>	
+	</select>
+	
+	
+	<!-- 차량정보 등록   -->
+	<insert id="insertDelivehicle" parameterType="com.doppio.workplace.bm.service.DlvrMasterVo">  
+	<selectKey keyProperty="carCd" resultType="String" order="BEFORE">
+		SELECT CAST(IFNULL(MAX(TDM.CAR_CD),'10000') AS DECIMAL)+1 AS CAR_CD FROM KRMC.TFM_DLVR_MST as TDM
+	</selectKey>
+	/*DeliVehicleMapper.insertDelivehicle*/
+		 INSERT INTO KRMC.TFM_DLVR_MST
+      	(
+      		 CAR_CD
+		    ,CAR_NM
+		    ,CAR_NUM
+		    ,DRV_SNM
+		    ,MTEL_NO
+		    ,CAR_TYPE
+		    ,START_DT
+		    ,END_DT
+		    ,USE_YN
+		    ,REG_ID
+		    ,REG_DT
+		    ,MOD_ID
+		    ,MOD_DT
+     	 )VALUES
+     	 (
+     	     #{carCd}
+		    ,#{carNm}
+		    ,#{carNum}
+		    ,#{drvSnm}
+		    ,#{mtelNo}
+		    ,#{carType}
+		    ,#{startDt}
+		    ,#{endDt}
+		    ,#{useYn}
+		    ,#{workId, jdbcType=VARCHAR}
+		     ,NOW()
+		    ,#{workId, jdbcType=VARCHAR}
+		     ,NOW()
+		 )
+     	
+	</insert>
+	
+	
+	<!-- 차량정보 수정  -->
+	<insert id="updateDelivehicle" parameterType="com.doppio.workplace.bm.service.DlvrMasterVo">
+	/*DeliVehicleMapper.updateDelivehicle*/
+     UPDATE  KRMC.TFM_DLVR_MST SET
+     	     CAR_NM		= #{carNm}
+		    ,CAR_NUM	= #{carNum}
+		    ,DRV_SNM	= #{drvSnm}
+		    ,MTEL_NO	= #{mtelNo}
+		    ,CAR_TYPE	= #{carType}
+		    ,START_DT	= #{startDt}
+		    ,END_DT		= #{endDt}
+		    ,USE_YN		= #{useYn}
+		    ,MOD_ID		= #{workId, jdbcType=VARCHAR}
+		    ,MOD_DT		= NOW()
+	  WHERE  CAR_CD		= #{carCd}
+	</insert>	 
+	
+	<!-- 차량정보 삭제  -->
+	<insert id="deleteDelivehicle" parameterType="com.doppio.workplace.bm.service.DlvrMasterVo">
+	/*DeliVehicleMapper.deleteDelivehicle*/
+    DELETE  FROM KRMC.TFM_DLVR_MST 
+     WHERE  CAR_CD		= #{carCd}
+	</insert>	    
+	
+</mapper>

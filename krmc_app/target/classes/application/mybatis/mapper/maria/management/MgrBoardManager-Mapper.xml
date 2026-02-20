@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.doppio.management.service.impl.MgrBoardManagerMapper">
+
+	<!-- 팝업존리스트 조회 map -->
+	<resultMap id="boardManagerMap" type="com.doppio.management.service.MgrBoardManagerVo">
+		<result property="boardCd"			column="BOARD_CD"			/>	<!-- 게시판코드(key)		  -->
+		<result property="boardKindCd"		column="BOARD_KIND_CD"		/>	<!-- 게시판유형코드[CODE 9020]     -->
+		<result property="boardKindCdNm"	column="BOARD_KIND_CD_NM"	/>	<!-- 게시판유형코드명칭 -->
+		<result property="boardNm"			column="BOARD_NM"			/>	<!-- 게시판명           -->
+		<result property="memberCd"			column="MEMBER_CD"			/>	<!-- 관리자고유번호     -->
+		<result property="userNm"			column="USER_NM"			/>	<!-- 관리자명칭     	  -->
+		<result property="fileCount"		column="FILE_COUNT"			/>	<!-- 업로드파일갯수     -->
+		<result property="fileUploadSize"	column="FILE_UPLOAD_SIZE"	/>	<!-- 파일업로드사이즈   -->
+		<result property="writeYn"			column="WRITE_YN"			/>	<!-- 글쓰기유무         -->
+		<result property="replyYn"			column="REPLY_YN"			/>	<!-- 댓글사용여부       -->
+		<result property="commentYn"		column="COMMENT_YN"			/>	<!-- 한줄답변글사용여부 -->
+		<result property="useYn"			column="USE_YN"				/>	<!-- 사용여부           -->
+		<result property="boardCount"		column="BOARD_CNT"			/>	<!-- 게시판별 등록글 수 -->
+	</resultMap>
+	
+	
+	<!-- 게시판 LIST 조회  -->
+	<select id="selectBoardList" parameterType="com.doppio.management.service.MgrBoardManagerVo" resultMap="boardManagerMap">
+			/*MgrBoardManagerMapper.selectBoardList*/
+			SELECT  A.BOARD_CD          
+			       ,A.BOARD_KIND_CD      
+			       ,FN_CODE_RTN('9020',A.BOARD_KIND_CD) AS BOARD_KIND_CD_NM
+			       ,A.BOARD_NM          
+			       ,A.MEMBER_CD
+			       ,B.USER_NM          
+			       ,A.FILE_COUNT        
+			       ,A.FILE_UPLOAD_SIZE  
+			       ,A.WRITE_YN          
+			       ,A.REPLY_YN          
+			       ,A.COMMENT_YN				
+			       ,A.USE_YN		
+			       ,IFNULL(T1.BOARD_CNT,0) AS BOARD_CNT				
+			 FROM TCM_BOARD_MANAGER   A
+			       LEFT OUTER JOIN TCM_MEMBER B ON A.MEMBER_CD = B.MEMBER_CD
+			       LEFT OUTER JOIN (SELECT COUNT(*) BOARD_CNT, BOARD_CD  
+                                      FROM TCM_BOARD_MST GROUP BY BOARD_CD 
+                                    ) T1 ON A.BOARD_CD = T1.BOARD_CD
+			<where>
+			    <if test='boardKindCd != null and boardKindCd != ""'>
+			        AND A.BOARD_KIND_CD = #{boardKindCd}
+			    </if>
+			    <if test='boardNm != null and boardNm != ""'>
+			        AND A.BOARD_NM LIKE CONCAT('%',#{boardNm},'%')
+			    </if>
+				<if test='useYn != null and useYn != ""'>
+			        AND A.USE_YN = #{useYn}
+			    </if>
+			</where>
+		   ORDER BY A.BOARD_NM, A.BOARD_CD
+	</select>
+	
+	
+    
+    <!-- 게시판코드 중복유무 카운트 확인 -->
+	<select id="selectBoardManagerCount"   resultType="String" parameterType="com.doppio.management.service.MgrBoardManagerVo">
+		/* MgrBoardManagerMapper.selectBoardManagerCount*/
+		SELECT COUNT(*) CNT FROM TCM_BOARD_MANAGER  WHERE BOARD_CD = #{boardCd}
+	</select>
+	
+	
+	 <!-- 게시판관리 수정 -->
+    <update id="updateBoardManager" parameterType="com.doppio.management.service.MgrBoardManagerVo">
+    	/*MgrBoardManagerMapper.updateBoardManager*/
+    	 UPDATE TCM_BOARD_MANAGER SET  
+                  BOARD_CD           =  #{boardCd}                          
+                 ,BOARD_KIND_CD      =  #{boardKindCd}      
+                 ,BOARD_NM           =  #{boardNm}
+                 ,MEMBER_CD          =  #{memberCd}
+                 ,FILE_COUNT         =  #{fileCount}
+                 ,FILE_UPLOAD_SIZE   =  #{fileUploadSize}
+                 ,WRITE_YN           =  #{writeYn}
+                 ,REPLY_YN           =  #{replyYn}
+                 ,COMMENT_YN         =  #{commentYn}
+                 ,USE_YN             =  #{useYn}
+                 ,MOD_DT             =  NOW()
+                 ,MOD_ID             =  #{workId}
+		WHERE	BOARD_CD  = #{oldBoardCd}
+    </update>
+    
+    
+    <!-- 게시판관리 등록 -->
+    <insert id="insertBoardManager" parameterType="com.doppio.management.service.MgrBoardManagerVo">
+    	/*MgrBoardManagerMapper.insertBoardManager*/
+		INSERT INTO TCM_BOARD_MANAGER ( 
+					BOARD_CD
+                   ,BOARD_KIND_CD    
+                   ,BOARD_NM
+                   ,MEMBER_CD
+                   ,FILE_COUNT
+                   ,FILE_UPLOAD_SIZE
+                   ,WRITE_YN
+                   ,REPLY_YN
+                   ,COMMENT_YN
+                   ,USE_YN
+                   ,REG_DT
+                   ,REG_ID
+                   ,MOD_DT
+                   ,MOD_ID )
+		VALUES		(#{boardCd}
+                 	,#{boardKindCd}     
+                 	,#{boardNm}
+                 	,#{memberCd}
+                 	,#{fileCount}
+                 	,#{fileUploadSize}
+                 	,#{writeYn}
+                 	,#{replyYn}
+                 	,#{commentYn}
+                 	,#{useYn}
+                 	,NOW()            
+                 	,#{workId}
+                 	,NOW()            
+                 	,#{workId}) 
+    </insert>
+    
+    
+    <!-- 게시판관리 삭제 -->
+    <delete id="deleteBoardManager" parameterType="com.doppio.management.service.MgrBoardManagerVo">
+    	/*MgrBoardManagerMapper.deleteBoardMerge*/
+    	DELETE FROM TCM_BOARD_MANAGER WHERE BOARD_CD = #{oldBoardCd}
+    </delete>
+    
+    
+    <!-- 해당게시글 삭제플레그 처리 -->
+    <delete id="updateBoardMstAllDelFlage" parameterType="com.doppio.management.service.MgrBoardManagerVo">
+    	/*MgrBoardManagerMapper.updateBoardMstDelFlage*/
+    	UPDATE TCM_BOARD_MST SET 
+    		 DEL_YN = 'Y' 
+    		,MOD_DT = NOW() 
+  			,MOD_ID = #{workId}
+    	WHERE BOARD_CD = #{oldBoardCd}
+    </delete>
+    
+    
+    <!-- 해당게시글 게시판코드 전체 UPDATE 처리 -->
+    <delete id="updateBoardMstBoardCd" parameterType="com.doppio.management.service.MgrBoardManagerVo">
+    	/*MgrBoardManagerMapper.updateBoardMstBoardCd*/
+    	UPDATE TCM_BOARD_MST SET BOARD_CD = #{boardCd}    WHERE BOARD_CD  = #{oldBoardCd}
+    </delete>
+    
+</mapper>

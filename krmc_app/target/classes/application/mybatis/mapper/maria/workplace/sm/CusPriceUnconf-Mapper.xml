@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusPriceUnconfMapper">
+
+	
+	<!-- 매출단가 미확정건 조회 -->
+	<select id="selectCusPriceUnconfList" parameterType="com.doppio.workplace.sm.service.CusPriceUnconfVo" resultType="com.doppio.workplace.sm.service.CusPriceUnconfVo">
+	/*CusPriceUnconfMapper.selectCusPriceUnconfList*/	
+		SELECT 
+			   A.SALES_DT
+		   	   , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+	           , A.SALES_QTY
+	           , TPM.COST
+	           , '0' AS PRICE
+	           , A.SALES_SLIP_NO
+		   	   , TSAI.SALES_NM
+		       , TSPM.SALES_PR_NM
+	           , TM_1.USER_NM AS REG_ID
+		       , A.REG_DT
+		       , TM_2.USER_NM AS MOD_ID
+		       , A.MOD_DT
+	      FROM (SELECT SALES_DT
+					   , SALES_SLIP_NO
+					   , SALES_CD
+					   , PRDT_CD
+					   , SALES_QTY
+					   , REG_DT
+					   , REG_ID
+					   , MOD_DT
+					   , MOD_ID
+			      FROM TSH_SALES_DLV
+			     WHERE SALES_DT BETWEEN #{startDt} AND #{endDt}
+			       AND PRICE = 0
+		     UNION ALL
+			    SELECT RTN_DT AS SALES_DT
+					   , SALES_SLIP_NO
+					   , SALES_CD
+					   , PRDT_CD
+					   , RTN_QTY AS SALES_QTY
+					   , REG_DT
+					   , REG_ID
+					   , MOD_DT
+					   , MOD_ID
+			      FROM TSH_SALES_RETURN
+			     WHERE RTN_DT BETWEEN #{startDt} AND #{endDt}
+			       AND PRICE = 0
+			   ) AS A
+			   JOIN TFM_SALES_ADD_INFO AS TSAI
+			       ON TSAI.SALES_CD = A.SALES_CD
+			       
+			   LEFT OUTER JOIN TFM_SALES_PR_MST AS TSPM
+			       ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+			       
+			   JOIN TFM_SALES_HQ_CLASS AS TSHC
+			       ON TSHC.SALES_CD = A.SALES_CD
+			       
+			   JOIN TFM_PRDT_MST AS TPM
+			       ON TPM.PRDT_CD = A.PRDT_CD
+			       
+			   LEFT OUTER JOIN TCM_MEMBER TM_1
+			       ON TM_1.USER_ID = A.REG_ID
+			        
+			   LEFT OUTER JOIN TCM_MEMBER TM_2
+			       ON TM_2.USER_ID = A.MOD_ID
+			       
+	      WHERE A.SALES_QTY != 0
+	        <if test='salesPrCd != null and salesPrCd != ""'> 
+			  AND TSAI.SALES_PR_CD = #{salesPrCd}
+	        </if>
+	        <if test='hqClass == "10"'>
+		      AND TSHC.HQ_CD = #{salesCd} 
+	        </if>
+	        <if test='hqClass == "20"'>
+		      AND TSHC.SALES_CD = #{salesCd} 
+	        </if>     
+	     ORDER BY A.SALES_DT, A.SALES_CD
+
+	</select>
+
+	<!-- 매출단가 미확정건 엑셀 -->
+	<select id="selectCusPriceUnconfListExcelDown" parameterType="com.doppio.workplace.sm.service.CusPeriodListVo" resultType="java.util.HashMap">
+	/*CusPeriodListMapper.selectCusPriceUnconfListExcelDown*/	
+		SELECT 
+			   A.SALES_DT
+		   	   , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+	           , A.SALES_QTY
+	           , TPM.COST
+	           , '0' AS PRICE
+	           , A.SALES_SLIP_NO
+		   	   , TSAI.SALES_NM
+		       , TSPM.SALES_PR_NM
+	           , TM_1.USER_NM AS REG_ID
+		       , A.REG_DT
+		       , TM_2.USER_NM AS MOD_ID
+		       , A.MOD_DT
+	      FROM (SELECT SALES_DT
+					   , SALES_SLIP_NO
+					   , SALES_CD
+					   , PRDT_CD
+					   , SALES_QTY
+					   , REG_DT
+					   , REG_ID
+					   , MOD_DT
+					   , MOD_ID
+			      FROM TSH_SALES_DLV
+			     WHERE SALES_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+			       AND PRICE = '0'
+		     UNION ALL
+			    SELECT RTN_DT AS SALES_DT
+					   , SALES_SLIP_NO
+					   , SALES_CD
+					   , PRDT_CD
+					   , RTN_QTY AS SALES_QTY
+					   , REG_DT
+					   , REG_ID
+					   , MOD_DT
+					   , MOD_ID
+			      FROM TSH_SALES_RETURN
+			     WHERE RTN_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+			       AND PRICE = '0'
+			   ) AS A
+			   JOIN TFM_SALES_ADD_INFO AS TSAI
+			       ON TSAI.SALES_CD = A.SALES_CD
+			       
+			   LEFT OUTER JOIN TFM_SALES_PR_MST AS TSPM
+			       ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+			       
+			   JOIN TFM_SALES_HQ_CLASS AS TSHC
+			       ON TSHC.SALES_CD = A.SALES_CD
+			       
+			   JOIN TFM_PRDT_MST AS TPM
+			       ON TPM.PRDT_CD = A.PRDT_CD
+			       
+			   LEFT OUTER JOIN TCM_MEMBER TM_1
+			       ON TM_1.USER_ID = A.REG_ID
+			        
+			   LEFT OUTER JOIN TCM_MEMBER TM_2
+			       ON TM_2.USER_ID = A.MOD_ID
+			       
+	      WHERE A.SALES_QTY != 0
+	        <if test='salesPrCd != null and salesPrCd != ""'> 
+			  AND TSAI.SALES_PR_CD = #{salesPrCd}
+	        </if>
+	        <if test='hqClass == "10"'>
+		      AND TSHC.HQ_CD = #{salesCd} 
+	        </if>
+	        <if test='hqClass == "20"'>
+		      AND TSHC.SALES_CD = #{salesCd} 
+	        </if>     
+	     ORDER BY A.SALES_DT, A.SALES_CD
+	</select>
+
+	<!-- 매출단가 미확정건 출력-->
+	<select id="selectCusPricePrintList" parameterType="com.doppio.workplace.sm.service.CusPriceUnconfVo" resultType="com.doppio.workplace.sm.service.CusPriceUnconfVo">
+		/*CusPriceUnconfMapper.selectCusPricePrintList*/	
+		SELECT 
+		        #{startDt} AS BUY_START_DT
+		       , #{endDt}  AS BUY_END_DT
+		       , #{salesNm} AS SALES_NM_SEARCH
+		       , IFNULL(A.SALES_DT,'') AS SALES_DT
+		       , IFNULL(A.SALES_SLIP_NO,'') AS SALES_SLIP_NO
+		       , IFNULL(A.SALES_NM,'') AS SALES_NM
+		       , IFNULL(A.PRDT_NM,'')  AS PRDT_NM
+		       , IFNULL(A.PRDT_STD,'') AS PRDT_STD
+	           , IFNULL(A.QTY,0) AS ORD_QTY
+	           , IFNULL(A.COST,'') AS COST
+	           , '0' AS PURE_AMT
+	           , IFNULL(A.SALES_PR_NM,'') AS SALES_PR_NM
+	           , IFNULL(A.REG_ID,'') AS REG_ID
+		       , IFNULL(A.REG_DT,'') AS REG_DT
+		       , IFNULL(A.MOD_ID,'') AS MOD_ID
+		       , IFNULL(A.MOD_DT,'') AS MOD_DT
+		   
+          FROM (
+		        SELECT
+					IFNULL(A.SALES_DT,'') AS SALES_DT
+					, IFNULL(A.SALES_SLIP_NO,'') AS SALES_SLIP_NO
+					, IFNULL(B.SALES_NM,'') AS SALES_NM
+					, IFNULL(C.PRDT_NM ,'') AS PRDT_NM
+					, IFNULL(C.PRDT_STD,'') AS PRDT_STD
+					, IFNULL(D.SALES_PR_NM,'') AS SALES_PR_NM
+					, IFNULL(A.ORD_QTY,0) AS QTY
+					, IFNULL(C.COST,0) AS COST
+					, IFNULL(A.REG_DT,'') AS REG_DT
+					, IFNULL(A.REG_ID,'') AS REG_ID
+					, IFNULL(A.MOD_DT,'') AS MOD_DT
+					, IFNULL(A.MOD_ID,'') AS MOD_ID
+			FROM	 TSH_SALES_DLV A, TFM_SALES_ADD_INFO B, TFM_PRDT_MST C, TFM_SALES_PR_MST D
+			WHERE	A.SALES_CD = B.SALES_CD
+			AND		A.PRDT_CD = C.PRDT_CD
+			AND		B.SALES_PR_CD = D.SALES_PR_CD
+			AND		A.SALES_DT BETWEEN DATE_FORMAT(#{startDt},'%Y%m%d') AND  DATE_FORMAT(#{endDt},'%Y%m%d')
+			<!--AND		A.AREA_CLASS = '00'-->
+			AND		A.ORD_QTY != '0'
+			AND		A.PRICE = '0'
+		<if test='salesPrCd != null and salesPrCd != ""'>	<!-- 판매담당자코드  --> 
+			AND B.SALES_PR_CD LIKE CONCAT('%',#{salesPrCd},'%')
+	    </if>
+	    <if test='salesCd != null and salesCd != ""'>	<!-- 판매처코드  --> 
+			AND A.SALES_CD LIKE CONCAT('%',#{salesCd},'%')
+	    </if>
+		UNION ALL
+			SELECT	IFNULL(A.RTN_DT,'') AS SALES_DT
+					, IFNULL(A.SALES_SLIP_NO,'') AS SALES_SLIP_NO
+					, IFNULL(B.SALES_NM,'') AS SALES_NM
+					, IFNULL(C.PRDT_NM,'') AS PRDT_NM
+					, IFNULL(C.PRDT_STD,'') AS PRDT_STD
+					, IFNULL(D.SALES_PR_NM,'') AS SALES_PR_NM
+					, IFNULL(A.RTN_QTY,0) AS QTY
+					, IFNULL(C.COST,0) AS COST
+					, IFNULL(A.REG_DT,'') AS REG_DT
+					, IFNULL(A.REG_ID,'') AS REG_ID
+					, IFNULL(A.MOD_DT,'') AS MOD_DT
+					, IFNULL(A.MOD_ID,'') AS MOD_ID
+			FROM	 TSH_SALES_RETURN A, TFM_SALES_ADD_INFO B, TFM_PRDT_MST C, TFM_SALES_PR_MST D
+			WHERE	A.SALES_CD = B.SALES_CD
+			AND		A.PRDT_CD = C.PRDT_CD
+			AND		B.SALES_PR_CD = D.SALES_PR_CD
+			AND		A.RTN_DT BETWEEN DATE_FORMAT(#{startDt},'%Y%m%d') AND  DATE_FORMAT(#{endDt},'%Y%m%d')
+			AND		A.RTN_QTY != '0'
+			AND		A.PRICE = '0'
+		<if test='salesPrCd != null and salesPrCd != ""'>	<!-- 판매자명  --> 
+			AND B.SALES_PR_CD LIKE CONCAT('%',#{salesPrCd},'%')
+	    </if>
+	     <if test='salesCd != null and salesCd != ""'>	<!-- 판매자코드  --> 
+			AND A.SALES_CD LIKE CONCAT('%',#{salesCd},'%')
+	    </if>
+
+			) A
+	ORDER BY A.SALES_DT, A.SALES_SLIP_NO
+
+</select>
+
+</mapper>

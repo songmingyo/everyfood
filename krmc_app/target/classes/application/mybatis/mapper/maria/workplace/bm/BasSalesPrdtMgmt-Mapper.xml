@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.bm.service.impl.SalesPrdtMgmtMapper">
+
+	<!-- 매출처별 상품 조회 -->
+	<select id="selectSalesPrdtMgmtList" parameterType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo" resultType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo">
+	/*SalesPrdtMgmtMapper.selectSalesPrdtMgmtList*/	
+		SELECT TSPM.PRDT_CD
+               , TPM.PRDT_NM
+               , TPM.PRDT_STD
+               , TCD.DTL_NM AS ORD_UNIT
+               , TPM.COST
+               , TSPM.SALES_CD
+               , TSAI.SALES_NM
+			   , TSPM.SALES_PRDT_CD_1
+               , TSPM.SALES_PRDT_CD_2
+               , TSPM.SALES_PRDT_CD_1 AS SALES_PRDT_CD_1_ORG
+               , TSPM.SALES_PRDT_CD_2 AS SALES_PRDT_CD_2_ORG
+               , TSPM.PRICE
+               , TSPM.PREV_PRICE
+               , TSPM.PRICE AS PRICE_ORG
+               , TSPM.VAT_YN
+               , TSPM.START_DT
+               , TM_1.USER_NM AS REG_NM
+               , TSPM.REG_DT
+               , TM_2.USER_NM AS MOD_NM
+               , TSPM.MOD_DT
+		  FROM KRMC.TSM_SALES_PRDT_MST AS TSPM
+		  
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_1
+		           ON TSPM.REG_ID = TM_1.USER_ID
+		           
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_2
+		           ON TSPM.MOD_ID = TM_2.USER_ID
+		           
+		       JOIN
+                   (SELECT DISTINCT CASE WHEN #{hqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                           , SALES_CD
+                      FROM V_SALES_HQ_CD
+                     <where>
+	                     <if test='hqClass != null and hqClass != ""'> 
+	                       AND HQ_CLASS = #{hqClass}
+	                     </if>
+	                     <if test='salesCd != null and salesCd != ""'> 
+	                       AND (HQ_CD = #{salesCd} OR SALES_CD = #{salesCd})
+	                     </if>
+                     </where>
+                   ) AS VSHD
+                   ON VSHD.SALES_CD = TSPM.SALES_CD
+		       
+		       JOIN KRMC.TFM_SALES_ADD_INFO AS TSAI
+		           ON TSPM.SALES_CD = TSAI.SALES_CD
+		           
+		       JOIN KRMC.TFM_PRDT_MST AS TPM
+		           ON TSPM.PRDT_CD = TPM.PRDT_CD
+		           
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD
+		           ON TPM.ORD_UNIT = TCD.DTL_CD
+		           AND TCD.COM_CD = 'M006'
+		           
+		 WHERE TPM.USE_YN = 'Y'
+			 <if test='prdtCd != null and prdtCd != ""'> 
+			   AND TSPM.PRDT_CD = #{prdtCd}
+			 </if>
+		 ORDER BY TSPM.PRDT_CD
+	</select>
+	
+	<!-- 매출처별 품목 엑셀 다운 -->
+	<select id="selectSalesPrdtListExcelDown" parameterType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo" resultType="java.util.HashMap">
+	/*SalesPrdtMgmtMapper.selectSalesPrdtListExcelDown*/	
+		SELECT IFNULL(TSPM.PRDT_CD,'') AS PRDT_CD
+               , IFNULL(TPM.PRDT_NM,'') AS PRDT_NM
+               , IFNULL(TPM.PRDT_STD,'') AS PRDT_STD
+               , IFNULL(TCD.DTL_NM,'') AS ORD_UNIT
+               , IFNULL(TPM.COST,0) AS COST
+               , IFNULL(TSAI.SALES_NM,'') AS SALES_NM
+			   , IFNULL(TSPM.SALES_PRDT_CD_1,'') AS SALES_PRDT_CD_1
+               , IFNULL(TSPM.SALES_PRDT_CD_2,'') AS SALES_PRDT_CD_2
+               , IFNULL(TSPM.PRICE,0) AS PRICE
+               , IFNULL(TSPM.PREV_PRICE,0) AS PREV_PRICE
+               , IFNULL(TSPM.VAT_YN,'') AS VAT_YN
+               , IFNULL(TSPM.START_DT,'') AS START_DT
+               , IFNULL(TM_1.USER_NM,'') AS REG_NM
+               , IFNULL(TSPM.REG_DT,'') AS REG_DT
+               , IFNULL(TM_2.USER_NM,'') AS MOD_NM
+               , IFNULL(TSPM.MOD_DT,'') AS MOD_DT
+		  FROM KRMC.TSM_SALES_PRDT_MST AS TSPM
+		  
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_1
+		           ON TSPM.REG_ID = TM_1.USER_ID
+		           
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM_2
+		           ON TSPM.MOD_ID = TM_2.USER_ID
+		           
+		       JOIN
+                   (SELECT DISTINCT CASE WHEN #{hqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                           , SALES_CD
+                      FROM V_SALES_HQ_CD
+                     <where>
+	                     <if test='hqClass != null and hqClass != ""'> 
+	                       AND HQ_CLASS = #{hqClass}
+	                     </if>
+	                     <if test='salesCd != null and salesCd != ""'> 
+	                       AND (HQ_CD = #{salesCd} OR SALES_CD = #{salesCd})
+	                     </if>
+                     </where>
+                   ) AS VSHD
+                   ON VSHD.SALES_CD = TSPM.SALES_CD
+		       
+		       JOIN KRMC.TFM_SALES_ADD_INFO AS TSAI
+		           ON TSPM.SALES_CD = TSAI.SALES_CD
+		           
+		       JOIN KRMC.TFM_PRDT_MST AS TPM
+		           ON TSPM.PRDT_CD = TPM.PRDT_CD
+		           
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD
+		           ON TPM.ORD_UNIT = TCD.DTL_CD
+		           AND TCD.COM_CD = 'M006'
+		           
+		 <where>
+			 <if test='prdtCd != null and prdtCd != ""'> 
+			   AND TSPM.PRDT_CD = #{prdtCd}
+			 </if>
+		 </where>
+		 ORDER BY TSPM.PRDT_CD
+	</select>
+	
+
+	<!-- 상품 신규 저장 -->
+	<insert id="insertSalesPrdtMaterSalesPrdtAll" parameterType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo">
+	/*SalesPrdtMgmtMapper.insertSalesPrdtMaterSalesPrdtAll*/
+	    INSERT INTO KRMC.TSM_SALES_PRDT_MST
+            (SALES_CD, PRDT_CD, SALES_PRDT_CD_1, SALES_PRDT_CD_2
+             , START_DT, END_DT, VAT_YN, PRICE, PREV_PRICE
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT)
+        VALUES
+            (#{salesCd}, #{prdtCd}, #{salesPrdtCd1}, #{salesPrdtCd2}
+             , #{startDt}, '99991231', #{vatYn}, #{price}, #{prevPrice}
+			 , 'Y', #{workId}, NOW(), #{workId}, NOW()
+            )
+	</insert>
+	
+
+	<!-- 매출처 상품 수정 -->
+	<update id="updateSalesPrdtMasterData" parameterType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo">
+	/*SalesPrdtMgmtMapper.updateSalesPrdtMasterData*/
+        UPDATE KRMC.TSM_SALES_PRDT_MST
+           SET SALES_PRDT_CD_1   = #{salesPrdtCd1}
+               , SALES_PRDT_CD_2 = #{salesPrdtCd2}
+               , START_DT        = #{startDt}
+               , VAT_YN          = #{vatYn}
+               , PRICE           = #{price}
+               , PREV_PRICE      = #{priceOrg}
+               , MOD_ID          = #{workId}
+               , MOD_DT           = NOW()
+         WHERE SALES_CD = #{salesCd}
+           AND PRDT_CD =  #{prdtCd}
+           AND SALES_PRDT_CD_1 = #{salesPrdtCd1Org}
+           AND SALES_PRDT_CD_2 = #{salesPrdtCd2Org}
+	</update>
+	
+	<!-- 선택 상품 삭제 -->
+	<update id="updateSalesPrdtMasterDataUseFlag" parameterType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo">
+	/*SalesPrdtMgmtMapper.updateSalesPrdtMasterDataUseFlag*/
+        DELETE FROM KRMC.TSM_SALES_PRDT_MST
+         WHERE SALES_CD = #{salesCd}
+           AND PRDT_CD =  #{prdtCd}
+	</update>
+	
+	<!-- 품목코드 일괄변경 -->
+	<update id="updateSalesPrdtMaterPrdtOldNewChg" parameterType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo">
+	/*SalesPrdtMgmtMapper.updateSalesPrdtMaterPrdtOldNewChg*/
+        UPDATE KRMC.TSM_SALES_PRDT_MST
+           SET PRDT_CD        = #{prdtCdNew}
+               , MOD_ID       = #{workId}
+               , MOD_DT       = NOW()
+         WHERE PRDT_CD =  #{prdtCdOld}
+	</update>
+	
+	<!-- 매출처 품목 복사 -->
+	<insert id="updateSalesPrdtMaterSalesCdOrgNewInsert" parameterType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo">
+	/*SalesPrdtMgmtMapper.updateSalesPrdtMaterSalesCdOrgNewInsert*/
+        INSERT INTO KRMC.TSM_SALES_PRDT_MST
+        (SALES_CD, PRDT_CD, SALES_PRDT_CD_1, SALES_PRDT_CD_2, START_DT, END_DT
+         , VAT_YN, PRICE, PREV_PRICE, USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT
+        )
+        SELECT #{salesCdNew}, PRDT_CD, SALES_PRDT_CD_1, SALES_PRDT_CD_2, START_DT, END_DT
+               , VAT_YN, PRICE, PREV_PRICE, USE_YN, #{workId}, NOW(), #{workId}, NOW()
+          FROM KRMC.TSM_SALES_PRDT_MST
+         WHERE SALES_CD =  #{salesCdOrg}
+           AND PRDT_CD NOT IN (SELECT PRDT_CD FROM KRMC.TSM_SALES_PRDT_MST
+                                WHERE SALES_CD = #{salesCdNew}
+                              )
+           AND USE_YN = 'Y'
+	</insert>
+	
+	
+	<!-- 품목일괄 적용 조회  -->
+	<select id="selectSalesPrdtMgmtAddList" parameterType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo" resultType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo">
+	/*SalesPrdtMgmtMapper.selectSalesPrdtMgmtAddList*/	
+		SELECT TPM.PRDT_CD
+               , TPM.PRDT_NM
+               , TPM.PRDT_STD
+               , TCD.DTL_NM AS ORD_UNIT
+               , TPM.COST
+               , TSAI.SALES_CD
+               , TSAI.SALES_NM
+			   , #{salesPrdtCd1AllSch} AS SALES_PRDT_CD_1
+               , #{salesPrdtCd2AllSch} AS SALES_PRDT_CD_2
+               , #{priceAllSch} AS PRICE
+               , #{hqclassAllSch} AS HQ_CLASS
+               , 0 AS PREV_PRICE
+               , TPM.VAT_YN
+               , DATE_FORMAT(NOW(),'%Y%m%d') AS START_DT
+		  FROM KRMC.TFM_PRDT_MST AS TPM
+		       
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD
+		           ON TPM.ORD_UNIT = TCD.DTL_CD
+		           AND TCD.COM_CD = 'M006'
+		  
+		       , (SELECT DISTINCT CASE WHEN #{hqclassAllSch}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                    FROM V_SALES_HQ_CD
+                   <where>
+                     <if test='hqclassAllSch == "10"'>
+                       AND HQ_CD = #{salesCdAllSch}
+                     </if>
+                     <if test='hqclassAllSch == "20"'>
+                       AND SALES_CD = #{salesCdAllSch}
+                     </if>
+                   </where>
+                 ) AS VSHD
+		       
+		       , KRMC.TFM_SALES_ADD_INFO AS TSAI
+		           
+		 WHERE TPM.PRDT_CD = #{prdtCdAllSch}
+	       AND VSHD.HQ_CD = TSAI.SALES_CD
+		 ORDER BY TPM.PRDT_CD
+	</select>
+	
+	
+	<!-- 품목 일괄 적용 -->
+	<insert id="updateSalesPrdtMaterSalesPrdtAllInsert" parameterType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo">
+	/*SalesPrdtMgmtMapper.updateSalesPrdtMaterSalesPrdtAllInsert*/
+		<if test='hqClass == "10"'>			<!-- 본부  --> 
+	        INSERT INTO KRMC.TSM_SALES_PRDT_MST
+	        (SALES_CD, PRDT_CD, SALES_PRDT_CD_1, SALES_PRDT_CD_2, START_DT, END_DT
+	         , VAT_YN, PRICE, PREV_PRICE, USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT
+	        )
+	        SELECT TSHC.SALES_CD, TPM.PRDT_CD, #{salesPrdtCd1}, #{salesPrdtCd2}, CONCAT(DATE_FORMAT(NOW(),"%Y%m"),'01'), '99991231'
+	               , #{vatYn}, #{price}, 0, 'Y', #{workId}, NOW(), #{workId}, NOW()
+	          FROM TFM_PRDT_MST AS TPM, TFM_SALES_HQ_CLASS AS TSHC
+	         WHERE TPM.PRDT_CD = #{prdtCd}
+	           AND TSHC.HQ_CD = #{salesCd}
+	           AND TPM.PRDT_CD NOT IN (SELECT TSPM.PRDT_CD 
+	                                     FROM TSM_SALES_PRDT_MST AS TSPM
+                                              JOIN TFM_SALES_HQ_CLASS AS TSHC
+                                                  ON TSHC.SALES_CD = TSPM.SALES_CD
+                                        WHERE TSHC.HQ_CD = #{salesCd}
+                                      )
+	    </if>
+	    <if test='hqClass == "20"'>			<!-- 실제매출처  --> 
+	        INSERT INTO KRMC.TSM_SALES_PRDT_MST
+	        (SALES_CD, PRDT_CD, SALES_PRDT_CD_1, SALES_PRDT_CD_2, START_DT, END_DT
+	         , VAT_YN, PRICE, PREV_PRICE, USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT
+	        )
+	        SELECT TSHC.SALES_CD, TPM.PRDT_CD, #{salesPrdtCd1}, #{salesPrdtCd2}, CONCAT(DATE_FORMAT(NOW(),"%Y%m"),'01'), '99991231'
+	               , #{vatYn}, #{price}, 0, 'Y', #{workId}, NOW(), #{workId}, NOW()
+	          FROM TFM_PRDT_MST AS TPM, TFM_SALES_HQ_CLASS AS TSHC
+	         WHERE TPM.PRDT_CD = #{prdtCd}
+	           AND TSHC.SALES_CD = #{salesCd}
+	           AND TPM.PRDT_CD NOT IN (SELECT TSPM.PRDT_CD 
+	                                     FROM TSM_SALES_PRDT_MST AS TSPM
+                                              JOIN TFM_SALES_HQ_CLASS AS TSHC
+                                                  ON TSHC.SALES_CD = TSPM.SALES_CD
+                                        WHERE TSHC.SALES_CD = #{salesCd}
+                                      )
+	    </if>
+	</insert>
+	
+	<!-- 품목코드 일괄변경 -->
+	<update id="updateSalesPrdtMaterSalesPriceUpt" parameterType="com.doppio.workplace.bm.service.SalesPrdtMgmtVo">
+	/*SalesPrdtMgmtMapper.updateSalesPrdtMaterSalesPriceUpt*/
+        UPDATE TSM_SALES_PRDT_MST AS TSPM_1
+          JOIN TSM_SALES_PRDT_MST AS TSPM_2
+              ON TSPM_2.PRDT_CD = TSPM_1.PRDT_CD
+           SET TSPM_1.PRICE        = #{priceUpt}
+               , TSPM_1.PREV_PRICE = TSPM_2.PRICE
+               , TSPM_1.MOD_ID     = #{workId}
+               , TSPM_1.MOD_DT     = NOW()
+         WHERE TSPM_1.PRDT_CD =  #{prdtCdPriceUpt}
+	</update>
+	
+</mapper>
+

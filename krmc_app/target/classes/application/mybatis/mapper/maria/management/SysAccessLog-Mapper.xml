@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.management.service.impl.SysAccessLogMapper">
+
+<!--  
+<cache type="org.springframework.mybatis.FacadeCache"></cache>
+-->
+
+	<resultMap id="accessLog" type="com.doppio.management.service.SysAccessVo">
+        <id 	column="LOG_IDX"		  	property="logIdx"			/>	<!-- 접근로그인덱스     -->
+        <result column="SESSION_ID"     	property="sessionId"      	/>	<!-- 브라우저세션아이디  -->
+		<result column="RES_PGM_URL"    	property="resPgmUrl"     	/>	<!-- 접근프로그램URL   -->
+		<result column="RES_FULL_URL"   	property="resFullUrl"     	/>	<!-- 접근URL전체경로   -->
+        <result column="MENU_ID"		  	property="menuId"     		/>	<!-- 메뉴아이디    	-->
+        <result column="TITLE"          	property="title"     		/>	<!-- 메뉴명    		-->
+        <result column="TITLE_SUB"        	property="titleSub"     	/>	<!-- 메뉴명확장명    	-->
+        <result column="RES_IP"         	property="resIp"          	/>	<!-- 접근IP         	-->
+        <result column="RES_CNT"        	property="resCnt"         	/>	<!-- 접근횟수         -->
+        <result column="REG_DT"         	property="regDt"          	/>	<!-- 최초접근일시      -->
+        <result column="MOD_DT"         	property="modDt"          	/>	<!-- 최종접근일시      -->
+        <result column="REG_ID"         	property="regId"          	/>	<!-- 접근자아이디      -->
+        <result column="USER_NM"        	property="userNm"         	/>	<!-- 접근자명		    -->
+
+        <result column="TYPE_FLAGE_NM"		property="typeFlageNm"	 	/>	<!-- 실행매뉴/EVENT[9011] 여부명    -->
+       	<result column="TYPE_FLAGE_CD"		property="typeFlageCd"	 	/>	<!-- 실행매뉴/EVENT 코드(1/2) 		-->
+
+		<result column="EXECUTE_TIME"	  	property="executeTime" 		/>  <!-- 수행시간         -->
+		<result column="EXECUTE_TIME_AVG"	property="executeTimeAvg"	/> 	<!-- 수행시간평균      -->
+		<result column="DTL_LOG_YN"			property="dtlLogYn" 	  	/> 	<!-- 로그상세여부      -->
+
+        <result column="RNUM"        		property="rnum"           	/>
+		<result column="TOTAL_COUNT"		property="totalCount"  		/>
+    </resultMap>
+
+	<!-- 상세로그 조회 MAP -->
+		<resultMap id="logDetailMap"   	type="com.doppio.management.service.SysAccessVo">
+		  <result column="LOG_IDX"		  property="logIdx"			/>	<!-- 접근로그인덱스        -->
+          <result column="REG_DT"         property="regDt"          />	<!-- 최초접근일시           -->
+          <result column="REG_ID"         property="regId"          />	<!-- 접근자아이디           -->
+		  <result column="SEQ"		 	  property="seq" 			/>  <!-- 순번   	      -->
+		  <result column="DTL_COMMAND"	  property="dtlCommand" 	 /> <!-- 상세커맨드              -->
+	</resultMap>
+
+	<!-- access log [selectAccessLogCount, selectAccessLog]  -->
+	<sql id="selectAccessLog_Where">
+		<where>
+	      	<if test='typeFlageCd != null and typeFlageCd != ""'>
+	         	AND (CASE WHEN T1.RES_PGM_URL = T2.WEB_PAGE THEN '1' ELSE '2' END ) = #{typeFlageCd}
+	        </if>
+	        <if test='title != null and title != ""'>
+	        	AND T2.TITLE LIKE CONCAT('%',#{title},'%')
+	        </if>
+
+	        <if test='accFromDtLocale != null and accFromDtLocale != ""'>
+				AND T1.ACCESS_DY BETWEEN #{accFromDtLocale}
+			</if>
+			<if test='accFromDtLocale == null or accFromDtLocale == ""'>
+				AND T1.ACCESS_DY BETWEEN DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')
+			</if>
+			<if test='accToDtLocale != null and accToDtLocale != ""'>
+				AND #{accToDtLocale}
+			</if>
+			<if test='accToDtLocale == null or accToDt == ""'>
+				AND DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')
+			</if>
+	        <if test='userNm != null and userNm != ""'>
+				AND T3.USER_NM LIKE CONCAT('%',#{userNm},'%')
+			</if>
+	      	<if test='userId != null and userId != ""'>
+				AND T3.REG_ID  LIKE CONCAT('%',#{userId},'%')
+			</if>
+	      	<if test='resPgmUrl != null and resPgmUrl != ""'>
+				AND T1.RES_PGM_URL LIKE CONCAT('%',#{resPgmUrl},'%')
+			</if>
+			<if test='title != null and title != ""'>
+				AND T2.TITLE LIKE CONCAT('%',#{title},'%')
+			</if>
+			<if test='titleSub != null and titleSub != ""'>
+				AND T2.TITLE_SUB LIKE CONCAT('%',#{titleSub},'%')
+			</if>
+			<if test='search_useYn != null and search_useYn != ""'>
+				AND T2.DTL_LOG_YN LIKE CONCAT('%',#{search_useYn},'%')
+			</if>
+		</where>
+	</sql>
+
+	<!-- paging count -->
+	<select id="selectAccessLogCount" parameterType="com.doppio.management.service.SysAccessVo" resultType="int">
+		/*SysAccessLog.selectAccessLogCount*/
+		  SELECT COUNT(*) AS CNT
+		    FROM TCM_PERSONALINFO_LOG   T1
+           	LEFT OUTER JOIN TCM_MENU    T2 ON T1.MENU_ID  = T2.MENU_ID
+            LEFT OUTER JOIN TCM_MEMBER  T3 ON T1.REG_ID   = T3.MEMBER_CD
+		  <include refid="selectAccessLog_Where"/>
+	</select>
+
+	<!-- access log list -->
+	 <select id="selectAccessLog" resultMap="accessLog" parameterType="com.doppio.management.service.SysAccessVo">
+	 	/*SysAccessLog.selectAccessLog*/
+		 SELECT C.* FROM (
+      		SELECT S.ROW_CNT as RNUM ,COUNT(1) OVER() TOTAL_COUNT ,S.* FROM (
+					   SELECT ROW_NUMBER() OVER(order by T1.LOG_IDX DESC) as ROW_CNT
+			                ,T1.LOG_IDX
+							,T1.SESSION_ID
+							,T1.RES_PGM_URL
+							,T1.RES_FULL_URL
+							,T2.MENU_ID
+							,T2.TITLE
+							,T2.TITLE_SUB
+							,T1.RES_IP
+							,T1.RES_CNT
+							,DATE_FORMAT(T1.REG_DT, '%Y%m%d%H%i%s') AS REG_DT
+							,DATE_FORMAT(T1.MOD_DT, '%Y%m%d%H%i%s') AS MOD_DT
+							,T1.REG_ID
+							,IFNULL(T3.USER_NM,'guest') USER_NM
+							,T1.EXECUTE_TIME
+							,ROUND(0.001*CAST(T1.EXECUTE_TIME_AVG AS INT),4) AS EXECUTE_TIME_AVG
+							,T2.DTL_LOG_YN
+							,FN_CODE_RTN('9011',(CASE WHEN T1.RES_PGM_URL = T2.WEB_PAGE THEN '1' ELSE '2' END)) AS  TYPE_FLAGE_NM
+               				,CASE WHEN T1.RES_PGM_URL = T2.WEB_PAGE THEN '1' ELSE '2' END AS TYPE_FLAGE_CD
+
+					    FROM TCM_PERSONALINFO_LOG  		T1
+           				  LEFT OUTER JOIN TCM_MENU 		T2 ON T1.MENU_ID   = T2.MENU_ID
+					      LEFT OUTER JOIN TCM_MEMBER	T3 ON T1.REG_ID    = T3.MEMBER_CD
+      	 				   <include refid="selectAccessLog_Where"/>
+			          ) S
+		)C
+        WHERE RNUM between #{startRowNo} and #{endRowNo}
+     </select>
+
+   	 <delete id="deleteAccessLog" parameterType="com.doppio.management.service.SysAccessVo">
+   	    /*deleteAccessLog*/
+   	 	DELETE FROM TCM_PERSONALINFO_LOG WHERE LOG_IDXs = #{logIdx}
+   	 </delete>
+
+   	<!-- 상세로그 조회 -->
+   	<select id="selectDetailLogList" parameterType="com.doppio.management.service.SysAccessVo" resultMap="logDetailMap">
+     /*SysAccessLog.selectDetailLogList*/
+		SELECT  LOG_IDX                                                /* 접근로그인덱스	*/
+       		   ,SEQ                                                    /* 순번		*/
+       		   ,DTL_COMMAND                                            /* 로그상세내역	*/
+			   ,DATE_FORMAT (REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT    /* 접근일자		*/
+       		   ,REG_ID                                                 /* 접근아이디	*/
+		FROM    TCM_PERSONALINFO_LOG_DTL
+		WHERE   LOG_IDX = #{logIdx}									   /* 접근로그인덱스 */
+		ORDER BY SEQ 												   /* 순번		*/
+    </select>
+
+   	 <!-- 접근로그 시간대별 통계 정보 조회 -->
+	<select id="selectAccessLogTimesList" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+	/* SysAccessLogMapper.selectAccessLogTimesList */
+		 SELECT  '0' AS TCODE_NM
+			,DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 9 DAY),'%m/%d') DT_01
+            ,DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 8 DAY),'%m/%d') DT_02
+            ,DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 7 DAY),'%m/%d') DT_03
+            ,DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 6 DAY),'%m/%d') DT_04
+            ,DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 5 DAY),'%m/%d') DT_05
+            ,DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 4 DAY),'%m/%d') DT_06
+            ,DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 3 DAY),'%m/%d') DT_07
+            ,DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 2 DAY),'%m/%d') DT_08
+            ,DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 1 DAY),'%m/%d') DT_09
+            ,DATE_FORMAT(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'),  '%m/%d') DT_10
+            ,'' AS DTS
+      UNION ALL
+
+		  SELECT   C.TCODE_NM
+		         	,IFNULL(CONCAT(C.DT_01 ), '0' ) DT_01
+                	,IFNULL(CONCAT(C.DT_02 ), '0' ) DT_02
+                	,IFNULL(CONCAT(C.DT_03 ), '0' ) DT_03
+                	,IFNULL(CONCAT(C.DT_04 ), '0' ) DT_04
+                	,IFNULL(CONCAT(C.DT_05 ), '0' ) DT_05
+                	,IFNULL(CONCAT(C.DT_06 ), '0' ) DT_06
+                	,IFNULL(CONCAT(C.DT_07 ), '0' ) DT_07
+                	,IFNULL(CONCAT(C.DT_08 ), '0' ) DT_08
+                	,IFNULL(CONCAT(C.DT_09 ), '0' ) DT_09
+                	,IFNULL(CONCAT(C.DT_10 ), '0' ) DT_10
+		         <![CDATA[
+               ,CASE WHEN DATE_FORMAT(SYSDATE(),'%H') =  SUBSTR(C.TCODE_NM,1,2) THEN '1'
+                    WHEN DATE_FORMAT(SYSDATE(),'%H') =  SUBSTR(C.TCODE_NM,4)   THEN '2'
+                      ELSE
+                       CASE WHEN CAST(DATE_FORMAT(SYSDATE(),'%H') AS INT) > 20 AND SUBSTR(C.TCODE_NM,  4) = '24' THEN '1'
+                            WHEN CAST(DATE_FORMAT(SYSDATE(),'%H') AS INT) > 0 AND CAST(DATE_FORMAT(SYSDATE(),'%H') AS INT) < 8 AND SUBSTR(C.TCODE_NM,1,2) = '01' THEN '1'
+                          ELSE '' END
+                  END DTS
+                  ]]>
+		     FROM
+		          (SELECT  FN_CODE_RTN('9090',T1.TCODE) TCODE_NM
+		                  ,SUM(CASE WHEN DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 9 DAY),'%Y%m%d') =  DT THEN T1.RES_CNT ELSE '' END) DT_01
+                          ,SUM(CASE WHEN DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 8 DAY),'%Y%m%d') =  DT THEN T1.RES_CNT ELSE '' END) DT_02
+                          ,SUM(CASE WHEN DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 7 DAY),'%Y%m%d') =  DT THEN T1.RES_CNT ELSE '' END) DT_03
+                          ,SUM(CASE WHEN DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 6 DAY),'%Y%m%d') =  DT THEN T1.RES_CNT ELSE '' END) DT_04
+                          ,SUM(CASE WHEN DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 5 DAY),'%Y%m%d') =  DT THEN T1.RES_CNT ELSE '' END) DT_05
+                          ,SUM(CASE WHEN DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 4 DAY),'%Y%m%d') =  DT THEN T1.RES_CNT ELSE '' END) DT_06
+                          ,SUM(CASE WHEN DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 3 DAY),'%Y%m%d') =  DT THEN T1.RES_CNT ELSE '' END) DT_07
+                          ,SUM(CASE WHEN DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 2 DAY),'%Y%m%d') =  DT THEN T1.RES_CNT ELSE '' END) DT_08
+                          ,SUM(CASE WHEN DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 1 DAY),'%Y%m%d') =  DT THEN T1.RES_CNT ELSE '' END) DT_09
+                          ,SUM(CASE WHEN DATE_FORMAT(STR_TO_DATE(#{searchDateLocale},'%Y%m%d')  ,'%Y%m%d') =  DT THEN T1.RES_CNT ELSE '' END) DT_10
+		             FROM
+
+		             ( SELECT
+		             		<![CDATA[
+                            CASE WHEN CAST(DATE_FORMAT(MOD_DT,'%H') AS INT ) >= 0  AND CAST(DATE_FORMAT(MOD_DT,'%H') AS INT) < 8 THEN '01'
+                                  WHEN CAST(DATE_FORMAT(MOD_DT,'%H') AS INT ) =   8 THEN '02'
+                                  WHEN CAST(DATE_FORMAT(MOD_DT,'%H') AS INT ) =   9 THEN '03'
+                                  WHEN CAST(DATE_FORMAT(MOD_DT,'%H') AS INT ) =  10 THEN '04'
+                                  WHEN CAST(DATE_FORMAT(MOD_DT,'%H') AS INT ) =  11 THEN '05'
+                                  WHEN CAST(DATE_FORMAT(MOD_DT,'%H') AS INT ) =  12 THEN '06'
+                                  WHEN CAST(DATE_FORMAT(MOD_DT,'%H') AS INT ) =  13 THEN '07'
+                                  WHEN CAST(DATE_FORMAT(MOD_DT,'%H') AS INT ) =  14 THEN '08'
+                                  WHEN CAST(DATE_FORMAT(MOD_DT,'%H') AS INT ) =  15 THEN '09'
+                                  WHEN CAST(DATE_FORMAT(MOD_DT,'%H') AS INT ) =  16 THEN '10'
+                                  WHEN CAST(DATE_FORMAT(MOD_DT,'%H') AS INT ) =  17 THEN '11'
+                                  WHEN CAST(DATE_FORMAT(MOD_DT,'%H') AS INT ) =  18 THEN '12'
+                                  WHEN CAST(DATE_FORMAT(MOD_DT,'%H') AS INT ) =  19 THEN '13'
+                                  ELSE  '14'  END as TCODE
+                            ]]>
+		                     , RES_CNT
+		                     , DATE_FORMAT(MOD_DT,'%Y%m%d') DT
+							FROM TCM_PERSONALINFO_LOG
+							<if test='typeFlage == "1"'>
+							    ,(  SELECT MAX(LOG_IDX) AS LOG_IDX FROM TCM_PERSONALINFO_LOG A,
+							    	(
+							    		SELECT  DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 9 DAY), '%Y%m%d') AS FR_DT
+                                    			,DATE_FORMAT(SYSDATE(), '%Y%m%d') AS TO_DT
+							    	) oo
+	                 					WHERE ACCESS_DY BETWEEN oo.FR_DT AND oo.TO_DT
+	                 					GROUP BY A.SESSION_ID ) M1
+                           	   WHERE TCM_PERSONALINFO_LOG.LOG_IDX = M1.LOG_IDX
+							</if>
+							<if test='typeFlage == "2"'>
+								,(
+						    		SELECT  DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{searchDateLocale},'%Y%m%d'), INTERVAL 9 DAY), '%Y%m%d') AS FR_DT
+                                    		,DATE_FORMAT(SYSDATE(), '%Y%m%d') AS TO_DT
+							    ) oo
+							    WHERE ACCESS_DY BETWEEN oo.FR_DT AND oo.TO_DT
+							</if>
+                         ) T1
+		             GROUP BY TCODE ) C
+		      ORDER BY TCODE_NM
+	</select>
+
+	<!-- access log list 엑셀 다운로드 -->
+	 <select id="selectAccessLogExl" parameterType="com.doppio.management.service.SysAccessVo" resultType="java.util.HashMap">
+	 	/* SysAccessLog.selectAccessLogExl */
+				 SELECT
+					T1.SESSION_ID
+					,IFNULL(T2.MENU_ID,'') AS MENU_ID
+					,IFNULL(T2.TITLE,'') AS TITLE
+					,T1.RES_FULL_URL
+					,IFNULL(T3.USER_NM,'guest') AS USER_NM
+					,T1.REG_ID
+					,T1.RES_IP
+					,T1.RES_CNT
+					,CASE WHEN #{langCd} = 'KO'
+					 THEN DATE_FORMAT(T1.REG_DT,'%Y-%m-%d %H:%i:%s')
+                	 ELSE DATE_FORMAT(T1.REG_DT,'%H:%i:%s %d-%m-%Y') END AS REG_DT
+					,CASE WHEN #{langCd} = 'KO'
+					 THEN DATE_FORMAT(T1.MOD_DT,'%Y-%m-%d %H:%i:%s')
+               		 ELSE DATE_FORMAT(T1.MOD_DT,'%H:%i:%s %d-%m-%Y') END AS MOD_DT
+					,IFNULL(ROUND(0.001*CAST(T1.EXECUTE_TIME_AVG AS INT),4),'') AS EXECUTE_TIME_AVG
+					,IFNULL(T2.DTL_LOG_YN,'') AS DTL_LOG_YN
+				FROM 	TCM_PERSONALINFO_LOG  T1
+		           		LEFT OUTER JOIN TCM_MENU T2 ON T1.MENU_ID   = T2.MENU_ID
+				LEFT OUTER JOIN TCM_MEMBER T3 ON T1.REG_ID    = T3.MEMBER_CD
+		      	 		<include refid="selectAccessLog_Where"/>
+     </select>
+</mapper>

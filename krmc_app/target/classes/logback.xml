@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+	<timestamp key="bySecond" datePattern="yyyyMMddHH" />
+	
+	<property name="LOGS_ABSOLUTE_PATH" value="/Volumes/dadasite/project/Logs/krmc" />
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<layout class="ch.qos.logback.classic.PatternLayout">
+			<pattern>%d{yyyyMMdd HH:mm:ss.SSS}|%-5p|%5X{guid}|%-5X{logCode}|%-40F|%-5L|%m%n</pattern>
+		</layout>
+	</appender>
+
+	<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<prudent>true</prudent>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${LOGS_ABSOLUTE_PATH}/logFile.%d{yyyy-MM-dd-HH}.log</fileNamePattern>
+			<maxHistory>30</maxHistory>
+		</rollingPolicy>
+		<encoder >
+			<pattern>%d{yyyyMMdd HH:mm:ss.SSS}|%-5p|%36X{guid}|%-5X{logCode}|%-5F|%-5L|%m%n</pattern>
+		</encoder>
+	</appender>
+
+	<!--
+	<appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<prudent>true</prudent>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${LOGS_ABSOLUTE_PATH}/logJson.%d{yyyy-MM-dd-HH}.log</fileNamePattern>
+			<maxHistory>6</maxHistory>
+		</rollingPolicy>
+		<encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <jsonGeneratorDecorator class="org.springframework.tronic.decorator.PrettyPrintingDecorator"/>
+            <jsonFactoryDecorator class="org.springframework.tronic.decorator.DataFormatDecorator"/>
+        </encoder>
+	</appender>
+	-->
+
+	<!--
+	<appender name="STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+      <destination>127.0.0.1:4560</destination>
+	  <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+    </appender>
+	 -->
+
+	<conversionRule conversionWord="syslogStart" converterClass="ch.qos.logback.classic.pattern.SyslogStartConverter"/>
+
+
+
+
+	<!-- Logstash JSON 형식으로 파일 로그 생성 -->
+    <!-- /var/log/applicaion/log.json 파일에 최신 로그 생성 -->
+    <!-- /var/log/applicaion/log_2016-07-15.0.json 파일에 과거 로그 보관 -->
+    <!-- 5MB 초과, 날짜 변경 시점마다 생성, 생성된지 3일 이상된 파일은 삭제 -->
+	<!--
+	<appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <prudent>true</prudent>
+        <File>${LOGS_ABSOLUTE_PATH}/log.json</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${LOGS_ABSOLUTE_PATH}/logJson_%d{yyyy-MM-dd}.%i.json</FileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>5MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>3</maxHistory>
+        </rollingPolicy>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <jsonGeneratorDecorator class="org.springframework.tronic.decorator.PrettyPrintingDecorator"/>
+            <jsonFactoryDecorator class="org.springframework.tronic.decorator.DataFormatDecorator"/>
+        </encoder>
+    </appender>
+	-->
+
+    <logger name="org.springframework" 			level="info" />
+    <logger name="org.springframework.security" level="info" />
+
+    <logger name="jdbc" 			level="OFF"/>
+    <logger name="jdbc.resultset" 	level="OFF"/>
+
+
+
+  	<logger name="jdbc.sqlonly" level="DEBUG" additivity="false">
+  	    <appender-ref  ref="FILE"   />
+    	<appender-ref ref="STDOUT" />
+  	</logger>
+  	<logger name="jdbc.resultsettable" level="DEBUG" additivity="false">
+  	    <appender-ref  ref="FILE"   />
+    	<appender-ref ref="STDOUT" />
+  	</logger>
+
+
+ <!--  FATAL > ERROR > WARN > INFO > DEBUG > TRACE  OFF  -->
+    <root level="INFO">
+        <appender-ref  ref="STDOUT" />
+        <appender-ref  ref="FILE"   />
+        <!-- <appender-ref ref="JSON_FILE"/> -->
+    </root>
+
+	<logger name="org.springframework.aop.interceptor.PerformanceMonitorInterceptor" additivity="false">
+		<level value="TRACE" />
+		<appender-ref  ref="FILE"   />
+		<appender-ref ref="STDOUT" />
+	</logger>
+
+	<logger name="java.sql"  >
+		<level			value="DEBUG" />
+		<appender-ref  ref="FILE"   />
+        <appender-ref	ref="STDOUT" />
+    </logger>
+
+	<logger name="java.sql.PreparedStatement" additivity="false">
+    	<level value="DEBUGE"/>
+    	<appender-ref  ref="FILE"   />
+  		<appender-ref ref="STDOUT"/>
+    </logger>
+
+	<logger name="com.doppio" additivity="false">
+		<level value="DEBUG" />
+		<appender-ref  ref="FILE"   />
+		<appender-ref ref="STDOUT" />
+	</logger>
+
+
+<!--
+# log4jdbc settings development production
+jdbc.connection     :     WARN       WARN
+jdbc.audit          :     WARN       WARN
+jdbc.sqlonly        :     WARN       WARN
+jdbc.sqltiming      :     INFO       WARN
+jdbc.resultset      :     WARN       WARN
+jdbc.resultsettable :     INFO       WARN
+-->
+
+<!--
+<logger name="jdbc.connection" additivity="false">
+    <level value="WARN"/>
+    <appender-ref ref="STDOUT"/>
+</logger>
+
+<logger name="jdbc.audit" additivity="false">
+    <level value="WARN"/>
+    <appender-ref ref="STDOUT"/>
+</logger>
+
+<logger name="jdbc.sqlonly" additivity="false">
+    <level value="WARN"/>
+    <appender-ref ref="STDOUT"/>
+</logger>
+
+<logger name="jdbc.sqltiming" additivity="false">
+    <level value="INFO"/>
+    <appender-ref ref="STDOUT"/>
+</logger>
+
+<logger name="jdbc.resultset" additivity="false">
+    <level value="WARN"/>
+    <appender-ref ref="STDOUT"/>
+</logger>
+
+<logger name="jdbc.resultsettable" additivity="false">
+    <level value="INFO"/>
+    <appender-ref ref="STDOUT"/>
+</logger>
+-->
+<!--
+ FATAL > ERROR > WARN > INFO > DEBUG > TRACE  OFF
+org.springframework.ui.context
+org.springframework.web.context
+org.springframework.beans.factory.annotation
+org.springframework.beans.factory
+org.springframework.core.io.support
+org.springframework.web.servlet.DispatcherServlet
+org.springframework.aop.framework
+ -->
+
+<!-- 	 <root>
+		<level value="DEBUG" />
+		<appender-ref ref="console" />
+	</root>  -->
+
+<!--  	<root>
+		<level value="ERROR"/>
+    	<appender-ref ref="console"/>
+	</root> -->
+<!--
+ 	<root>
+		<level value="TRACE"/>
+    	<appender-ref ref="CONSOLE"/>
+    	<appender-ref ref="INTERFACE"/>
+    </root>
+-->
+</configuration>

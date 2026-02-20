@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans 		xmlns="http://www.springframework.org/schema/beans"
+			xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			xmlns:beans="http://www.springframework.org/schema/beans"
+			xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+								http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd
+								http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd"
+			>
+
+<!--
+	<bean id="jdbcProp" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location" value="classpath:/property/jdbc.properties" />
+	</bean>
+-->
+
+	<!-- MAIN Data Source for JNDI -->
+	<bean id="dataSourceSpied" class="org.springframework.jndi.JndiObjectFactoryBean">
+		<property name="jndiName"    value="KRMC_SYS"/>
+		<property name="resourceRef" value="true"/>
+	</bean>
+	<!-- DataSource for DBCP bean id = "dataSourceSpied" -->
+	<bean id="dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSourceSpied" />
+	 	<property name="logFormatter">
+	 		<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+	   			<property name="loggingType" value="MULTI_LINE" />
+	   			<property name="sqlPrefix" value="SQL:::" />
+	  		</bean>
+	 	</property>
+	</bean>
+
+	<!-- ANOTHER Data Source for JNDI -->
+	<!-- 
+	<bean id="dataSourceSpied_another" class="org.springframework.jndi.JndiObjectFactoryBean">
+		<property name="jndiName"    value="KRMC_ANOTHER"/>
+		<property name="resourceRef" value="true"/>
+	</bean>
+	 -->
+	<!-- DataSource for DBCP bean id = "dataSourceSpied_ems" -->
+	<!-- 
+	<bean id="dataSource_another" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSourceSpied_another" />
+	 	<property name="logFormatter">
+			<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				<property name="loggingType" value="MULTI_LINE" />
+				<property name="sqlPrefix" value="ANOTHER SQL:::" />
+	  		</bean>
+	 	</property>
+	</bean>
+ 	-->
+</beans>

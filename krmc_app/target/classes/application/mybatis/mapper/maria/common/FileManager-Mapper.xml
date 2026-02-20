@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.common.service.impl.FileManagerMapper">
+
+
+	<!-- 등록된 첨부파일 목록 조회 -->
+	<select id="selectAttachFileDataList" parameterType="com.doppio.common.model.AttachFileVo" resultType="com.doppio.common.model.AttachFileVo">
+	/*FileManagerMapper.selectAttachFileDataList*/
+		SELECT
+			 T1.ATCH_FILE_ID
+			,T1.SEQ
+			,T1.ORG_FILE_NM
+			,T1.SAVE_FILE_NM
+			,T1.FILE_KIND_CD
+			,T1.FILE_SIZE
+			,ROUND(T1.FILE_SIZE/1024,2) AS FILE_SIZE_KB
+			,T1.FILE_PATH_NM
+			,T1.FILE_TYPE_NM
+			,DATE_FORMAT(T1.REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT
+			,T1.REG_ID
+			,DATE_FORMAT(T1.MOD_DT, '%Y-%m-%d %H:%i:%s') AS MOD_DT
+			,T1.MOD_ID
+		FROM TCM_ATTACH_FILE T1 
+		WHERE T1.ATCH_FILE_ID = #{atchFileId}
+	    AND T1.SEQ  = #{seq}
+		ORDER BY T1.SEQ
+	</select>
+
+	<!-- 삭제할 첨부파일 목록 조회 -->
+	<select id="selectDeleteAttachFileDataList" parameterType="com.doppio.common.model.AttachFileVo" resultType="com.doppio.common.model.AttachFileVo">
+	/*FileManagerMapper.selectDeleteAttachFileDataList*/
+		SELECT
+			 ATCH_FILE_ID
+			,SEQ
+		FROM TCM_ATTACH_FILE
+		WHERE ATCH_FILE_ID = #{atchFileId}
+		AND SEQ NOT IN
+		<foreach collection="seqList" open="(" item="item" separator="," close=")">
+			#{item}
+		</foreach>
+		ORDER BY SEQ
+	</select>
+
+
+	<!-- 동일한 atchFileId 등록된 첨부파일 목록 조회 -->
+	<select id="selectAttachFileList" parameterType="String" resultType="com.doppio.common.model.AttachFileVo">
+	/*FileManagerMapper.selectAttachFileList*/
+		SELECT
+			ATCH_FILE_ID AS atchFileId
+			,SEQ AS seq
+			,ORG_FILE_NM AS orgFileNm
+			,SAVE_FILE_NM AS saveFileNm
+			,FILE_KIND_CD AS fileKindCd
+			,FILE_SIZE AS fileSize
+			,ROUND(FILE_SIZE/1024,2) AS fileSizeKb
+			,FILE_PATH_NM AS filePathNm
+			,FILE_TYPE_NM AS fileTypeNm
+			,DATE_FORMAT(REG_DT, '%Y-%m-%d %H:%i:%s') AS regDt
+			,REG_ID AS regId
+			,DATE_FORMAT(MOD_DT, '%Y-%m-%d %H:%i:%s') AS modDt		
+			,MOD_ID AS modId
+		FROM TCM_ATTACH_FILE
+		WHERE ATCH_FILE_ID = #{atchFileId}
+		ORDER BY SEQ
+	</select>
+
+
+	<!-- 동일한 atchFileId 등록된 첨부파일 갯수 조회 -->
+	<select id="selectAttachFileListCount" parameterType="String" resultType="java.lang.Integer">
+	/*FileManagerMapper.selectAttachFileListCount*/
+		SELECT
+			COUNT(*) AS CNT
+		FROM TCM_ATTACH_FILE
+		WHERE ATCH_FILE_ID = #{atchFileId}
+	</select>
+
+	<!-- 파일업로드 정보 등록 -->
+	<insert id="insertFileData" parameterType="com.doppio.common.model.AttachFileVo">
+		/* FileManagerMapper.insertFileData */
+		INSERT INTO TCM_ATTACH_FILE (
+			ATCH_FILE_ID	/* 첨부파일아이디 */
+			,SEQ			/* 순번 */
+			,ORG_FILE_NM	/* 원본파일명 */
+			,SAVE_FILE_NM	/* 저장파일명 */
+			,FILE_KIND_CD	/* 파일종류코드[9040] */
+			,FILE_SIZE		/* 파일사이즈 */
+			,FILE_PATH_NM	/* 파일경로명 */
+			,FILE_TYPE_NM	/* 파일확장자명 */
+			,ANX_INFO_NM	/* 파일부가정보 */
+			,REG_ID			/* 등록자아이디 */
+			,REG_DT			/* 등록일시 */
+			,MOD_ID			/* 수정자아이디 */
+			,MOD_DT			/* 수정일시 */
+		)
+		VALUES (
+			#{atchFileId}
+			,#{seq}
+			,#{orgFileNm}
+			,#{saveFileNm}
+			,#{fileKindCd}
+			,#{fileSize}
+			,#{filePathNm}
+			,#{fileTypeNm}
+			,#{anxInfoNm}
+			,#{workId}
+			,NOW()
+			,#{workId}
+			,NOW()
+		)
+	</insert>
+
+	<!-- 파일업로드 삭제 -->
+    <delete id="deleteFileData" parameterType="com.doppio.common.model.AttachFileVo" >
+		/*FileManagerMapper.deleteFileData*/
+		DELETE FROM TCM_ATTACH_FILE       WHERE ATCH_FILE_ID = #{atchFileId}
+		<if test='seq != null and seq != ""'>
+		    AND SEQ = #{seq}
+		</if>
+    </delete>
+
+	 <!-- 파일업로드 전체 삭제 -->
+     <delete id="deleteAttachFileData" parameterType="String" >
+      /*FileManagerMapper.deleteAttachFileData*/
+    	DELETE FROM TCM_ATTACH_FILE WHERE ATCH_FILE_ID = #{atchFileId}
+    </delete>
+
+
+    <!-- 시퀀스 증가 하면서 파일정보 등록 -->
+    <insert id="insertFileRaiseSeq" parameterType="com.doppio.common.model.AttachFileVo">
+	/*FileManagerMapper.insertFileRaiseSeq*/
+		<selectKey keyProperty="seq" resultType="String" order="BEFORE">
+			SELECT IFNULL(MAX(SEQ), 0) + 1 AS SEQ FROM TCM_ATTACH_FILE WHERE ATCH_FILE_ID = #{atchFileId}
+		</selectKey>
+	   INSERT INTO TCM_ATTACH_FILE
+	          (ATCH_FILE_ID
+	          ,SEQ
+	          ,ORG_FILE_NM
+	          ,SAVE_FILE_NM
+	          ,FILE_KIND_CD
+	          ,FILE_SIZE
+	          ,FILE_PATH_NM
+	          ,FILE_TYPE_NM
+	          ,REG_DT
+	          ,REG_ID
+	          ,MOD_DT
+	          ,MOD_ID)
+	   VALUES( #{atchFileId}
+	   		  ,#{seq}
+	   		  ,#{orgFileNm}
+	   		  ,#{saveFileNm}
+	   		  ,#{fileKindCd}
+	   		  ,#{fileSize}
+	   		  ,#{filePathNm}
+	   		  ,#{fileTypeNm}
+	   		  ,NOW()
+	   		  ,#{workId, jdbcType=VARCHAR}
+	   		  ,NOW()
+	   		  ,#{workId, jdbcType=VARCHAR}
+	   		  )
+	</insert>
+	
+	<!-- 파일 시퀀스 조회 -->
+    <select id="selectFileSeq" parameterType="com.doppio.common.model.AttachFileVo" resultType="com.doppio.common.model.AttachFileVo">
+	/*FileManagerMapper.selectFileSeq*/
+		SELECT
+			 ATCH_FILE_ID 				AS atchFileId
+			,SEQ 						AS seq
+			,ORG_FILE_NM 				AS orgFileNm
+		FROM TCM_ATTACH_FILE
+		WHERE ATCH_FILE_ID = #{atchFileId}
+		<if test='orgFileNm != null and orgFileNm != ""'>
+		    AND ORG_FILE_NM  = #{orgFileNm}
+		</if>
+		ORDER BY SEQ
+	</select>
+	
+	<!-- atchFileId 여러개 조회 -->
+	<select id="selectAtchFileIdsFileList" parameterType="com.doppio.common.model.AttachFileVo" resultType="com.doppio.common.model.AttachFileVo">
+		/*FileManagerMapper.selectAtchFileIdsFileList*/
+		SELECT
+			ATCH_FILE_ID AS atchFileId
+			,SEQ AS seq
+			,ORG_FILE_NM AS orgFileNm
+			,SAVE_FILE_NM AS saveFileNm
+			,FILE_KIND_CD AS fileKindCd
+			,FILE_SIZE AS fileSize
+			,ROUND(FILE_SIZE/1024,2) AS fileSizeKb
+			,FILE_PATH_NM AS filePathNm
+			,FILE_TYPE_NM AS fileTypeNm
+			,DATE_FORMAT(REG_DT, '%Y-%m-%d %H:%i:%s') AS regDt
+			,REG_ID AS regId
+			,DATE_FORMAT(MOD_DT, '%Y-%m-%d %H:%i:%s') AS modDt		
+			,MOD_ID AS modId
+		FROM TCM_ATTACH_FILE
+		WHERE ATCH_FILE_ID IN 
+			<foreach collection="atchFileIds" item="item" separator="," close=")" open="(">
+				#{item}
+			</foreach>
+		ORDER BY SEQ
+	</select>
+	
+	<!--  filePath update  -->
+	<update id="updateFilePath" parameterType="com.doppio.common.model.AttachFileVo">
+		/*FileManagerMapper.updateFilePath*/
+		UPDATE TCM_ATTACH_FILE
+		   SET FILE_PATH_NM = #{filePathNm}
+		   	  ,MOD_DT = SYSDATE()
+		   	  ,MOD_ID = #{workId}
+		 WHERE ATCH_FILE_ID = #{atchFileId}
+		   AND SEQ = #{seq}
+	</update>
+	
+	
+</mapper>

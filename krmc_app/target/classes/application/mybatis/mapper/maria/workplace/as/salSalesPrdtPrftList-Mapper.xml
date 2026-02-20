@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.SalSalesPrdtPrftListMapper">
+	
+	<!-- 매출처 품목별이익현황 조회 -->
+	<select id="selectSalSalesPrdtPrftList" parameterType="com.doppio.workplace.as.service.SalSalesPrdtPrftListVo" resultType="com.doppio.workplace.as.service.SalSalesPrdtPrftListVo">
+	/*SalSalesPrdtPrftListMapper.selectSalSalesPrdtPrftList*/	
+		SELECT TCD.DTL_NM AS SALES_CLASS
+		       ,TSAI.SALES_NM
+		       , TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       
+		       , CONF_COST.COST
+		       , CONF_COST.COST * A.SALES_QTY AS BUY_AMT
+		       
+		       , A.PRICE
+		       , A.PURE_AMT
+		       
+		       , IFNULL(A.PURE_AMT,0) - (IFNULL(A.SALES_QTY,0) * IFNULL(CONF_COST.COST,0)) AS SALES_PROFIT
+		       
+		       , ROUND(CASE WHEN (CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.SALES_QTY*CONF_COST.COST ELSE A.PURE_AMT END) = 0 THEN 0
+                                       ELSE ( A.PURE_AMT - (A.SALES_QTY*CONF_COST.COST)) / ( CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.SALES_QTY*CONF_COST.COST ELSE A.PURE_AMT END ) * 100
+                 END,2) AS MAR_RATE
+			   
+		       , CASE WHEN TSAI.PROFIT_CLASS='10' THEN '매입단가' ELSE '매출단가' END AS COST_ClASS
+		       
+		       , A.SALES_QTY AS SALES_QTY
+		       
+		       , TSPM.SALES_PR_NM
+		       , TSAI.SUBSIDY_RATE
+			     
+		  FROM (SELECT VSHD.HQ_CD AS SALES_CD
+		               , A.PRDT_CD
+		               , ROUND(CASE WHEN SUM(A.SALES_QTY)=0 THEN 0 ELSE ROUND(SUM(A.PURE_AMT) / SUM(A.SALES_QTY),0) END,0) AS PRICE
+		               , SUM(A.SALES_QTY) AS SALES_QTY
+		         	   , SUM(A.PURE_AMT) AS PURE_AMT
+		          FROM (
+		           		SELECT SALES_CD
+		           		       , PRDT_CD
+		                       , SUM(SALES_QTY) AS SALES_QTY
+		         	           , SUM(PURE_AMT) AS PURE_AMT
+            		      FROM TSH_SALES_DLV
+		            	 WHERE SALES_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+	                       AND PRDT_CD = #{searchPrdtCd}
+                         </if>
+		            	 GROUP BY SALES_CD, PRDT_CD
+		              UNION ALL
+		                SELECT SALES_CD
+		           		       , PRDT_CD
+		            	       , SUM(RTN_QTY)*-1 AS QTY
+		         	           , SUM(PURE_AMT)*-1 AS PURE_AMT
+ 		            	  FROM TSH_SALES_RETURN
+		            	 WHERE RTN_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+	                       AND PRDT_CD = #{searchPrdtCd}
+                         </if>
+		            	 GROUP BY SALES_CD, PRDT_CD
+	                   ) AS A
+	                   
+	                   JOIN
+                           (SELECT CASE WHEN #{searchHqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                                   , SALES_CD
+                              FROM V_SALES_HQ_CD
+                             WHERE HQ_CLASS = #{searchHqClass}
+                             <if test='searchSalesCd != null and searchSalesCd != ""'> 
+                               AND (HQ_CD = #{searchSalesCd} OR SALES_CD = #{searchSalesCd})
+                             </if>
+                           ) AS VSHD
+                           ON VSHD.SALES_CD = A.SALES_CD
+                           
+	             GROUP BY VSHD.HQ_CD, A.PRDT_CD
+	           ) AS A
+	           
+	           LEFT OUTER JOIN
+	               (SELECT A.PRDT_CD
+					       , MAX(CASE WHEN DATE_FORMAT(#{searchStartDt}, '%Y%m') = DATE_FORMAT(NOW(), '%Y%m') THEN (CASE WHEN IFNULL(A.COST,0)=0 THEN A.CONF_COST ELSE A.COST END) ELSE A.CONF_COST END) AS COST
+					  FROM (
+					        SELECT LEFT(TPR.BUY_DT, 6) AS YEAR_MON
+					               , TPR.PRDT_CD
+					               , IFNULL(MAX(TPR.COST),0) AS COST
+					               , 0 AS CONF_COST
+					          FROM TBH_PRDT_RCPT AS TPR
+					               JOIN
+					                   (SELECT PRDT_CD, MAX(BUY_DT) AS MAX_BUY_DT
+					                      FROM TBH_PRDT_RCPT
+					                     WHERE BUY_DT LIKE CONCAT(DATE_FORMAT(#{searchStartDt}, '%Y%m') , '%')
+					                       AND BUY_CONF_YN = 'Y'
+					                       AND BUY_QTY != 0
+					                     GROUP BY PRDT_CD
+					                   ) AS A
+					         WHERE TPR.BUY_DT = A.MAX_BUY_DT
+					           AND TPR.PRDT_CD = A.PRDT_CD
+					           AND TPR.BUY_CONF_YN = 'Y'
+					           AND TPR.BUY_QTY != 0
+					         GROUP BY LEFT(TPR.BUY_DT, 6), TPR.PRDT_CD
+					     UNION ALL
+					        SELECT YEAR_MON
+					               , PRDT_CD
+					               , 0 AS COST
+					               , COST AS CONF_COST
+					          FROM TMH_MON_BUY_COST
+					         WHERE YEAR_MON = DATE_FORMAT(#{searchStartDt},'%Y%m')
+					       ) AS A
+					 GROUP BY A.PRDT_CD
+          		   ) AS CONF_COST
+	                   ON CONF_COST.PRDT_CD = A.PRDT_CD
+                        
+	           JOIN TFM_SALES_ADD_INFO AS TSAI
+	               ON TSAI.SALES_CD = A.SALES_CD	              
+	               
+	           LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+	               ON TCD.DTL_CD = TSAI.SALES_CLASS
+	              AND COM_CD = 'M013'
+	              
+	           JOIN TFM_PRDT_MST AS TPM
+	               ON TPM.PRDT_CD = A.PRDT_CD	              
+                  
+               LEFT OUTER JOIN TFM_SALES_PR_MST AS TSPM
+	               ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+	              
+         <where>
+           <if test='salesClass != null and salesClass != ""'> 
+	         AND TSAI.SALES_CLASS = #{salesClass}
+           </if>
+           <if test='searchLCd != null and searchLCd != ""'> 
+             AND TPM.L_CD = #{searchLCd}
+           </if>
+           <if test='searchMCd != null and searchMCd != ""'> 
+             AND TPM.M_CD = #{searchMCd}
+           </if>
+           <if test='searchSalesPrCd != null and searchSalesPrCd != ""'> 
+             AND TSPM.SALES_PR_CD = #{searchSalesPrCd}
+           </if>
+         </where>
+               
+	</select>
+	
+	
+	<!-- 매출처 품목별이익현황 Footer -->
+	<select id="selectSalSalesPrdtPrftFooter" parameterType="com.doppio.workplace.as.service.SalSalesPrdtPrftListVo" resultType="com.doppio.workplace.as.service.SalSalesPrdtPrftListVo">
+	/*SalSalesPrdtPrftListMapper.selectSalSalesPrdtPrftFooter*/	
+		SELECT IFNULL(CASE WHEN SUM( CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT ELSE A.PURE_AMT END ) = 0 THEN 0
+                                          ELSE ( SUM(A.PURE_AMT) - SUM(A.BUY_AMT)) / SUM( CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.BUY_AMT ELSE A.PURE_AMT END ) * 100
+			           END, 0) AS MAR_RATE_SUM
+			     
+		  FROM (SELECT VSHD.HQ_CD AS SALES_CD
+		               , SUM(A.SALES_QTY*CONF_COST.COST) AS BUY_AMT
+		               , ROUND(CASE WHEN SUM(A.SALES_QTY)=0 THEN 0 ELSE ROUND(SUM(A.PURE_AMT) / SUM(A.SALES_QTY),0) END,0) AS PRICE
+		               , SUM(A.SALES_QTY) AS SALES_QTY
+		         	   , SUM(A.PURE_AMT) AS PURE_AMT
+		          FROM (
+		           		SELECT SALES_CD
+		           		       , PRDT_CD
+		                       , SUM(SALES_QTY) AS SALES_QTY
+		         	           , SUM(PURE_AMT) AS PURE_AMT
+            		      FROM TSH_SALES_DLV
+		            	 WHERE SALES_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+	                       AND PRDT_CD = #{searchPrdtCd}
+                         </if>
+		            	 GROUP BY SALES_CD, PRDT_CD
+		              UNION ALL
+		                SELECT SALES_CD
+		           		       , PRDT_CD
+		            	       , SUM(RTN_QTY)*-1 AS QTY
+		         	           , SUM(PURE_AMT)*-1 AS PURE_AMT
+ 		            	  FROM TSH_SALES_RETURN
+		            	 WHERE RTN_DT BETWEEN #{searchStartDt} AND #{searchEndDt}
+                         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+	                       AND PRDT_CD = #{searchPrdtCd}
+                         </if>
+		            	 GROUP BY SALES_CD, PRDT_CD
+	                   ) AS A
+	                   JOIN
+                           (SELECT CASE WHEN #{searchHqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                                   , SALES_CD
+                              FROM V_SALES_HQ_CD
+                             WHERE HQ_CLASS = #{searchHqClass}
+                             <if test='searchSalesCd != null and searchSalesCd != ""'> 
+                               AND (HQ_CD = #{searchSalesCd} OR SALES_CD = #{searchSalesCd})
+                             </if>
+                           ) AS VSHD
+                           ON VSHD.SALES_CD = A.SALES_CD
+	                   
+	                   LEFT OUTER JOIN
+			               (SELECT A.PRDT_CD
+							       , MAX(CASE WHEN DATE_FORMAT(#{searchStartDt}, '%Y%m') = DATE_FORMAT(NOW(), '%Y%m') THEN (CASE WHEN IFNULL(A.COST,0)=0 THEN A.CONF_COST ELSE A.COST END) ELSE A.CONF_COST END) AS COST
+							  FROM (
+							        SELECT LEFT(TPR.BUY_DT, 6) AS YEAR_MON
+							               , TPR.PRDT_CD
+							               , IFNULL(MAX(TPR.COST),0) AS COST
+							               , 0 AS CONF_COST
+							          FROM TBH_PRDT_RCPT AS TPR
+							               JOIN
+							                   (SELECT PRDT_CD, MAX(BUY_DT) AS MAX_BUY_DT
+							                      FROM TBH_PRDT_RCPT
+							                     WHERE BUY_DT LIKE CONCAT(DATE_FORMAT(#{searchStartDt}, '%Y%m') , '%')
+							                       AND BUY_CONF_YN = 'Y'
+							                       AND BUY_QTY != 0
+							                     GROUP BY PRDT_CD
+							                   ) AS A
+							         WHERE TPR.BUY_DT = A.MAX_BUY_DT
+							           AND TPR.PRDT_CD = A.PRDT_CD
+							           AND TPR.BUY_CONF_YN = 'Y'
+							           AND TPR.BUY_QTY != 0
+							         GROUP BY LEFT(TPR.BUY_DT, 6), TPR.PRDT_CD
+							     UNION ALL
+							        SELECT YEAR_MON
+							               , PRDT_CD
+							               , 0 AS COST
+							               , COST AS CONF_COST
+							          FROM TMH_MON_BUY_COST
+							         WHERE YEAR_MON = DATE_FORMAT(#{searchStartDt},'%Y%m')
+							       ) AS A
+							 GROUP BY A.PRDT_CD
+		          		   ) AS CONF_COST
+			                   ON CONF_COST.PRDT_CD = A.PRDT_CD
+	                      
+	                   JOIN TFM_PRDT_MST AS TPM
+	                       ON TPM.PRDT_CD = A.PRDT_CD
+	             <where>
+	               <if test='searchLCd != null and searchLCd != ""'> 
+                     AND TPM.L_CD = #{searchLCd}
+                   </if>
+                   <if test='searchMCd != null and searchMCd != ""'> 
+                     AND TPM.M_CD = #{searchMCd}
+                   </if> 
+	             </where>
+	                      
+                  
+	             GROUP BY VSHD.HQ_CD
+	           ) A
+	              
+	           JOIN TFM_SALES_ADD_INFO AS TSAI
+	               ON TSAI.SALES_CD = A.SALES_CD
+	               
+	           LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+	               ON TCD.DTL_CD = TSAI.SALES_CLASS
+	              AND COM_CD = 'M013'
+	                 
+               JOIN TFM_SALES_PR_MST AS TSPM
+	               ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+
+         <where>
+           <if test='salesClass != null and salesClass != ""'> 
+	         AND TSAI.SALES_CLASS = #{salesClass}
+           </if>
+           <if test='searchSalesPrCd != null and searchSalesPrCd != ""'> 
+             AND TSPM.SALES_PR_CD = #{searchSalesPrCd}
+           </if>
+         </where>
+
+	</select>
+	
+	
+	<!-- 매출처 품목별이익현황 엑셀 다운로드 -->
+	<select id="selectSalSalesPrdtPrftListExcelDown" parameterType="com.doppio.workplace.as.service.SalSalesPrdtPrftListVo" resultType="java.util.HashMap">
+	/*SalSalesPrdtPrftListMapper.selectSalSalesPrdtPrftListExcelDown*/	
+		SELECT TCD.DTL_NM AS SALES_CLASS
+		       ,TSAI.SALES_NM
+		       , TPM.PRDT_CD
+		       , TPM.PRDT_NM
+		       , TPM.PRDT_STD
+		       
+		       , CONF_COST.COST
+		       , CONF_COST.COST * A.SALES_QTY AS BUY_AMT
+		       
+		       , A.PRICE
+		       , A.PURE_AMT
+		       
+		       , IFNULL(A.PURE_AMT,0) - (IFNULL(A.SALES_QTY,0) * IFNULL(CONF_COST.COST,0)) AS SALES_PROFIT
+		       
+		       , ROUND(CASE WHEN (CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.SALES_QTY*CONF_COST.COST ELSE A.PURE_AMT END) = 0 THEN 0
+                                       ELSE ( A.PURE_AMT - (A.SALES_QTY*CONF_COST.COST)) / ( CASE WHEN TSAI.PROFIT_CLASS = '10' THEN A.SALES_QTY*CONF_COST.COST ELSE A.PURE_AMT END ) * 100
+                 END,2) AS MAR_RATE
+			   
+		       , CASE WHEN TSAI.PROFIT_CLASS='10' THEN '매입단가' ELSE '매출단가' END AS COST_ClASS
+		       
+		       , A.SALES_QTY AS SALES_QTY
+		       
+		       , TSPM.SALES_PR_NM
+		       , TSAI.SUBSIDY_RATE
+			     
+		  FROM (SELECT VSHD.HQ_CD AS SALES_CD
+		               , A.PRDT_CD
+		               , ROUND(CASE WHEN SUM(A.SALES_QTY)=0 THEN 0 ELSE ROUND(SUM(A.PURE_AMT) / SUM(A.SALES_QTY),0) END,0) AS PRICE
+		               , SUM(A.SALES_QTY) AS SALES_QTY
+		         	   , SUM(A.PURE_AMT) AS PURE_AMT
+		          FROM (
+		           		SELECT SALES_CD
+		           		       , PRDT_CD
+		                       , SUM(SALES_QTY) AS SALES_QTY
+		         	           , SUM(PURE_AMT) AS PURE_AMT
+            		      FROM TSH_SALES_DLV
+		            	 WHERE SALES_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+	                       AND PRDT_CD = #{searchPrdtCd}
+                         </if>
+		            	 GROUP BY SALES_CD, PRDT_CD
+		              UNION ALL
+		                SELECT SALES_CD
+		           		       , PRDT_CD
+		            	       , SUM(RTN_QTY)*-1 AS QTY
+		         	           , SUM(PURE_AMT)*-1 AS PURE_AMT
+ 		            	  FROM TSH_SALES_RETURN
+		            	 WHERE RTN_DT BETWEEN REPLACE(#{searchStartDt},'-','') AND REPLACE(#{searchEndDt},'-','')
+                         <if test='searchPrdtCd != null and searchPrdtCd != ""'> 
+	                       AND PRDT_CD = #{searchPrdtCd}
+                         </if>
+		            	 GROUP BY SALES_CD, PRDT_CD
+	                   ) AS A
+	                   JOIN
+                           (SELECT CASE WHEN #{searchHqClass}='10' THEN HQ_CD ELSE SALES_CD END AS HQ_CD
+                                   , SALES_CD
+                              FROM V_SALES_HQ_CD
+                             WHERE HQ_CLASS = #{searchHqClass}
+                             <if test='searchSalesCd != null and searchSalesCd != ""'> 
+                               AND (HQ_CD = #{searchSalesCd} OR SALES_CD = #{searchSalesCd})
+                             </if>
+                           ) AS VSHD
+                           ON VSHD.SALES_CD = A.SALES_CD
+                           
+	             GROUP BY VSHD.HQ_CD, A.PRDT_CD
+	           ) AS A
+	           
+	           LEFT OUTER JOIN
+	               (SELECT A.PRDT_CD
+					       , MAX(CASE WHEN DATE_FORMAT(#{searchStartDt}, '%Y%m') = DATE_FORMAT(NOW(), '%Y%m') THEN (CASE WHEN IFNULL(A.COST,0)=0 THEN A.CONF_COST ELSE A.COST END) ELSE A.CONF_COST END) AS COST
+					  FROM (
+					        SELECT LEFT(TPR.BUY_DT, 6) AS YEAR_MON
+					               , TPR.PRDT_CD
+					               , IFNULL(MAX(TPR.COST),0) AS COST
+					               , 0 AS CONF_COST
+					          FROM TBH_PRDT_RCPT AS TPR
+					               JOIN
+					                   (SELECT PRDT_CD, MAX(BUY_DT) AS MAX_BUY_DT
+					                      FROM TBH_PRDT_RCPT
+					                     WHERE BUY_DT LIKE CONCAT(DATE_FORMAT(#{searchStartDt}, '%Y%m') , '%')
+					                       AND BUY_CONF_YN = 'Y'
+					                       AND BUY_QTY != 0
+					                     GROUP BY PRDT_CD
+					                   ) AS A
+					         WHERE TPR.BUY_DT = A.MAX_BUY_DT
+					           AND TPR.PRDT_CD = A.PRDT_CD
+					           AND TPR.BUY_CONF_YN = 'Y'
+					           AND TPR.BUY_QTY != 0
+					         GROUP BY LEFT(TPR.BUY_DT, 6), TPR.PRDT_CD
+					     UNION ALL
+					        SELECT YEAR_MON
+					               , PRDT_CD
+					               , 0 AS COST
+					               , COST AS CONF_COST
+					          FROM TMH_MON_BUY_COST
+					         WHERE YEAR_MON = DATE_FORMAT(#{searchStartDt},'%Y%m')
+					       ) AS A
+					 GROUP BY A.PRDT_CD
+          		   ) AS CONF_COST
+	                   ON CONF_COST.PRDT_CD = A.PRDT_CD
+                        
+	           JOIN TFM_SALES_ADD_INFO AS TSAI
+	               ON TSAI.SALES_CD = A.SALES_CD	              
+	               
+	           LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+	               ON TCD.DTL_CD = TSAI.SALES_CLASS
+	              AND COM_CD = 'M013'
+	              
+	           JOIN TFM_PRDT_MST AS TPM
+	               ON TPM.PRDT_CD = A.PRDT_CD	              
+                  
+               JOIN TFM_SALES_PR_MST AS TSPM
+	               ON TSPM.SALES_PR_CD = TSAI.SALES_PR_CD
+	              
+         <where>
+           <if test='salesClass != null and salesClass != ""'> 
+	         AND TSAI.SALES_CLASS = #{salesClass}
+           </if>
+           <if test='searchLCd != null and searchLCd != ""'> 
+             AND TPM.L_CD = #{searchLCd}
+           </if>
+           <if test='searchMCd != null and searchMCd != ""'> 
+             AND TPM.M_CD = #{searchMCd}
+           </if>
+           <if test='searchSalesPrCd != null and searchSalesPrCd != ""'> 
+             AND TSPM.SALES_PR_CD = #{searchSalesPrCd}
+           </if>
+         </where>
+	</select>
+	
+</mapper>
+

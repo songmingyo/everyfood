@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+    xmlns:beans="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+    http://www.springframework.org/schema/context  http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-5.7.xsd
+    http://www.springframework.org/schema/aop  http://www.springframework.org/schema/aop/spring-aop-3.0.xsd">
+
+
+	<!-- <http pattern="/**/loadImageCommon" security="none" /> -->
+	<http pattern="/resources/**" security="none" />
+
+	<!-- intercept-url 태그 순서에 주의(아래부터 위로 세부셋팅해야함) hasAnyRole(ROLE_ADMIN, ROLE_USER, ROLE_SYSTEM) -->
+	<!-- 유저타입 SA는 ROLE_ADMIN, ROLE_SYSTEM 셋팅 그외 내부사용자와 외부사용자는 ROLE_USER로 셋팅 -->
+	<!-- access 속성정보 : hasAnyRole(롤중 1개이상 갖고있는 사용자 허용), authenticated(인증된 사용자 허용), permitAll(모든 사용자 허용) -->
+	<http auto-config="true" use-expressions="true">
+		<!-- <intercept-url pattern="/app/mgr/**" 		    access="hasAnyRole('ROLE_SYSTEM', 'ROLE_ADMIN')" />  -->
+		<intercept-url pattern="/app/mgr/**" 		    access="authenticated" />
+        <intercept-url pattern="/res/**" 			    access="authenticated" />
+        <intercept-url pattern="/app/**" 			    access="authenticated" />
+        <intercept-url pattern="/front/**" 			    access="authenticated" />
+        <intercept-url pattern="/web/**" 			    access="permitAll" />
+ 		<intercept-url pattern="/security/**" 			access="permitAll"/>
+        <intercept-url pattern="/" 	 					access="authenticated"/>
+        <intercept-url pattern="/**" 					access="authenticated" />
+
+	<session-management invalid-session-url="/" />
+
+   		<form-login
+        	login-processing-url		="/security/securityLogin"
+        	username-parameter			="userId"
+            password-parameter			="userPw"
+            login-page					="/security/securityIndex"
+        	authentication-failure-url	="/security/securityForm?fail=true"
+            authentication-success-handler-ref="customUserLoginSuccessHandler"
+        	default-target-url			="/"
+        />
+        <logout
+        	 invalidate-session			="true"
+ 	     	 logout-success-url			="/"
+ 	     	 logout-url					="/security/securitySignout"
+ 	     	 delete-cookies				="JSESSIONID,DEVELNOTES_REMEMBER_TOKEN"
+ 	    />
+ 	    
+
+ 	    <!-- <remember-me services-ref="rememberMeServices"/> -->
+        <csrf disabled="false"/>
+   	 	<access-denied-handler ref="customAccessDeniedHandler" />
+
+   	 	<headers>
+			<frame-options disabled="true"/>
+		</headers>
+   	</http>
+
+	<!-- 인증 어노테이션을 사용하기 위한 설정  @PreAuthorize, @PreFilter, @PostAuthorize, @PostFilter. -->
+	<global-method-security pre-post-annotations="enabled"/>
+
+    <beans:bean id="customAuthentication"   class="com.doppio.common.security.CustomAuthenticationProvider" />
+    <beans:bean id="bcryptPasswordEncoder" 	class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" /> 
+
+    <!-- access-denied-handler -->
+    <beans:bean id="customAccessDeniedHandler" class="com.doppio.common.security.CustomAccessDeniedHandler">
+		<beans:property name="errorPage" value="/security/accessDenied" />
+    </beans:bean>
+
+    <beans:bean id="customUserLoginSuccessHandler" 	class="com.doppio.common.security.CustomUserLoginSuccessHandler" />
+    <beans:bean id="customeLogoutSuccessHandler" 	class="com.doppio.common.security.CustomeLogoutSuccessHandler" />
+
+	<!-- remember me configuration 
+	 <beans:bean id="rememberMeServices" class="org.springframework.security.web.authentication.rememberme.PersistentTokenBasedRememberMeServices">
+	    <beans:constructor-arg 	value="${security.rememberme.key}"/>
+	    <beans:constructor-arg 	ref="customAuthentication"/>
+	    <beans:constructor-arg 	ref="tokenRepository"/>
+	    <beans:property 		name="cookieName" 		value="${security.rememberme.cookiename}"/>
+	    <beans:property 		name="tokenLength"		value="${security.rememberme.tokenlength}"/>
+	    <beans:property 		name="parameter" 		value="${security.rememberme.parameter}"/>
+	</beans:bean>
+
+	<beans:bean id="rememberMeAuthenticationProvider" class= "org.springframework.security.authentication.RememberMeAuthenticationProvider">
+    	<beans:constructor-arg value="${security.rememberme.key}"/>
+    </beans:bean>
+	-->
+	
+	<beans:bean id="tokenRepository" class="org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl">
+    	<beans:property name="dataSource" ref="dataSource"/>
+    </beans:bean>
+
+    <authentication-manager alias="authenticationManager">
+    	<authentication-provider  ref="customAuthentication"/>
+    	<!-- <authentication-provider  ref="rememberMeAuthenticationProvider" /> -->
+    </authentication-manager>
+
+
+	<!-- thymeleaf laytout -->
+	<!--
+	<beans:bean id="templateEngine" class="org.thymeleaf.spring4.SpringTemplateEngine">
+	  <beans:property name="templateResolver" ref="templateResolver" />
+	  <beans:property name="additionalDialects">
+	    <beans:set>
+	      <beans:bean class="org.thymeleaf.extras.springsecurity4.dialect.SpringSecurityDialect" />
+	    </beans:set>
+	  </beans:property>
+	</beans:bean>
+
+	<beans:bean class="org.thymeleaf.spring4.view.ThymeleafViewResolver">
+	    <beans:property name="templateEngine" ref="templateEngine" />
+	    <beans:property name="order" value="1" />
+	</beans:bean>
+	-->
+
+</beans:beans>

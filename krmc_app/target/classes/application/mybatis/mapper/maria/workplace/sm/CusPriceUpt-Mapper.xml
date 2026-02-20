@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusPriceUptMapper">
+
+	<!-- 매출 품목 단가 일괄 조정  -->
+	<select id="selectCusPriceUptList" parameterType="com.doppio.workplace.sm.service.CusPriceUptVo" resultType="com.doppio.workplace.sm.service.CusPriceUptVo">
+	/*CusPriceUptMapper.selectCusPriceUptDetailList*/	
+		SELECT TSD.SALES_SLIP_NO
+		       , TSD.SALES_SEQ
+		       , TSD.SALES_DT
+		       , TSD.SALES_CD
+			   , TSAI.SALES_NM
+			   , TSD.PRDT_CD
+			   , TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TCD_1.DTL_NM AS ORD_UNIT
+			   , TSD.SALES_QTY
+			   , TSD.PRICE
+			   , TPM.VAT_YN
+			   , IFNULL(TSD.PURE_AMT,0) AS PURE_AMT
+			   , IFNULL(TSD.VAT_AMT,0) AS VAT_AMT
+			   , IFNULL(TSD.TOT_AMT,0) AS TOT_AMT
+			   
+			   , 'N' AS GRID_FLAG
+			                  
+		  FROM TSH_SALES_DLV AS TSD
+		  
+		       JOIN TFM_SALES_ADD_INFO AS TSAI
+			       ON TSAI.SALES_CD = TSD.SALES_CD
+			       
+			   JOIN TFM_SALES_HQ_CLASS AS TSHC
+			       ON TSHC.SALES_CD = TSD.SALES_CD
+			   
+			   JOIN KRMC.TFM_PRDT_MST AS TPM
+		           ON TPM.PRDT_CD = TSD.PRDT_CD
+		           
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_1
+		           ON TCD_1.DTL_CD = TPM.ORD_UNIT
+		          AND TCD_1.COM_CD = 'M006'
+
+		 WHERE TSD.SALES_DT BETWEEN #{salesStartDt} AND #{salesEndDt}
+		 
+		 <if test='hqClass == "10"'>
+		   AND TSHC.HQ_CD = #{salesCd} 
+	     </if>
+	     <if test='hqClass == "20"'>
+		   AND TSHC.SALES_CD = #{salesCd} 
+	     </if>
+		 <if test='prdtCd != null and prdtCd != ""'>		<!-- 매출처코드  --> 
+		   AND TSD.PRDT_CD = #{prdtCd}
+		 </if>
+		   AND TSD.SALES_QTY != 0
+		 ORDER BY TSD.PRDT_CD
+	</select>
+	
+
+	<!-- 매출처 출고 수정 -->
+	<update id="updateCusPriceUptData" parameterType="com.doppio.workplace.sm.service.CusPriceUptVo">
+	/*CusPriceUptMapper.updateCusPriceUptData*/
+        UPDATE KRMC.TSH_SALES_DLV
+           SET PRICE		= #{price}
+           	   , PURE_AMT   = #{pureAmt}
+               , VAT_AMT    = #{vatAmt}
+               , TOT_AMT    = #{totAmt}
+               , MOD_ID     = #{workId}
+               , MOD_DT     = NOW()
+         WHERE SALES_SLIP_NO = #{salesSlipNo}
+           AND SALES_SEQ = #{salesSeq}
+	</update>
+	
+</mapper>
+

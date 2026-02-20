@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.sm.service.impl.CusSchdlStkListMapper">
+
+	<!-- 조회 -->
+	<select id="selectCusSchdlStkList" parameterType="com.doppio.workplace.sm.service.CusSchdlStkListVo" resultType="com.doppio.workplace.sm.service.CusSchdlStkListVo">
+	/*CusSchdlStkListMapper.selectCusSchdlStkList*/	
+
+		SELECT
+			   TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TCD.DTL_NM AS ORD_UNIT_NM
+			   , C.B_SALES_QTY AS PRE_SALES_QTY
+			   , A.STK_QTY
+			   , B.SALES_QTY
+			   , IFNULL(A.STK_QTY,0) - IFNULL(B.SALES_QTY,0) AS REM_STK_QTY
+			   , ROUND( CASE WHEN C.B_SALES_QTY = 0 THEN 0 ELSE ABS(A.STK_QTY / C.B_SALES_QTY) * 30 END ) AS STK_DT
+		  FROM TFM_PRDT_MST AS TPM
+		  
+		       JOIN
+			       (SELECT A.PRDT_CD
+			               , SUM(A.SALES_QTY) SALES_QTY
+			          FROM (
+			                SELECT PRDT_CD
+			                       , SUM(SALES_QTY) AS SALES_QTY
+			                  FROM TSH_SALES_DLV
+			                 WHERE SALES_DT = #{salesDt}
+			                 GROUP BY PRDT_CD
+				          UNION ALL
+				           SELECT PRDT_CD
+				                  , SUM(FREE_QTY) AS SALES_QTY
+				             FROM TSH_SALES_FREE
+				            WHERE FREE_DT = #{salesDt}
+					        GROUP BY PRDT_CD, WH_CD
+					      ) AS A
+				    GROUP BY A.PRDT_CD
+				    HAVING SUM(A.SALES_QTY) != 0
+			      ) AS B
+			          ON B.PRDT_CD = TPM.PRDT_CD
+			       
+			   LEFT OUTER JOIN
+		           (SELECT PRDT_CD, SUM(STK_QTY) AS STK_QTY
+			          FROM V_WH_PRDT_STK_NEW
+			         WHERE STK_QTY != 0
+			         GROUP BY PRDT_CD	           
+		           ) AS A
+		           ON A.PRDT_CD = TPM.PRDT_CD
+		           
+		       JOIN
+			       (SELECT A.PRDT_CD
+			               , SUM(A.SALES_QTY) AS B_SALES_QTY
+			          FROM (
+			                SELECT PRDT_CD
+			                       , SUM(SALES_QTY) AS SALES_QTY
+			                  FROM TSH_SALES_DLV
+			                 WHERE SALES_DT LIKE CONCAT(DATE_FORMAT(#{salesDt} + INTERVAL -1 MONTH, '%Y%m'),'%')
+			                 GROUP BY PRDT_CD
+				          UNION ALL
+				           SELECT PRDT_CD
+				                  , SUM(FREE_QTY) AS SALES_QTY
+				             FROM TSH_SALES_FREE
+				            WHERE FREE_DT LIKE CONCAT(DATE_FORMAT(#{salesDt} + INTERVAL -1 MONTH, '%Y%m'),'%')
+					        GROUP BY PRDT_CD, WH_CD
+					      ) AS A
+				    GROUP BY A.PRDT_CD
+				    HAVING SUM(A.SALES_QTY) != 0
+			      ) AS C
+			          ON C.PRDT_CD = TPM.PRDT_CD
+		       
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.COM_CD = 'M006'
+		          AND TCD.DTL_CD = TPM.ORD_UNIT
+	</select>
+
+	<!-- 엑셀 -->
+	<select id="selectCusSchdlStkListExcelDown" parameterType="com.doppio.workplace.sm.service.CusSchdlStkListVo" resultType="java.util.HashMap">
+	/*CusSchdlStkListMapper.selectCusSchdlStkListExcelDown*/	
+		SELECT
+			   TPM.PRDT_NM
+			   , TPM.PRDT_STD
+			   , TCD.DTL_NM AS ORD_UNIT_NM
+			   , IFNULL(C.B_SALES_QTY,0) AS PRE_SALES_QTY
+			   , IFNULL(A.STK_QTY,0) AS STK_QTY
+			   , IFNULL(B.SALES_QTY,0) AS SALES_QTY
+			   , IFNULL(A.STK_QTY,0) - IFNULL(B.SALES_QTY,0) AS REM_STK_QTY
+			   , IFNULL(ROUND( CASE WHEN C.B_SALES_QTY = 0 THEN 0 ELSE ABS(A.STK_QTY / C.B_SALES_QTY) * 30 END ),0) AS STK_DT
+		  FROM TFM_PRDT_MST AS TPM
+		  
+		       JOIN
+			       (SELECT A.PRDT_CD
+			               , SUM(A.SALES_QTY) SALES_QTY
+			          FROM (
+			                SELECT PRDT_CD
+			                       , SUM(SALES_QTY) AS SALES_QTY
+			                  FROM TSH_SALES_DLV
+			                 WHERE SALES_DT = REPLACE(#{salesDt},'-','')
+			                 GROUP BY PRDT_CD
+				          UNION ALL
+				           SELECT PRDT_CD
+				                  , SUM(FREE_QTY) AS SALES_QTY
+				             FROM TSH_SALES_FREE
+				            WHERE FREE_DT = REPLACE(#{salesDt},'-','')
+					        GROUP BY PRDT_CD, WH_CD
+					      ) AS A
+				    GROUP BY A.PRDT_CD
+				    HAVING SUM(A.SALES_QTY) != 0
+			      ) AS B
+			          ON B.PRDT_CD = TPM.PRDT_CD
+			       
+			   LEFT OUTER JOIN
+		           (SELECT PRDT_CD, SUM(STK_QTY) AS STK_QTY
+			          FROM V_WH_PRDT_STK_NEW
+			         WHERE STK_QTY != 0
+			         GROUP BY PRDT_CD	           
+		           ) AS A
+		           ON A.PRDT_CD = TPM.PRDT_CD
+		           
+		       JOIN
+			       (SELECT A.PRDT_CD
+			               , SUM(A.SALES_QTY) AS B_SALES_QTY
+			          FROM (
+			                SELECT PRDT_CD
+			                       , SUM(SALES_QTY) AS SALES_QTY
+			                  FROM TSH_SALES_DLV
+			                 WHERE SALES_DT LIKE CONCAT(DATE_FORMAT(REPLACE(#{salesDt},'-','') + INTERVAL -1 MONTH, '%Y%m'),'%')
+			                 GROUP BY PRDT_CD
+				          UNION ALL
+				           SELECT PRDT_CD
+				                  , SUM(FREE_QTY) AS SALES_QTY
+				             FROM TSH_SALES_FREE
+				            WHERE FREE_DT LIKE CONCAT(DATE_FORMAT(REPLACE(#{salesDt},'-','') + INTERVAL -1 MONTH, '%Y%m'),'%')
+					        GROUP BY PRDT_CD, WH_CD
+					      ) AS A
+				    GROUP BY A.PRDT_CD
+				    HAVING SUM(A.SALES_QTY) != 0
+			      ) AS C
+			          ON C.PRDT_CD = TPM.PRDT_CD
+		       
+		       LEFT OUTER JOIN TCM_CODE_DTL AS TCD
+		           ON TCD.COM_CD = 'M006'
+		          AND TCD.DTL_CD = TPM.ORD_UNIT
+	</select>
+	
+</mapper>

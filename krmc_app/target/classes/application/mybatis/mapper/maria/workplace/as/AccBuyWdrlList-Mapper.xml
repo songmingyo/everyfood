@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.as.service.impl.AccBuyWdrlListMapper">
+
+	<!-- 매입처지급관리 조회 -->
+	<select id="selectAccBuyWdrlList" parameterType="com.doppio.workplace.as.service.AccBuyWdrlListVo" resultType="com.doppio.workplace.as.service.AccBuyWdrlListVo">
+	/*AccBuyWdrlListMapper.selectAccBuyWdrlList*/	
+	    SELECT TBW.WDRL_DT
+	    	   , TBM.BUY_NM
+	    	   , SUM(CASE WHEN TBW.SETL_CLASS='01' THEN TBW.SETL_AMT END) AS ACCOUNT_AMT
+	    	   , SUM(CASE WHEN TBW.SETL_CLASS='02' THEN TBW.SETL_AMT END) AS CASH_AMT
+	    	   , SUM(CASE WHEN TBW.SETL_CLASS='05' THEN TBW.SETL_AMT END) AS CARD_AMT
+	    	   , SUM(CASE WHEN TBW.SETL_CLASS='03' THEN TBW.SETL_AMT END) AS NOTE_AMT
+	    	   , SUM(CASE WHEN TBW.SETL_CLASS='04' THEN TBW.SETL_AMT END) AS SUBSIDY_AMT
+	    	   , SUM(CASE WHEN TBW.SETL_CLASS='06' THEN TBW.SETL_AMT END) AS VAT_AMT
+	    	   , SUM(CASE WHEN TBW.SETL_CLASS='07' THEN TBW.SETL_AMT END) AS INCOME_AMT
+	    	   , SUM(CASE WHEN TBW.SETL_CLASS='08' THEN TBW.SETL_AMT END) AS ETC_AMT
+	    	   , SUM(TBW.SETL_AMT) AS TOT_AMT
+	    	   , TBM.SETL_CON
+	      FROM TBH_BUY_WDRL AS TBW
+	           JOIN TFM_BUY_MST AS TBM
+	     WHERE TBW.BUY_CD = TBM.BUY_CD
+	       AND TBW.WDRL_DT BETWEEN #{startDt} AND #{endDt}
+         <if test='buyCd != null and buyCd != ""'> 
+	       AND TBW.BUY_CD = #{buyCd}
+         </if>
+	     GROUP BY TBW.WDRL_DT, TBM.BUY_NM, TBM.SETL_CON
+	     ORDER BY TBW.WDRL_DT, TBM.BUY_NM
+    </select>
+
+	<!-- 매입처지급관리 다운 -->
+	<select id="selectAccBuyWdrlListExcelDown" parameterType="com.doppio.workplace.as.service.AccBuyWdrlListVo" resultType="java.util.HashMap">
+	/*AccBuyWdrlListMapper.selectAccBuyWdrlListExcelDown*/	
+	    SELECT TBW.WDRL_DT
+	    	   , TBM.BUY_NM
+	    	   , IFNULL(SUM(CASE WHEN TBW.SETL_CLASS='01' THEN TBW.SETL_AMT END),0) AS ACCOUNT_AMT
+	    	   , IFNULL(SUM(CASE WHEN TBW.SETL_CLASS='02' THEN TBW.SETL_AMT END),0) AS CASH_AMT
+	    	   , IFNULL(SUM(CASE WHEN TBW.SETL_CLASS='05' THEN TBW.SETL_AMT END),0) AS CARD_AMT
+	    	   , IFNULL(SUM(CASE WHEN TBW.SETL_CLASS='03' THEN TBW.SETL_AMT END),0) AS NOTE_AMT
+	    	   , IFNULL(SUM(CASE WHEN TBW.SETL_CLASS='04' THEN TBW.SETL_AMT END),0) AS SUBSIDY_AMT
+	    	   , IFNULL(SUM(CASE WHEN TBW.SETL_CLASS='06' THEN TBW.SETL_AMT END),0) AS VAT_AMT
+	    	   , IFNULL(SUM(CASE WHEN TBW.SETL_CLASS='07' THEN TBW.SETL_AMT END),0) AS INCOME_AMT
+	    	   , IFNULL(SUM(CASE WHEN TBW.SETL_CLASS='08' THEN TBW.SETL_AMT END),0) AS ETC_AMT
+	    	   , IFNULL(SUM(TBW.SETL_AMT),0) AS TOT_AMT
+	    	   , TBM.SETL_CON
+	      FROM TBH_BUY_WDRL AS TBW
+	           JOIN TFM_BUY_MST AS TBM
+	     WHERE TBW.BUY_CD = TBM.BUY_CD
+	       AND TBW.WDRL_DT BETWEEN REPLACE(#{startDt},'-','') AND REPLACE(#{endDt},'-','')
+         <if test='buyCd != null and buyCd != ""'> 
+	       AND TBW.BUY_CD = #{buyCd}
+         </if>
+	     GROUP BY TBW.WDRL_DT, TBM.BUY_NM, TBM.SETL_CON
+	     ORDER BY TBW.WDRL_DT, TBM.BUY_NM
+    </select>
+
+
+</mapper>

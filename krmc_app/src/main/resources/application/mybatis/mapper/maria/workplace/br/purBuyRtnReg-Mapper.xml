@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.workplace.br.service.impl.BuyRtnRegMapper">
+
+	<!-- 매입처 입고 내역 검색조건-->
+	<sql id="selectBuyRtnList_Where">
+		/*BuyRtnRegMapper.selectBuyRtnList_Where*/
+		<where>
+			<if test='rtnDt != null and rtnDt != ""'>		<!-- 입고일자  --> 
+				AND TPR.RTN_DT = #{rtnDt}
+			</if>
+			<if test='buyCd != null and buyCd != ""'>		<!-- 매입처코드  --> 
+				AND TPR.BUY_CD = #{buyCd}
+			</if>
+			AND TPR.RTN_QTY != 0
+		</where>
+	</sql>
+	
+	
+	<!-- 매입처 반품된 내역 카운트 -->
+	<select id="selectBuyRtnListCount" parameterType="com.doppio.workplace.br.service.BuyRtnRegVo" resultType="int">
+		/* BuyRtnRegMapper.selectBuyRtnListCount */
+		SELECT COUNT(*) AS totalCount
+		  FROM KRMC.TBH_PRDT_RETURN AS TPR
+		<include refid="selectBuyRtnList_Where"/>
+	</select>
+	
+	
+	<!-- 반품 내역 조회 -->
+	<select id="selectBuyRtnList" parameterType="com.doppio.workplace.br.service.BuyRtnRegVo" resultType="com.doppio.workplace.br.service.BuyRtnRegVo">
+	/*BuyRtnRegMapper.selectBuyRtnList*/
+		SELECT TPR.BUY_SLIP_NO
+		       , TPR.BUY_CD
+			   , TBM.BUY_NM
+			   , TPR.RTN_DT
+               , SUM(IFNULL(TPR.PURE_AMT,0)) AS PURE_AMT
+			   , SUM(IFNULL(TPR.VAT_AMT,0)) AS VAT_AMT
+			   , SUM(IFNULL(TPR.TOT_AMT,0)) AS TOT_AMT
+
+               , CASE WHEN MAX(IFNULL(TPR.TERM_VAL,''))='' THEN '미입력' ELSE '입력' END AS TERM_VAL_YN
+
+               , MAX(TM.USER_NM) AS REG_NM
+               , MAX(TPR.REG_DT) AS REG_DT
+   		                      
+		  FROM KRMC.TBH_PRDT_RETURN AS TPR
+		       LEFT OUTER JOIN KRMC.TFM_BUY_MST AS TBM
+			       ON TBM.BUY_CD = TPR.BUY_CD
+		           
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM
+		           ON TM.USER_ID = TPR.REG_ID
+
+		<include refid="selectBuyRtnList_Where"/>
+		 GROUP BY TPR.BUY_SLIP_NO, TPR.BUY_CD, TBM.BUY_NM, TPR.RTN_DT
+		 ORDER BY TPR.BUY_CD, TPR.RTN_DT
+	</select>
+	
+	<!-- 반품 내역 상세 조회 -->
+	<select id="selectBuyRtnDetailList" parameterType="com.doppio.workplace.br.service.BuyRtnRegVo" resultType="com.doppio.workplace.br.service.BuyRtnRegVo">
+	/*BuyRtnRegMapper.selectBuyRtnDetailList*/	
+		SELECT IFNULL(TPR.BUY_SLIP_NO,'') AS BUY_SLIP_NO
+			   , IFNULL(TPR.BUY_SEQ, 0) AS BUY_SEQ
+		       , TPR.BUY_CD
+			   , TBM.BUY_NM
+			   , TPR.PRDT_CD
+			   , CONCAT(TPM.PRDT_NM, TPM.PRDT_STD) AS PRDT_NM
+			   , TCD_1.DTL_NM AS ORD_UNIT
+			   , TPR.RTN_CLASS
+			   , TPR.RTN_DT
+			   , TPR.RTN_QTY
+			   , TPR.BOX_QTY
+			   , TPR.COST			   
+			   , IFNULL(TPR.PURE_AMT,0) AS PURE_AMT
+			   , IFNULL(TPR.VAT_AMT,0) AS VAT_AMT
+			   , IFNULL(TPR.TOT_AMT,0) AS TOT_AMT
+			   , TPM.EXPRT_DT
+			   , TPR.TERM_VAL
+			   , TWM.WH_NM
+			   , TPR.REMARKS
+			   , TM.USER_NM AS MOD_NM
+               , TPR.MOD_DT
+				
+			   , TPR.RTN_DT
+			   , TPM.VAT_YN
+			   , TPM.QTY_BOX
+			   
+			   , TPR.RTN_QTY AS RTN_QTY_ORG
+			   , IFNULL(TPR.PURE_AMT,0) AS PURE_AMT_ORG
+			   , IFNULL(TPR.VAT_AMT,0) AS VAT_AMT_ORG
+			   
+			   , CASE WHEN TPR.BUY_SLIP_NO IS NULL THEN 'I' ELSE 'U' END AS GRID_FLAG
+			   , TPM.STD_YN			/* 규격유무 add by song min kyo 2025.01.07 */   		                      
+		  FROM KRMC.TBH_PRDT_RETURN AS TPR
+		       LEFT OUTER JOIN KRMC.TFM_BUY_MST AS TBM
+			       ON TBM.BUY_CD = TPR.BUY_CD
+			   
+			   LEFT OUTER JOIN KRMC.TFM_PRDT_MST AS TPM
+		           ON TPM.PRDT_CD = TPR.PRDT_CD
+		           
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD_1
+		           ON TCD_1.DTL_CD = TPM.ORD_UNIT
+		           AND TCD_1.COM_CD = 'M006'
+		           
+		       LEFT OUTER JOIN KRMC.TCM_MEMBER AS TM
+		           ON TM.USER_ID = TPR.MOD_ID
+		           
+		       LEFT OUTER JOIN KRMC.TFM_WH_MST AS TWM
+		           ON TWM.WH_CD = TPR.WH_CD
+
+		 WHERE TPR.BUY_SLIP_NO = #{buySlipNo}
+		   AND TPR.RTN_QTY != 0
+		   AND TPR.BUY_CD = #{buyCd}
+		 ORDER BY TPR.PRDT_CD
+	</select>
+	
+	
+	<!-- 반품 추가 품목 조회 -->
+	<select id="selectBuyRtnRegPrdtAddList" parameterType="com.doppio.workplace.br.service.BuyRtnRegVo" resultType="com.doppio.workplace.br.service.BuyRtnRegVo">
+	/*BuyRtnRegMapper.selectBuyRtnRegPrdtAddList*/	
+		SELECT TPM.BUY_CD
+			   , TBM.BUY_NM
+			   , TPM.PRDT_CD
+			   , CONCAT(TPM.PRDT_NM, TPM.PRDT_STD) AS PRDT_NM
+			   , TCD.DTL_NM AS ORD_UNIT
+			   , TPM.COST			   
+			   , TPM.EXPRT_DT
+			   , TWM.WH_NM
+			   , '' AS REMARKS
+               , TPM.VAT_YN
+			   , TPM.QTY_BOX
+			   , TPM.STD_YN
+			   
+			   , 0 AS RTN_QTY			   
+   		       
+			   , '' AS RTN_DT
+			   
+			   , 'I' AS GRID_FLAG
+			                  
+		  FROM KRMC.TFM_PRDT_MST AS TPM
+		       LEFT OUTER JOIN KRMC.TFM_BUY_MST AS TBM
+			       ON TBM.BUY_CD = TPM.BUY_CD
+			   
+		       LEFT OUTER JOIN KRMC.TCM_CODE_DTL AS TCD
+		           ON TCD.DTL_CD = TPM.ORD_UNIT
+		           AND TCD.COM_CD = 'M006'
+		           
+		       LEFT OUTER JOIN KRMC.TFM_WH_MST AS TWM
+		           ON TWM.WH_CD = #{whCd}
+
+		 WHERE TPM.PRDT_CD = #{prdtCd}
+		   AND TPM.BUY_CD = #{buyCd}
+	</select>
+	
+	<!-- 매입처 반품 신규 전표번호 저장 -->
+	<insert id="insertBuyRtnSlipNo" parameterType="com.doppio.workplace.br.service.BuyRtnRegVo">
+	/*BuyOrderRegMapper.insertBuyRtnSlipNo*/
+	<selectKey keyProperty="buySlipNo" resultType="String" order="BEFORE">
+	
+		SELECT CASE WHEN A.BUY_SLIP_NO IS NOT NULL
+	           THEN A.BUY_SLIP_NO
+	           ELSE (SELECT CONCAT(#{rtnDt}, '-', LPAD(CAST(RIGHT(IFNULL(MAX(BUY_SLIP_NO),'0000'),4) AS DECIMAL)+1, 4, 0)) AS BUY_SLIP_NO
+			           FROM KRMC.TBH_DAY_SLIPNO
+			          WHERE BUY_SLIP_DT = #{rtnDt}                  
+	                )
+	           END BUY_SLIP_NO
+	      FROM (SELECT MAX(BUY_SLIP_NO) AS BUY_SLIP_NO
+	              FROM KRMC.TBH_PRDT_RETURN
+	             WHERE RTN_DT = #{rtnDt}
+	           ) AS A
+	</selectKey>
+	    INSERT IGNORE INTO KRMC.TBH_DAY_SLIPNO
+            (BUY_SLIP_DT, BUY_SLIP_NO
+             , REG_DT)
+        VALUES
+            (SUBSTRING(#{buySlipNo},1,8), #{buySlipNo}
+			 , NOW()
+            )
+	</insert>
+	
+	
+	<!-- 매입처 반품 신규 저장 -->
+	<insert id="insertBuyRtnRegData" parameterType="com.doppio.workplace.br.service.BuyRtnRegVo">
+	/*BuyRtnRegMapper.insertBuyRtnRegData*/
+	<selectKey keyProperty="buySeq" resultType="String" order="BEFORE">
+		SELECT IFNULL(MAX(BUY_SEQ),0)+1 AS BUY_SEQ
+          FROM KRMC.TBH_PRDT_RETURN
+         WHERE BUY_SLIP_NO = #{buySlipNo}
+	</selectKey>
+	    INSERT INTO KRMC.TBH_PRDT_RETURN
+            (BUY_SLIP_NO, BUY_SEQ, RTN_DT, BUY_CD, PRDT_CD, RTN_CLASS, WH_CD, TERM_VAL
+             , COST, BOX_QTY, RTN_QTY, PURE_AMT, VAT_AMT, TOT_AMT, REMARKS
+             , USE_YN, REG_ID, REG_DT, MOD_ID, MOD_DT
+            )
+        VALUES
+        	(#{buySlipNo}, #{buySeq}, #{rtnDt}, #{buyCd}, #{prdtCd}, #{rtnClass}, #{whCd}, #{termVal}
+             , #{cost}, #{boxQty}, #{rtnQty}, #{pureAmt}, #{vatAmt}, #{totAmt}, #{remarks}
+			 , 'Y', #{workId}, NOW(), #{workId}, NOW()
+            )
+	</insert>
+
+	<!-- 매입처 반품 수정 -->
+	<update id="updateBuyRtnRegData" parameterType="com.doppio.workplace.br.service.BuyRtnRegVo">
+	/*BuyRtnRegMapper.updateBuyRtnRegData*/
+        UPDATE KRMC.TBH_PRDT_RETURN
+           SET WH_CD			= #{whCd}
+               , BOX_QTY		= #{boxQty}
+           	   , RTN_QTY   		= #{rtnQty}
+               , PURE_AMT   	= #{pureAmt}
+               , VAT_AMT    	= #{vatAmt}
+               , TOT_AMT    	= #{totAmt}
+               , TERM_VAL    	= #{termVal}
+               , REMARKS    	= #{remarks}
+               , MOD_ID     	= #{workId}
+               , MOD_DT     	= NOW()
+         WHERE BUY_SLIP_NO = #{buySlipNo}
+           AND BUY_SEQ     = #{buySeq}
+	</update>
+	
+	<!-- 매입처 반품현황 add by song min kyo 2025.08.25 -->
+	<select id="selectBuyRtnList_2" parameterType="com.doppio.workplace.br.service.BuyRtnRegVo" resultType="com.doppio.workplace.br.service.BuyRtnRegVo">
+	/*BuyRtnRegMapper.selectBuyRtnList_2*/	
+		SELECT 	A.BUY_SLIP_NO	AS BUY_SLIP_NO 			/* 매입전표번호 */
+			,	A.BUY_SEQ		AS BUY_SEQ              /* 순번 */
+			,	A.RTN_DT		AS RTN_DT               /* 입고일자 */
+			,	A.BUY_CD		AS BUY_CD               /* 매입처 */
+			,	A.PRDT_CD		AS PRDT_CD              /* 상품코드 */
+			,	A.RTN_CLASS		AS RTN_CLASS 	        /* 반품구분 */
+			,	A.WH_CD			AS WH_CD                /* 창고코드 */
+			,	A.TERM_VAL		AS TERM_VAL             /* */
+			,	A.COST			AS COST              	/* 반품단가 */
+			,	A.BOX_QTY		AS BOX_QTY              /* BOX 환산 수량 */
+			,	A.RTN_QTY		AS RTN_QTY              /* 반품수량 */
+			,	A.PURE_AMT		AS PURE_AMT             /* 공급가 */
+			,	A.VAT_AMT		AS VAT_AMT              /* 부가세 */
+			,	A.TOT_AMT		AS TOT_AMT              /* 합게금액 */
+			,	A.REMARKS		AS REMARKS              /* 비고 */
+			,	A.USE_YN		AS USE_YN               /* 사용유무 */
+			,	A.REG_DT		AS REG_DT               /* 등록 일시*/
+			,	A.MOD_ID		AS MOD_ID               /* 수정자 ID*/
+			,	A.MOD_DT		AS MOD_DT               /* 수정일시 */
+			,	TWM.WH_NM		AS WH_NM                /* 창고코드 명 */
+			,	TCD.DTL_NM 		AS RTN_CLASS_NM         /* 반품구분 코드 명 */
+			,	TBM.BUY_NM		AS BUY_NM               /* 매입처 명 */
+			,	TM.USER_NM 		AS REG_ID               /* 등록자 이름 */
+			,	TPM.PRDT_NM		AS PRDT_NM				/* 품목명 */
+			,	TPM.PRDT_STD	AS PRDT_STD				/* 규격 */
+		FROM TBH_PRDT_RETURN A
+		LEFT OUTER JOIN TFM_WH_MST AS TWM  ON TWM.WH_CD = A.WH_CD	
+		LEFT OUTER JOIN TCM_CODE_DTL AS TCD  ON TCD.DTL_CD = A.RTN_CLASS  AND TCD.COM_CD = 'M012'
+		LEFT OUTER JOIN TFM_BUY_MST AS TBM ON TBM.BUY_CD = A.BUY_CD
+		LEFT OUTER JOIN TFM_PRDT_MST TPM ON TPM.PRDT_CD = A.PRDT_CD
+		LEFT OUTER JOIN TCM_MEMBER AS TM ON TM.USER_ID = A.REG_ID
+		WHERE 1=1
+		
+		<if test='srchRtnClass != null and srchRtnClass != ""'>		
+			AND A.RTN_CLASS = #{srchRtnClass}					/* 검색조건_반품구분 */
+		</if>
+		<if test='srchPrdt != null and srchPrdt != ""'>		
+			AND TPM.PRDT_CD = #{srchPrdt}						/* 검색조건_품목코드 */
+		</if>
+		<if test='srchFrDt != null and srchFrDt != ""'>		
+			AND A.RTN_DT BETWEEN #{srchFrDt} AND #{srchToDt}	/* 검색조건_검색일자 */
+		</if>	
+		<if test='srchBuyCd != null and srchBuyCd != ""'>		
+			AND A.BUY_CD = #{srchBuyCd}
+		</if>		
+		AND A.RTN_QTY != '0'									/* 반품수량이 있는것만 */
+		ORDER BY A.RTN_DT DESC
+	</select>
+
+	<!-- 매입처 반품현황 excel add by song min kyo 2025.08.25 -->
+	<select id="selectBuyRtnListExcelDown" parameterType="com.doppio.workplace.br.service.BuyRtnRegVo" resultType="java.util.HashMap">
+	/*BuyRtnRegMapper.selectBuyRtnListExcelDown*/
+		SELECT A.*
+		FROM
+		(	
+			SELECT 	IFNULL(DATE_FORMAT(A.RTN_DT, '%Y-%m-%d'), '')			AS RTN_DT		/* 입고일자 */
+				,	IFNULL(A.BUY_SLIP_NO, '')	AS BUY_SLIP_NO 			/* 매입전표번호 */
+				,	IFNULL(TBM.BUY_NM, '')		AS BUY_NM               /* 매입처 명 */
+				,	IFNULL(A.PRDT_CD, '')		AS PRDT_CD              /* 상품코드 */
+				,	IFNULL(TPM.PRDT_NM, '')		AS PRDT_NM				/* 품목명 */
+				,	IFNULL(TPM.PRDT_STD, '')	AS PRDT_STD				/* 규격 */
+				,	IFNULL(TCD.DTL_NM, '') 		AS RTN_CLASS_NM         /* 반품구분 코드 명 */
+				,	IFNULL(A.COST, '0')			AS COST              	/* 반품단가 */
+				,	IFNULL(A.RTN_QTY, '0')		AS RTN_QTY              /* 반품수량 */
+				,	IFNULL(A.PURE_AMT, '0')		AS PURE_AMT             /* 공급가 */
+				,	IFNULL(A.VAT_AMT, '0')		AS VAT_AMT              /* 부가세 */
+				,	IFNULL(A.TOT_AMT, '0')		AS TOT_AMT              /* 합게금액 */
+				,	IFNULL(A.REMARKS, '')		AS REMARKS              /* 비고 */
+				,	IFNULL(TM.USER_NM, '') 		AS REG_ID               /* 등록자 이름 */			
+				,	IFNULL(A.REG_DT, '')		AS REG_DT               /* 등록 일시*/
+			FROM TBH_PRDT_RETURN A
+			LEFT OUTER JOIN TFM_WH_MST AS TWM  ON TWM.WH_CD = A.WH_CD	
+			LEFT OUTER JOIN TCM_CODE_DTL AS TCD  ON TCD.DTL_CD = A.RTN_CLASS  AND TCD.COM_CD = 'M012'
+			LEFT OUTER JOIN TFM_BUY_MST AS TBM ON TBM.BUY_CD = A.BUY_CD
+			LEFT OUTER JOIN TFM_PRDT_MST TPM ON TPM.PRDT_CD = A.PRDT_CD
+			LEFT OUTER JOIN TCM_MEMBER AS TM ON TM.USER_ID = A.REG_ID
+			WHERE 1=1
+			
+			<if test='srchRtnClass != null and srchRtnClass != ""'>		
+				AND A.RTN_CLASS = #{srchRtnClass}					/* 검색조건_반품구분 */
+			</if>
+			<if test='srchPrdt != null and srchPrdt != ""'>		
+				AND TPM.PRDT_CD = #{srchPrdt}						/* 검색조건_품목코드 */
+			</if>
+			<if test='srchFrDt != null and srchFrDt != ""'>		
+				AND A.RTN_DT BETWEEN REPLACE(#{srchFrDt}, '-', '') AND REPLACE(#{srchToDt}, '-', '')	/* 검색조건_검색일자 */
+			</if>	
+			<if test='srchBuyCd != null and srchBuyCd != ""'>		
+				AND A.BUY_CD = #{srchBuyCd}
+			</if>		
+			AND A.RTN_QTY != '0'									/* 반품수량이 있는것만 */
+			UNION ALL
+			SELECT 	''		AS RTN_DT		/* 입고일자 */
+				,	''		AS BUY_SLIP_NO 			/* 매입전표번호 */
+				,	'합 계'	AS BUY_NM               /* 매입처 명 */
+				,	''		AS PRDT_CD              /* 상품코드 */
+				,	''		AS PRDT_NM				/* 품목명 */
+				,	''		AS PRDT_STD				/* 규격 */
+				,	'' 		AS RTN_CLASS_NM         /* 반품구분 코드 명 */
+				,	''		AS COST              	/* 반품단가 */
+				,	SUM(IFNULL(A.RTN_QTY, 0))		AS RTN_QTY              /* 반품수량 */
+				,	SUM(IFNULL(A.PURE_AMT, 0))		AS PURE_AMT             /* 공급가 */
+				,	SUM(IFNULL(A.VAT_AMT, 0))		AS VAT_AMT              /* 부가세 */
+				,	SUM(IFNULL(A.TOT_AMT, 0))		AS TOT_AMT              /* 합게금액 */
+				,	''		AS REMARKS              /* 비고 */
+				,	'' 		AS REG_ID               /* 등록자 이름 */			
+				,	''		AS REG_DT               /* 등록 일시*/
+			FROM TBH_PRDT_RETURN A
+			LEFT OUTER JOIN TFM_WH_MST AS TWM  ON TWM.WH_CD = A.WH_CD	
+			LEFT OUTER JOIN TCM_CODE_DTL AS TCD  ON TCD.DTL_CD = A.RTN_CLASS  AND TCD.COM_CD = 'M012'
+			LEFT OUTER JOIN TFM_BUY_MST AS TBM ON TBM.BUY_CD = A.BUY_CD
+			LEFT OUTER JOIN TFM_PRDT_MST TPM ON TPM.PRDT_CD = A.PRDT_CD
+			LEFT OUTER JOIN TCM_MEMBER AS TM ON TM.USER_ID = A.REG_ID
+			WHERE 1=1
+			<if test='srchRtnClass != null and srchRtnClass != ""'>		
+				AND A.RTN_CLASS = #{srchRtnClass}					/* 검색조건_반품구분 */
+			</if>
+			<if test='srchPrdt != null and srchPrdt != ""'>		
+				AND TPM.PRDT_CD = #{srchPrdt}						/* 검색조건_품목코드 */
+			</if>
+			<if test='srchFrDt != null and srchFrDt != ""'>		
+				AND A.RTN_DT BETWEEN REPLACE(#{srchFrDt}, '-', '') AND REPLACE(#{srchToDt}, '-', '')	/* 검색조건_검색일자 */
+			</if>	
+			<if test='srchBuyCd != null and srchBuyCd != ""'>		
+				AND A.BUY_CD = #{srchBuyCd}
+			</if>		
+			AND A.RTN_QTY != '0'
+		) A
+		WHERE 1=1
+		ORDER BY A.RTN_DT DESC	
+	</select>
+</mapper>
+

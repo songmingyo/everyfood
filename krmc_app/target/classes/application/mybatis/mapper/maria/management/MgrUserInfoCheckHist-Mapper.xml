@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.doppio.management.service.impl.MgrUserInfoCheckHistMapper">
+	
+	<!-- 개인정보 리스트 불러오기 -->
+	<select id="selectMgrUserInfoCheckList" parameterType="com.doppio.management.service.MgrPerInfoVo" resultType="com.doppio.management.service.MgrPerInfoVo">
+		/*MgrUserInfoCheckHistMapper.selectMgrUserInfoCheckList*/
+		SELECT 	 RNUM			 -- 순번
+				,LOG_SEQ		 -- 이력번호
+				,ACCESS_DY		 -- 조회일자
+				,PERS_BIZS_CD	 -- 열람업무구분코드[9017]
+				,PERS_BIZS_CD_NM -- 열럼업무구분
+				,PERS_PCL_INFO   -- 조회사용자 식별정보
+				,PERS_INFO       -- 개인정보 조회내용
+				,REND_DIVN_CD    -- 열람사유구분코드[9016]
+				,REND_DIVN_CD_NM -- 열람사유구분
+				,USER_NM		 -- 담당자
+				,REG_DT			 -- 생성일자
+		FROM (
+				SELECT  ROW_NUMBER() OVER (ORDER BY TPL.REG_DT  ASC) AS RNUM 
+						,TPL.LOG_SEQ 
+						,TPL.ACCESS_DY
+						,TPL.PERS_BIZS_CD
+						,FN_CODE_RTN('9017',TPL.PERS_BIZS_CD) AS PERS_BIZS_CD_NM
+						,CONCAT(TPL.PERS_PCL_NO,'(',REPLACE (TM2.USER_NM,SUBSTRING(TM2.USER_NM,2,1),'*'),')') AS PERS_PCL_INFO
+						,TPL.PERS_INFO 
+						,TPL.REND_DIVN_CD
+						,CASE WHEN TPL.REND_CMT  != '' THEN  CONCAT( FN_CODE_RTN('9016',TPL.REND_DIVN_CD),'》',TPL.REND_CMT  )
+						ELSE CONCAT( FN_CODE_RTN('9016',TPL.REND_DIVN_CD)) END AS REND_DIVN_CD_NM  
+						,TM.USER_NM 
+						,TPL.REG_DT
+				FROM TCM_PERSINFO_LOG TPL
+				LEFT OUTER JOIN TCM_MEMBER TM ON TPL.REG_ID = TM.MEMBER_CD 
+				LEFT OUTER JOIN TCM_MEMBER TM2 ON TPL.PERS_PCL_NO = TM2.MEMBER_CD
+				<where>
+					<if test="srchFrDy != null and srchFrDy != ''">			<!-- 조회일자 조회조건 -->
+						AND DATE_FORMAT(TPL.REG_DT,'%Y%m%d') BETWEEN #{srchFrDy} AND #{srchToDy}
+					</if>
+					<if test="srchRendDivnCd != null and srchRendDivnCd != ''">	<!-- 열람사유조회조건 -->
+						AND TPL.REND_DIVN_CD = #{srchRendDivnCd}
+					</if>
+					<if test="srchPersBizsCd != null and srchPersBizsCd != ''"> <!-- 열람업무조회조건 -->
+						AND TPL.PERS_BIZS_CD = #{srchPersBizsCd}
+					</if>
+				</where>
+		) T1
+		<if test='startRowNo !=null and startRowNo !=""'>										<!-- 그리드 RNUM 순번 -->
+				WHERE RNUM BETWEEN #{startRowNo} AND #{endRowNo}
+		</if>
+	</select>
+	<!-- 개인정보 갯수 불러오기 -->
+	<select id="selectMgrUserInfoCheckListCount" parameterType="com.doppio.management.service.MgrPerInfoVo" resultType="int">
+		/*MgrUserInfoCheckHistMapper.selectMgrUserInfoCheckListCount*/
+		SELECT COUNT(1) AS CNT      -- 개인정보 갯수 
+		FROM (
+				SELECT RNUM ,
+				ACCESS_DY,
+				PERS_BIZS_CD,
+				PERS_BIZS_CD_NM,
+				PERS_PCL_INFO,
+				PERS_INFO,
+				REND_DIVN_CD,
+				REND_DIVN_CD_NM,
+				USER_NM,
+				REG_DT
+			FROM (
+				SELECT 	 ROW_NUMBER() OVER (ORDER BY TPL.REG_DT  ASC) AS RNUM
+						,TPL.LOG_SEQ 
+						,TPL.ACCESS_DY
+						,TPL.PERS_BIZS_CD
+						,FN_CODE_RTN('9017',TPL.PERS_BIZS_CD) AS PERS_BIZS_CD_NM
+						,CONCAT(TPL.PERS_PCL_NO,'(',TM2.USER_NM,')') AS PERS_PCL_INFO
+						,TPL.PERS_INFO 
+						,TPL.REND_DIVN_CD
+						,FN_CODE_RTN('9016',TPL.REND_DIVN_CD) AS REND_DIVN_CD_NM
+						,TM.USER_NM 
+						,TPL.REG_DT
+				FROM TCM_PERSINFO_LOG TPL
+				LEFT OUTER JOIN TCM_MEMBER TM ON TPL.REG_ID = TM.MEMBER_CD 
+				LEFT OUTER JOIN TCM_MEMBER TM2 ON TPL.PERS_PCL_NO = TM2.MEMBER_CD
+				<where>
+					<if test="srchFrDy != null and srchFrDy != ''">						<!-- 조회일자 조회조건 -->
+						AND DATE_FORMAT(TPL.REG_DT,'%Y%m%d') BETWEEN #{srchFrDy} AND #{srchToDy}
+					</if>
+					<if test="srchRendDivnCd != null and srchRendDivnCd != ''">		<!-- 열람사유조회조건 -->
+						AND TPL.REND_DIVN_CD = #{srchRendDivnCd}
+					</if>
+					<if test="srchPersBizsCd != null and srchPersBizsCd != ''">		<!-- 열람업무조회조건 -->
+						AND TPL.PERS_BIZS_CD = #{srchPersBizsCd}
+					</if>
+				</where>
+			) T1 
+		) T2
+	</select>
+	
+	<!-- 개인정보 엑셀 다운로드 데이터 조회  -->
+	<select id="selectUserCheckListExcelDown" parameterType="com.doppio.management.service.MgrPerInfoVo" resultType="java.util.HashMap">
+		/*MgrUserInfoCheckHistMapper.selectUserCheckListExcelDown*/	 
+		SELECT 	 LOG_SEQ			-- 이력번호
+				,ACCESS_DY_FMT		-- 조회일자
+				,PERS_BIZS_CD_NM    -- 열럼업무구분
+				,PERS_PCL_INFO      -- 조회사용자 식별정보
+				,PERS_INFO          -- 개인정보 조회내용
+				,REND_DIVN_CD_NM    -- 열람사유구분
+				,USER_NM			-- 담당자
+				,REG_DT_FMT		    -- 생성일자
+		FROM (
+				SELECT  ROW_NUMBER() OVER (ORDER BY TPL.REG_DT  ASC) AS RNUM 
+						,TPL.LOG_SEQ 
+						,DATE_FORMAT(TPL.ACCESS_DY,'%Y-%m-%d') AS ACCESS_DY_FMT
+						,TPL.PERS_BIZS_CD
+						,FN_CODE_RTN('9017',TPL.PERS_BIZS_CD) AS PERS_BIZS_CD_NM
+						,CONCAT(TPL.PERS_PCL_NO,'(',REPLACE (TM2.USER_NM,SUBSTRING(TM2.USER_NM,2,1),'*'),')') AS PERS_PCL_INFO
+						,TPL.PERS_INFO 
+						,TPL.REND_DIVN_CD
+						,CASE WHEN TPL.REND_CMT  != '' THEN  CONCAT( FN_CODE_RTN('9016',TPL.REND_DIVN_CD),'》',TPL.REND_CMT  )
+						ELSE CONCAT( FN_CODE_RTN('9016',TPL.REND_DIVN_CD)) END AS REND_DIVN_CD_NM  
+						,TM.USER_NM 
+						,DATE_FORMAT(TPL.REG_DT,'%Y-%m-%d %H:%m:%s') AS REG_DT_FMT
+				FROM TCM_PERSINFO_LOG TPL
+				LEFT OUTER JOIN TCM_MEMBER TM ON TPL.REG_ID = TM.MEMBER_CD 
+				LEFT OUTER JOIN TCM_MEMBER TM2 ON TPL.PERS_PCL_NO = TM2.MEMBER_CD
+				<where> 
+					<if test="srchFrDy != null and srchFrDy != ''">				 <!-- 조회일자 조회조건 -->
+						AND DATE_FORMAT(TPL.REG_DT,'%Y%m%d') BETWEEN #{srchFrDy} AND #{srchToDy}
+					</if>
+					<if test="srchRendDivnCd != null and srchRendDivnCd != ''">  <!-- 열람사유조회조건 -->
+						AND TPL.REND_DIVN_CD = #{srchRendDivnCd}
+					</if>
+					<if test="srchPersBizsCd != null and srchPersBizsCd !=''">   <!-- 열람업무조회조건 -->
+						AND TPL.PERS_BIZS_CD = #{srchPersBizsCd}
+					</if>
+				</where> 
+		)T1
+	</select>
+	
+	<!-- 사용자별 파일조회이력 리스트 -->
+	<select id="selectMgrUserFileHistory" parameterType="com.doppio.management.service.MgrPerInfoVo" resultType="com.doppio.management.service.MgrPerInfoVo">
+		/*MgrUserInfoCheckHistMapper.selectMgrUserFileHistory*/	 
+		SELECT 	RNUM ,															-- 순번
+				LOG_SEQ ,														-- 이력번호
+				FILE_KIND_CD ,													-- 파일종류 구분코드[9040]
+				FN_CODE_RTN('9040',FILE_KIND_CD) AS FILE_KIND_CD_NM , 			-- 파일종류
+				DWLD_CMD ,														-- 다운로드 내용
+				FILE_INFO ,														-- 다운로드 파일
+				EXECUTE_TIME ,													-- 실행시간MS
+				ACCESS_DY ,														-- 접근일자
+				RES_IP ,														-- 접근아이피
+				USER_NM ,														-- 사용자명
+				REG_DT 															-- 등록자 일시
+		FROM(
+				SELECT  ROW_NUMBER() OVER(ORDER BY TFL.REG_DT ASC ) AS RNUM 	
+						,TFL.LOG_SEQ 												
+						,TFL.FILE_KIND_CD 											
+						,FN_CODE_RTN('9040',TFL.FILE_KIND_CD) AS FILE_KIND_CD_NM    
+						,TFL.DWLD_CMD 												
+						,TFL.FILE_INFO 												
+						,TFL.EXECUTE_TIME 											
+						,TFL.ACCESS_DY 												
+						,TFL.RES_IP 												
+						,TM.USER_NM 												
+						,TFL.REG_DT 												
+				FROM TCM_FILEDWLDINFO_LOG TFL
+				LEFT OUTER JOIN TCM_MEMBER TM ON TM.MEMBER_CD = TFL.REG_ID 
+				<where>
+					<if test="srchFrDy != null and srchFrDy != ''">				 <!-- 조회일자 조회조건 -->
+						AND DATE_FORMAT(TFL.REG_DT,'%Y%m%d') BETWEEN #{srchFrDy} AND #{srchToDy}
+					</if>
+					<if test="srchfileKindCd != null and srchfileKindCd != ''">  <!-- 파일종류 조회조건 -->
+						AND TFL.FILE_KIND_CD = #{srchfileKindCd}
+					</if>
+				</where>
+		)T1		
+		<if test='startRowNo !=null and startRowNo !=""'>						 <!-- 그리드 RNUM 순번 -->
+				WHERE RNUM BETWEEN #{startRowNo} AND #{endRowNo}
+		</if>
+		ORDER BY RNUM DESC
+	</select>
+	
+	<!-- 사용자별 파일조회 갯수 불러오기 -->
+	<select id="selectMgrUserFileHistoryCount" parameterType="com.doppio.management.service.MgrPerInfoVo" resultType="int">
+		/*MgrUserInfoCheckHistMapper.selectMgrUserFileHistoryCount*/	 
+		SELECT COUNT(1) 								-- 사용자별 파일조회 이력 갯수				
+		FROM (
+			SELECT  ROW_NUMBER() OVER(ORDER BY TFL.REG_DT ASC ) AS RNUM ,
+					TFL.LOG_SEQ ,
+					TFL.FILE_KIND_CD ,
+					FN_CODE_RTN('9040',TFL.FILE_KIND_CD) AS FILE_KIND_CD_NM , 
+					TFL.DWLD_CMD ,
+					TFL.FILE_INFO ,
+					TFL.EXECUTE_TIME ,
+					TFL.ACCESS_DY ,
+					TFL.RES_IP ,
+					TM.USER_NM  ,
+					TFL.REG_DT 
+			FROM TCM_FILEDWLDINFO_LOG TFL
+			LEFT OUTER JOIN TCM_MEMBER TM ON TM.MEMBER_CD = TFL.REG_ID 
+			<where>
+				<if test="srchFrDy != null and srchFrDy != ''">				 <!-- 조회일자 조회조건 -->
+					AND DATE_FORMAT(TFL.REG_DT,'%Y%m%d') BETWEEN #{srchFrDy} AND #{srchToDy}
+				</if>
+				<if test="srchfileKindCd != null and srchfileKindCd != ''">  <!-- 파일종류 조회조건 -->
+					AND TFL.FILE_KIND_CD = #{srchfileKindCd}
+				</if>
+			</where>
+		)T1
+	</select>
+	<!-- 사용자별 파일조회 엑셀 다운로드용 데이터 조회 -->
+	<select id="selectMgrUserFileHistoryExcelDown" parameterType="com.doppio.management.service.MgrPerInfoVo" resultType="java.util.HashMap">
+		/*MgrUserInfoCheckHistMapper.selectMgrUserFileHistoryExcelDown*/	
+		 SELECT  TFL.LOG_SEQ 												-- 이력번호
+				,FN_CODE_RTN('9040',TFL.FILE_KIND_CD) AS FILE_KIND_CD_NM    -- 파일종류 
+				,TFL.DWLD_CMD 												-- 다운로드 내용
+				,TFL.FILE_INFO 												-- 다운로드 파일
+				,TFL.EXECUTE_TIME 											-- 실행시간MS
+				,DATE_FORMAT(TFL.ACCESS_DY,'%Y-%m-%d') AS ACCESS_DY_FMT 	-- 접근일자
+				,TFL.RES_IP 												-- 접근아이피
+				,TM.USER_NM 												-- 등록자 아이디
+				,DATE_FORMAT(TFL.REG_DT,'%Y-%m-%d %H:%m:%s') AS REG_DT   	-- 등록자 일시
+	     FROM    TCM_FILEDWLDINFO_LOG TFL
+		 LEFT OUTER JOIN TCM_MEMBER TM ON TM.MEMBER_CD = TFL.REG_ID 
+				<where>
+					<if test="srchFrDy != null and srchFrDy != ''">				 <!-- 조회일자 조회조건 -->
+						AND DATE_FORMAT(TFL.REG_DT,'%Y%m%d') BETWEEN #{srchFrDy} AND #{srchToDy}
+					</if>
+					<if test="srchfileKindCd != null and srchfileKindCd != ''">  <!-- 파일종류 조회조건 -->
+						AND TFL.FILE_KIND_CD = #{srchfileKindCd}
+					</if>
+				</where>
+	</select>
+</mapper>
